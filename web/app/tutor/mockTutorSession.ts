@@ -42,7 +42,14 @@ export function useMockTutorSession(): TutorSession {
     timers.current.forEach(clearTimeout);
     timers.current = [];
   };
-  useEffect(() => clearAll, []);
+  // Reset the start guard too: StrictMode unmounts once in dev, which clears the timers, so start() must run again.
+  useEffect(
+    () => () => {
+      clearAll();
+      started.current = false;
+    },
+    [],
+  );
 
   const patchTurn = (id: string, patch: Partial<TutorTurn>) =>
     setTurns((ts) => ts.map((t) => (t.id === id ? { ...t, ...patch } : t)));
