@@ -130,6 +130,10 @@ export const recapFixture = Recap.parse({
   reviewTomorrow: ["casa", "aprovechar"],
   summary_en:
     "You kept the conversation going and used 'huelga' correctly. Next time, watch the gender of words like 'problema'.",
+  tips: [
+    "Some nouns ending in -a are masculine: el problema, el mapa.",
+    "With 'yo', use the yo form: yo tengo, yo quiero.",
+  ],
 });
 
 export const sttTokenResponseFixture = SttTokenResponse.parse({

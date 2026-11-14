@@ -113,6 +113,7 @@ export const Recap = z.object({
   wordsNowKnown: z.array(z.string()),
   reviewTomorrow: z.array(z.string()),
   summary_en: z.string(),
+  tips: z.array(z.string()), // one-line rule + example per top error; [] if the model call fails
 });
 export type Recap = z.infer<typeof Recap>;
 
