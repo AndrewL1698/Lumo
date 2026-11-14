@@ -7425,7 +7425,8 @@
     "esperar"
   ],
   "expected": [
-    "esperar"
+    "esperar",
+    "previsto"
   ],
   "expecting": [
     "esperar"
@@ -12571,8 +12572,7 @@
   "manners": [
     "manera",
     "modo",
-    "educación",
-    "modal"
+    "educación"
   ],
   "mansion": [
     "mansión"
@@ -15177,7 +15177,8 @@
     "planeta"
   ],
   "planned": [
-    "planear"
+    "planear",
+    "previsto"
   ],
   "planner": [
     "agenda"
