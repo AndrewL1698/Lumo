@@ -5,9 +5,9 @@ import { ErrorState, LoadingState, PageHeader } from "@/components/ui/PageHeader
 import { useFetch } from "@/components/useFetch";
 
 export default function Page() {
-  const { data, error, loading, reload, setData } = useFetch("/api/data", DataResponse, { refetchOnFocus: true });
+  const { data, error, loading, reload } = useFetch("/api/data", DataResponse, { refetchOnFocus: true });
 
-  // Only change the list after the server confirms, so the screen never shows a delete that didn't happen.
+  // Only report success after the server confirms, then refetch so the screen matches the database.
   async function onDelete(req: DataDeleteRequest): Promise<boolean> {
     try {
       const res = await fetch("/api/data", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify(req) });
@@ -16,14 +16,8 @@ export default function Page() {
     } catch {
       return false;
     }
-    // HACK: the stub route ignores the request, so we filter locally instead of refetching.
-    setData((d) => {
-      if (!d) return d;
-      if (req.kind === "all") return { words: [], events: [], articles: [] };
-      if (req.kind === "word") return { ...d, words: d.words.filter((w) => w.lemma !== req.lemma) };
-      if (req.kind === "event") return { ...d, events: d.events.filter((e) => e.id !== req.id) };
-      return { ...d, articles: d.articles.filter((a) => a.id !== req.id) };
-    });
+    // The route is real now: refetch so the list shows exactly what the database holds.
+    await reload();
     return true;
   }
 
