@@ -9,6 +9,8 @@ export const REPO = join(HERE, "..", "..");
 export const OUT = join(HERE, "out");
 export const BATCH_DIR = join(OUT, "batches");
 export const WORDINDEX_PATH = join(REPO, "extension", "src", "wordindex.json");
+// lemma → difficulty band (1 beginner, 2 intermediate, 3 upper-intermediate), for level-matched swaps (D-007).
+export const WORDBANDS_PATH = join(REPO, "extension", "src", "wordbands.json");
 
 // Model ID comes from the one config constant (web/lib/config.ts).
 export const HAIKU = MODELS.correction;
