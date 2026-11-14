@@ -45,7 +45,7 @@ Andrew is the backstop. If anyone is blocked for more than 30 minutes, say so in
 | Decision | Owner | Default if undecided |
 |---|---|---|
 | STT provider (Scribe vs. alternative) | Andrew | Whichever preserves the most planted errors in the test |
-| Does the Amazon track require AWS? | Andrew | Check the track rules. If yes, call Claude via Bedrock |
+| Does the Amazon track require AWS? | Andrew | **Resolved: no** (see `decisions.md` D-001) |
 | Demo sites (2–3) | Naren | One news site + Wikipedia |
 | Photon phone line? | Team, Sat 9pm | No, unless Phase 3 is done |
 

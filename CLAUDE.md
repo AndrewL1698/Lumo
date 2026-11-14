@@ -3,6 +3,7 @@
 Shared guidance for every teammate's Claude. Planning docs live in `/docs`:
 - `docs/specs.md`: product source of truth (what we're building).
 - `docs/architecture.md`: technical design. **Overrides `specs.md` wherever they disagree** (§11 lists every change).
+- `docs/decisions.md`: log decisions here (STT choice, etc.). Documentation deliverables are tracked at the end of `docs/roadmap.md`.
 - `docs/roadmap.md`: phased schedule and per-person tasks. `docs/plan.md`: ownership and working agreements.
 
 This file covers how we work. Update the docs instead of silently deviating.

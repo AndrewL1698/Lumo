@@ -22,6 +22,8 @@ Who owns what and how we work: see [`plan.md`](plan.md). Technical design: see [
 | Shravan | Page shells, nav, layout, design tokens for all web pages. |
 | Naren | Write 15 error-planted Spanish sentences for the STT test (each with its intended error + correction). Check ElevenLabs credit balance + API access. |
 
+**Docs:** CLAUDE.md Commands filled, `.env.example`, README skeleton (Shravan), AWS decision closed (D-001, done).
+
 **Exit:** `npm run build` passes everywhere, the extension loads, the DB tables exist, and `/shared` is merged.
 
 ---
@@ -35,6 +37,8 @@ Who owns what and how we work: see [`plan.md`](plan.md). Technical design: see [
 | Karthik | `scripts/build-wordlist`: frequency list → lemmatize + dedupe → drop function words → Haiku batches → JSON → seed `words`. Also emit `extension/src/wordindex.json` (English form → lemmas). Claude audit pass on gender/article/false-friend. |
 | Naren | Extension swaps **hard-coded** words on one news site: TreeWalker with the skip rules, MutationObserver (debounced), max one swap per sentence. |
 | Shravan | Onboarding (level pick, reading-in-lessons toggle, pairing-code display) + vocabulary page on mock data. |
+
+**Docs:** STT decision in `decisions.md` (Andrew); `scripts/README.md` word-list method (Karthik).
 
 **Exit:** a hard-coded "la casa" appears on the demo site, `words` has ~2–3k rows, and the STT decision is written down.
 
@@ -50,6 +54,8 @@ Who owns what and how we work: see [`plan.md`](plan.md). Technical design: see [
 | Naren | Popup pairing. Service worker does **all** fetches. Real candidates + translate. Hover card (500 ms rule, Knew it / Didn't know). Batched event queue. |
 | Shravan | Tutor page UI: push-to-talk button, live transcript with inline correction highlights, tutor captions, recap panel, all driven by a mock `CorrectionResult` stream. |
 
+**Docs:** note any architecture deviations in `architecture.md` §11.
+
 **Exit:** hovering a swapped word writes an `events` row and updates `user_words`, and speaking a sentence shows corrections plus a spoken reply.
 
 ---
@@ -63,6 +69,8 @@ Who owns what and how we work: see [`plan.md`](plan.md). Technical design: see [
 | Karthik | Scoring formula + 70/30 review/new mix in candidates. `/api/vocab` (Learning / Your vocabulary / Mastered + streak). **Demo seed script** that backdates FSRS history so due and mastered words exist. |
 | Shravan | Wire vocabulary + settings to real APIs. "What Parrot knows" page (list, per-item delete, delete everything). |
 | Naren | 🔊 in the hover card via `/api/tts` (cached). `seen` via IntersectionObserver (≥2s). Toolbar toggle + Alt+Shift+P. Pause on this site. Then switch to the eval set. |
+
+**Docs:** lock `demo-script.md` (Naren); start capturing screenshots into `docs/img/` (Shravan).
 
 **Exit:** the full demo script (specs §11) runs once end to end, even if rough.
 
@@ -78,11 +86,14 @@ Who owns what and how we work: see [`plan.md`](plan.md). Technical design: see [
 | Shravan | Polish, empty states, English explanations visible everywhere (judges), recap styling. |
 | Naren | Lock the demo script. **Record the backup video.** Stretch controls only if Phase 3 finished (snooze → peek). |
 
+**Docs:** `eval/README.md` with method + numbers (Karthik/Andrew); screenshots done; backup video linked (Naren).
+
 ---
 
 ## Sun 3:00–7:30am: Ship
 - Everyone rehearses the 2-minute demo (headset mic, phone hotspot, localhost).
-- Naren: Devpost write-up. Shravan: README + screenshots. Andrew: pitch numbers slide.
+- Naren: Devpost write-up (copy from README). Shravan: final README + screenshots. Andrew: pitch numbers slide.
+- Everyone: run the documentation checklist below.
 - **Submit by 7:30am** (Devpost deadline 8:15am). Judging round 1 at 9:30am.
 
 ---
@@ -97,3 +108,22 @@ Who owns what and how we work: see [`plan.md`](plan.md). Technical design: see [
 7. Photon phone line
 
 **Never cut:** swaps + hover cards, the push-to-talk tutor with on-screen corrections, a word flipping to "known" after correct spoken use, the "What Parrot knows" page.
+
+---
+
+## Documentation checklist (Amazon track)
+Required: working prototype, clear use case + target user, basic documentation, presentation/pitch. Tick when merged to `main`.
+
+- [ ] CLAUDE.md Commands filled + `.env.example` (Andrew)
+- [x] AWS decision closed: not required (`decisions.md` D-001)
+- [ ] README skeleton committed (Shravan)
+- [ ] STT decision in `decisions.md` (Andrew)
+- [ ] `scripts/README.md` word-list method (Karthik)
+- [ ] `docs/demo-script.md` locked (Naren)
+- [ ] Screenshots in `docs/img/` (Shravan)
+- [ ] `eval/README.md` method + numbers (Karthik/Andrew)
+- [ ] Backup demo video linked (Naren)
+- [ ] README final: use case + target user on first screen, architecture diagram, eval numbers, screenshots, setup works on a clean checkout; sections for creativity, usefulness, technical implementation, UX, agentic behavior, adaptive intelligence, privacy (Shravan)
+- [ ] Devpost write-up, Amazon track selected (Naren)
+- [ ] Pitch slide with numbers (Andrew)
+- [ ] No API keys or `.env` committed
