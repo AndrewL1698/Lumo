@@ -5,8 +5,15 @@ import { EmptyState } from "@/components/ui/PageHeader";
 
 const fmt = (iso: string) => new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
+// Plain-English names for every LearnerEventType (shared/src/events.ts).
 const EVENT_LABEL: Record<string, string> = {
+  seen: "Saw a swapped word",
   hover: "Looked up a word",
+  knew_it: "Marked a word as known",
+  didnt_know: "Marked a word as new",
+  quiz_pass: "Got a quiz right",
+  quiz_fail: "Missed a quiz",
+  reading: "Read an article",
   spoken_correct: "Used a word correctly in speech",
   spoken_incorrect: "Used a word incorrectly in speech",
 };
@@ -61,6 +68,11 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
         It never stores full page text or what you type on other sites.
       </p>
 
+      <p className="mb-6 text-lg font-medium text-slate-800">
+        {data.words.length} words · {data.events.length} activity {data.events.length === 1 ? "entry" : "entries"} · {data.articles.length}{" "}
+        {data.articles.length === 1 ? "article" : "articles"}
+      </p>
+
       {failed && (
         <p role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-red-800">
           That didn't work. Nothing was removed, so please try again.
@@ -71,14 +83,26 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
         {data.words.length === 0 ? (
           <EmptyState>No words stored yet.</EmptyState>
         ) : (
-          <ul className="space-y-2">
+          // Compact chips so words, activity and articles all fit on one screen (it's a glance in the demo).
+          <ul className="flex flex-wrap gap-2">
             {data.words.map((w) => (
-              <Row key={w.lemma} busy={busy} label={w.lemma} onDelete={() => void run({ kind: "word", lemma: w.lemma })}>
+              <li
+                key={w.lemma}
+                title={`${w.state}${w.lastHoverAt ? ` · last looked up ${fmt(w.lastHoverAt)}` : ""}`}
+                className="flex items-center gap-1 rounded-full border border-slate-200 bg-white py-1 pl-3 pr-1"
+              >
                 <span className="font-semibold text-slate-900">{w.lemma}</span>
-                <span className="ml-2 text-sm text-slate-500">
-                  {w.state} · seen {w.seenCount}×{w.lastHoverAt ? ` · last looked up ${fmt(w.lastHoverAt)}` : ""}
-                </span>
-              </Row>
+                <span className="text-xs text-slate-500">{w.state}</span>
+                <button
+                  type="button"
+                  disabled={busy}
+                  aria-label={`Delete ${w.lemma}`}
+                  onClick={() => void run({ kind: "word", lemma: w.lemma })}
+                  className="ml-1 rounded-full px-2 text-lg leading-none text-red-600 hover:bg-red-50 disabled:opacity-50"
+                >
+                  ×
+                </button>
+              </li>
             ))}
           </ul>
         )}
