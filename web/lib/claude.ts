@@ -3,7 +3,11 @@
  * Direct Anthropic API only; keep the provider swappable here so routes never touch the SDK.
  */
 import Anthropic from "@anthropic-ai/sdk";
-import type { CorrectionResult, Level, TargetWord } from "@parrot/shared";
+import type { Level, TargetWord } from "@parrot/shared";
+import type { ModelCorrection } from "./tutor/types";
+
+/** Thrown by either lane when the model returns stop_reason "refusal". */
+export class ClaudeRefusalError extends Error {}
 
 let client: Anthropic | undefined;
 
@@ -19,7 +23,8 @@ export async function correctUtterance(_args: {
   level: Level;
   targetWords: TargetWord[];
   tutorPrevious?: string;
-}): Promise<Omit<CorrectionResult, "utterance_id">> {
+  signal?: AbortSignal;
+}): Promise<ModelCorrection> {
   throw new Error("not implemented");
 }
 
@@ -28,6 +33,7 @@ export async function correctUtterance(_args: {
 export async function* streamTutorReply(_args: {
   system: string;
   messages: { role: "user" | "assistant"; content: string }[];
+  signal?: AbortSignal;
 }): AsyncIterable<string> {
   throw new Error("not implemented");
 }

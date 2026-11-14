@@ -15,11 +15,14 @@ export async function mintSttToken(): Promise<string> {
 }
 
 // TODO(andrew): Flash v2.5 TTS for one text chunk (ELEVENLABS.ttsModel, voiceId).
-export async function ttsChunk(_text: string): Promise<ArrayBuffer> {
+export async function ttsChunk(
+  _text: string,
+  _opts?: { outputFormat?: string; voiceId?: string },
+): Promise<ArrayBuffer> {
   throw new Error("not implemented");
 }
 
-// TODO(andrew): batch STT fallback (ELEVENLABS.sttBatchModel).
-export async function sttBatch(_wav: ArrayBuffer): Promise<string> {
+// TODO(andrew): batch STT fallback (ELEVENLABS.sttBatchModel). `_pcm` is raw 16 kHz mono s16le (no WAV header).
+export async function sttBatch(_pcm: ArrayBuffer, _opts?: { model?: string }): Promise<string> {
   throw new Error("not implemented");
 }
