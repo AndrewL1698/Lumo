@@ -245,6 +245,10 @@ function processNode(node: Text): void {
   while ((match = PHRASE_RE.exec(text))) {
     if (isProperNoun(match[0])) continue;
 
+    // "the company's clients" would become "la empresa's clients". Leave possessives alone;
+    // the Spanish form differs and 2.2's translate call is what should handle them.
+    if (/^['’]s\b/i.test(text.slice(match.index + match[0].length))) continue;
+
     const sentence = sentenceIndexAt(text, match.index);
     if (usedSentences.has(sentence)) continue;
 
