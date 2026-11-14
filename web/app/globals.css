@@ -1,20 +1,78 @@
 @import "tailwindcss";
 
-/* Design tokens (Shravan). Big type for a projector; components use the slate/indigo/green/red scales. */
+/* Parrot design tokens. Dark flat ground; colour only as verdicts:
+   go = correct / known, wait = learning / listening, stop = mistake / delete. */
 @theme {
-  --color-brand: #4f46e5;
-  --color-brand-dark: #4338ca;
-  --color-surface: #f8fafc;
-  --color-ink: #0f172a;
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --color-bg: #0e1013;
+  --color-panel: #14171b;
+  --color-ink: #e8ebef;
+  --color-muted: #8a929d;
+  --color-line: #23272d;
+  --color-go: #2f9e5b;
+  --color-wait: #d99a1e;
+  --color-stop: #d64545;
+
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+
+  --font-sans: var(--font-b612), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-b612-mono), ui-monospace, monospace;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 html {
-  font-size: 18px;
+  font-size: 18px; /* projector */
+  color-scheme: dark;
+  scrollbar-color: var(--color-line) var(--color-bg);
 }
 
 body {
-  background: var(--color-surface);
+  background: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-sans);
+  caret-color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-go) 40%, transparent);
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+a {
+  text-underline-offset: 0.2em;
+}
+
+/* Numbers line up in lists and counts. */
+.font-mono {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Interlinear correction: the fix sits above the verbatim slip. */
+ruby.fix {
+  ruby-position: over;
+  ruby-align: center;
+}
+ruby.fix rt {
+  font-family: var(--font-mono);
+  font-size: 0.7em;
+  color: var(--color-go);
+  letter-spacing: 0;
+  padding-bottom: 0.15em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+    animation-duration: 0ms !important;
+  }
 }

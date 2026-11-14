@@ -1,7 +1,7 @@
 "use client";
 import { useEffect } from "react";
 
-// "Word is now known" toast. Pass a lemma from newlyKnown(wordUpdates) (lib/tutor/wordUpdates.ts).
+// "Word is now known" notice. Pass a lemma from newlyKnown(wordUpdates).
 export function KnownToast({
   lemma,
   onDone,
@@ -18,15 +18,16 @@ export function KnownToast({
   }, [lemma, onDone, durationMs]);
 
   if (!lemma) return null;
-  // Big and centered near the top: this is a never-cut demo moment, and the talk controls own the bottom.
+  // Near the top (the talk controls own the bottom). It enters once; that motion marks a real event.
   return (
     <div
       role="status"
       aria-live="polite"
-      className="fixed left-1/2 top-24 z-50 -translate-x-1/2 rounded-2xl bg-green-600 px-8 py-4 text-center text-white shadow-2xl ring-4 ring-green-200"
+      className="fixed left-1/2 top-24 z-50 w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 rounded-sm border border-go bg-bg px-6 py-4 transition-[opacity,transform] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] starting:-translate-y-2 starting:opacity-0"
     >
-      <p className="text-2xl font-bold">🎉 “{lemma}” is now in your vocabulary</p>
-      <p className="mt-1 text-base text-green-50">You used it correctly out loud.</p>
+      <p className="font-mono text-xs uppercase tracking-wider text-go">Now known</p>
+      <p className="mt-1 text-3xl font-bold text-ink">{lemma}</p>
+      <p className="mt-1 text-muted">Used correctly out loud. Added to your vocabulary.</p>
     </div>
   );
 }

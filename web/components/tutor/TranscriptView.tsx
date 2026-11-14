@@ -1,22 +1,19 @@
 import type { CorrectionResult } from "@parrot/shared";
 import { segmentTranscript } from "./highlight";
 
-// Renders the RAW transcript (what is graded) with confident errors highlighted inline.
-// Shows the fix right after each span so it is readable without hovering (judges).
+// Renders the RAW transcript (what is graded), verbatim and in place. Each confident slip is struck in red
+// with its correction set directly above it (interlinear, via <ruby>), so the fix reads without hovering.
 export function TranscriptView({ raw, result }: { raw: string; result?: CorrectionResult }) {
   const segments = segmentTranscript(raw, result);
   return (
-    <p className="text-xl leading-relaxed text-slate-900">
+    // Normal leading; the browser grows only the lines that carry a correction above them.
+    <p className="pt-3 text-2xl leading-[1.6] text-ink">
       {segments.map((seg, i) =>
         seg.error ? (
-          <span key={i} className="mx-0.5 inline-flex items-baseline gap-1.5">
-            <mark className="rounded bg-red-100 px-1 text-red-800 line-through decoration-red-400">
-              {seg.text}
-            </mark>
-            <span className="rounded bg-green-100 px-1 font-semibold text-green-800">
-              {seg.error.correction}
-            </span>
-          </span>
+          <ruby key={i} className="fix mx-0.5">
+            <s className="text-stop decoration-stop decoration-2">{seg.text}</s>
+            <rt>{seg.error.correction}</rt>
+          </ruby>
         ) : (
           <span key={i}>{seg.text}</span>
         ),

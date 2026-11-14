@@ -30,7 +30,7 @@ export function OnboardingForm({
       <button
         type="button"
         onClick={() => onSubmit({ ...initial, level, useReadingInLessons: useReading })}
-        className="rounded-lg bg-indigo-600 px-6 py-3 text-lg font-semibold text-white hover:bg-indigo-700"
+        className="inline-flex items-center justify-center rounded-sm bg-ink px-6 py-3 text-lg font-bold text-bg transition-colors duration-150 hover:bg-[#c9ced5] disabled:opacity-40"
       >
         Save and continue
       </button>

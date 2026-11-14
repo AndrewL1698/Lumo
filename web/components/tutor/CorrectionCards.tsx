@@ -15,25 +15,23 @@ export function CorrectionCards({ raw, result }: { raw: string; result?: Correct
   if (!result) return null;
   const errors = visibleErrors(raw, result);
   if (errors.length === 0) {
-    return (
-      <p className="rounded-lg bg-green-50 px-4 py-3 text-green-800">
-        ✓ No mistakes found in what you said.
-      </p>
-    );
+    return <p className="font-mono text-sm uppercase tracking-wider text-go">No mistakes found</p>;
   }
   return (
-    <ul className="space-y-2">
+    <ul className="divide-y divide-line border-y border-line">
       {errors.map((e, i) => (
-        <li key={i} className="rounded-lg border border-slate-200 bg-white px-4 py-3">
-          <div className="flex flex-wrap items-baseline gap-2">
-            <span className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              {TYPE_LABEL[e.type] ?? e.type}
-            </span>
-            <span className="text-red-700 line-through">{e.span}</span>
-            <span aria-hidden>→</span>
-            <span className="font-semibold text-green-700">{e.correction}</span>
+        <li key={i} className="grid gap-1 py-3 sm:grid-cols-[9rem_1fr] sm:gap-4">
+          <span className="font-mono text-xs uppercase tracking-wider text-muted sm:pt-1">{TYPE_LABEL[e.type] ?? e.type}</span>
+          <div>
+            <p className="text-lg">
+              <s className="text-stop decoration-stop">{e.span}</s>
+              <span className="mx-2 text-muted" aria-label="corrected to">
+                →
+              </span>
+              <span className="font-bold text-go">{e.correction}</span>
+            </p>
+            <p className="mt-1 text-muted">{e.explanation_en}</p>
           </div>
-          <p className="mt-1 text-sm text-slate-700">{e.explanation_en}</p>
         </li>
       ))}
     </ul>

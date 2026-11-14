@@ -1,9 +1,10 @@
 import type { VocabItem, VocabResponse } from "@parrot/shared";
 
-const LISTS: { key: "learning" | "known" | "mastered"; title: string; empty: string; tone: string }[] = [
-  { key: "learning", title: "Learning now", empty: "No words in progress yet. Hover a Spanish word while reading to start one.", tone: "border-amber-300" },
-  { key: "known", title: "Your vocabulary", empty: "Nothing here yet. Use a word correctly in a tutor conversation and it lands here.", tone: "border-green-400" },
-  { key: "mastered", title: "Mastered", empty: "No mastered words yet. Words you keep remembering over weeks show up here.", tone: "border-indigo-400" },
+// Colour is a verdict: learning waits (amber), known is a go (green). Mastered stays neutral.
+const LISTS: { key: "learning" | "known" | "mastered"; title: string; tone: string; empty: string }[] = [
+  { key: "learning", title: "Learning now", tone: "text-wait", empty: "No words in progress yet. Hover a Spanish word while reading to start one." },
+  { key: "known", title: "Your vocabulary", tone: "text-go", empty: "Nothing here yet. Use a word correctly in a tutor conversation and it lands here." },
+  { key: "mastered", title: "Mastered", tone: "text-ink", empty: "No mastered words yet. Words you keep remembering over weeks show up here." },
 ];
 
 // "due now" / "due tomorrow" / "due in 5 days" / "" for null.
@@ -20,18 +21,18 @@ function WordRow({ w, fresh, showDue = true }: { w: VocabItem; fresh?: boolean; 
   const due = showDue ? dueLabel(w.dueAt) : "";
   return (
     <li
-      className={`flex items-baseline justify-between gap-3 border-b border-slate-100 py-2 last:border-0 ${
-        fresh ? "-mx-2 rounded-lg border-0 bg-green-50 px-2 ring-2 ring-green-400" : ""
+      className={`flex items-baseline justify-between gap-3 border-b border-line py-3 last:border-0 ${
+        fresh ? "-mx-3 rounded-xs border border-go bg-go/10 px-3 last:border" : ""
       }`}
     >
-      <span className="text-lg font-semibold text-slate-900">
-        {w.article ? <span className="font-normal text-slate-500">{w.article} </span> : null}
-        {w.lemma}
-        {fresh && <span className="ml-2 rounded-full bg-green-600 px-2 py-0.5 align-middle text-xs font-semibold text-white">just learned</span>}
+      <span className="text-lg">
+        {w.article ? <span className="text-muted">{w.article} </span> : null}
+        <span className="font-bold text-ink">{w.lemma}</span>
+        {fresh && <span className="ml-3 font-mono text-xs uppercase tracking-wider text-go">Just learned</span>}
       </span>
-      <span className="text-right text-sm text-slate-600">
+      <span className="text-right text-muted">
         {w.english}
-        {due && <span className="block text-xs text-slate-400">{due}</span>}
+        {due && <span className="block font-mono text-xs">{due}</span>}
       </span>
     </li>
   );
@@ -39,9 +40,14 @@ function WordRow({ w, fresh, showDue = true }: { w: VocabItem; fresh?: boolean; 
 
 export function StreakBadge({ days }: { days: number }) {
   return (
-    <p className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-1.5 text-orange-800">
-      <span aria-hidden>🔥</span>
-      {days > 0 ? `${days}-day streak` : "No streak yet. Practice today to start one."}
+    <p className="font-mono text-sm text-muted">
+      {days > 0 ? (
+        <>
+          Streak <span className="text-ink">{days}</span> {days === 1 ? "day" : "days"}
+        </>
+      ) : (
+        "No streak yet. Practise today to start one."
+      )}
     </p>
   );
 }
@@ -50,22 +56,20 @@ export function VocabLists({ data, fresh = new Set<string>() }: { data: VocabRes
   return (
     <div className="space-y-6">
       <StreakBadge days={data.streakDays} />
-      <div className="grid gap-4 md:grid-cols-3">
-        {LISTS.map(({ key, title, empty, tone }) => {
+      <div className="grid gap-px overflow-hidden rounded-sm border border-line bg-line md:grid-cols-3">
+        {LISTS.map(({ key, title, tone, empty }) => {
           // Just-learned words go first so they are visible without scrolling.
           const words = [...data[key]].sort((a, b) => Number(fresh.has(b.lemma)) - Number(fresh.has(a.lemma)));
           return (
-            <section key={key} className={`rounded-xl border-t-4 ${tone} bg-white p-4 shadow-sm`}>
-              <h2 className="flex items-baseline justify-between text-xl font-bold text-slate-900">
-                {title}
-                <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-sm font-medium text-slate-700">
-                  {data.counts[key]}
-                </span>
+            <section key={key} className="bg-bg px-5 pb-3 pt-5">
+              <h2 className="flex items-baseline justify-between border-b border-line pb-3">
+                <span className="text-lg font-bold text-ink">{title}</span>
+                <span className={`font-mono text-lg ${tone}`}>{data.counts[key]}</span>
               </h2>
               {words.length === 0 ? (
-                <p className="mt-4 text-sm text-slate-500">{empty}</p>
+                <p className="py-4 text-muted">{empty}</p>
               ) : (
-                <ul className="mt-2">
+                <ul>
                   {words.map((w) => (
                     <WordRow key={w.lemma} w={w} fresh={key === "known" && fresh.has(w.lemma)} showDue={key !== "mastered"} />
                   ))}
