@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { correctResponseFixture, rawTextFixture } from "@parrot/shared";
 import { LuciMark } from "@/components/LuciMark";
+import { CursorTrail } from "@/components/home/CursorTrail";
 import { CorrectionCards } from "@/components/tutor/CorrectionCards";
 import { TranscriptView } from "@/components/tutor/TranscriptView";
 import { btn, eyebrow } from "@/components/ui/PageHeader";
@@ -13,7 +14,9 @@ const STEPS = [
 
 export default function Home() {
   return (
-    <div className="space-y-16">
+    // .home-firefly switches the cursor to the firefly on this page only (globals.css).
+    <div className="home-firefly space-y-16">
+      <CursorTrail />
       <section className="grid items-start gap-10 lg:grid-cols-[1fr_1.05fr]">
         <div>
           <p className={`${eyebrow} flex items-center gap-2`}>

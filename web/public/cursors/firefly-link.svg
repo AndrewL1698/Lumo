@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <!-- Luci cursor over links and buttons (brighter glow): head points up-left; the hotspot (6,6) is the front of the head. -->
+  <g transform="translate(-2 -2) rotate(-45 16 16)">
+    <ellipse cx="10.6" cy="13" rx="3" ry="5.6" transform="rotate(-28 10.6 13)" fill="#6fa8d6" fill-opacity=".9" stroke="#2a3a4a" stroke-width=".7"/>
+    <ellipse cx="21.4" cy="13" rx="3" ry="5.6" transform="rotate(28 21.4 13)" fill="#6fa8d6" fill-opacity=".9" stroke="#2a3a4a" stroke-width=".7"/>
+    <circle cx="16" cy="22.5" r="7.6" fill="#ffe9a0" fill-opacity=".95"/>
+    <ellipse cx="16" cy="22" rx="4.4" ry="5.4" fill="#ffe46b" stroke="#b07d00" stroke-width=".8"/>
+    <ellipse cx="16" cy="14.5" rx="3.8" ry="4.6" fill="#2a3a4a"/>
+    <circle cx="16" cy="8" r="3.4" fill="#2a3a4a"/>
+    <path d="M14.9 5.1 Q14 3.2 12.6 2.9 M17.1 5.1 Q18 3.2 19.4 2.9" fill="none" stroke="#2a3a4a" stroke-width=".9" stroke-linecap="round"/>
+    <circle cx="14.7" cy="7.7" r=".9" fill="#fcfcf8"/>
+    <circle cx="17.3" cy="7.7" r=".9" fill="#fcfcf8"/>
+  </g>
+</svg>
