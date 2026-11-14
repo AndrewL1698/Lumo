@@ -11,9 +11,10 @@ import { newlyKnown } from "./wordUpdates";
 
 // Pure view over a TutorSession. Pass useMockTutorSession() or Andrew's real useTutorSession().
 export function TutorPage({ session }: { session: TutorSession }) {
-  const { status, partial, turns, targetWords, recap, start, pressTalk, releaseTalk, end } = session;
+  const { status, partial, turns, targetWords, recap, notice, start, pressTalk, releaseTalk, sendText, end } = session;
   const [toasts, setToasts] = useState<string[]>([]);
   const [seen, setSeen] = useState<Set<string>>(new Set());
+  const [typed, setTyped] = useState("");
 
   useEffect(() => {
     void start();
@@ -47,6 +48,12 @@ export function TutorPage({ session }: { session: TutorSession }) {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4">
+      {notice && (
+        <p role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-amber-900">
+          {notice}
+        </p>
+      )}
+
       <TargetChips words={targetWords} known={known} />
 
       <ol className="space-y-6">
@@ -59,6 +66,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
                 {!t.correction && <p className="mt-2 text-sm text-slate-500">Checking…</p>}
               </div>
             )}
+            {t.correctionFailed && <p className="text-sm text-slate-500">We couldn&apos;t check this one, but your answer was received.</p>}
             <CorrectionCards raw={t.rawText} result={t.correction} />
             {t.tutorText && (
               <div className="rounded-xl bg-indigo-50 p-4">
@@ -96,6 +104,30 @@ export function TutorPage({ session }: { session: TutorSession }) {
           End session
         </button>
       </div>
+
+      <details className="text-slate-700">
+        <summary className="cursor-pointer text-sm font-medium">Type your answer instead</summary>
+        <form
+          className="mt-2 flex gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const text = typed.trim();
+            if (!text) return;
+            sendText(text);
+            setTyped("");
+          }}
+        >
+          <input
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            placeholder="Escribe en español…"
+            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2"
+          />
+          <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700">
+            Send
+          </button>
+        </form>
+      </details>
 
       <KnownToast lemma={toasts[0] ?? null} onDone={dismissToast} />
     </div>
