@@ -8,6 +8,7 @@ import { RecapPanel } from "./RecapPanel";
 import { TargetChips } from "./TargetChips";
 import { TranscriptView } from "./TranscriptView";
 import { newlyKnown } from "./wordUpdates";
+import { rememberLearned } from "@/components/vocab/justLearned";
 
 // Pure view over a TutorSession. Pass useMockTutorSession() or Andrew's real useTutorSession().
 export function TutorPage({ session }: { session: TutorSession }) {
@@ -29,6 +30,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
       fresh.push(...newlyKnown(t.wordUpdates));
     }
     if (fresh.length) {
+      rememberLearned(fresh); // so the Vocabulary page can highlight these
       setSeen(nextSeen);
       setToasts((q) => [...q, ...fresh]);
     }

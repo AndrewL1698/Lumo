@@ -1,12 +1,25 @@
 "use client";
 import { VocabResponse } from "@parrot/shared";
+import { useEffect, useState } from "react";
 import { VocabLists } from "@/components/vocab/VocabLists";
+import { justLearned, saveKnownSnapshot } from "@/components/vocab/justLearned";
 import { EmptyState, ErrorState, LoadingState, PageHeader } from "@/components/ui/PageHeader";
 import { useFetch } from "@/components/useFetch";
 
 export default function Page() {
   // Refetch on window focus so a word that just flipped to "known" in the tutor shows up (demo step 4).
   const { data, error, loading, reload } = useFetch("/api/vocab", VocabResponse, { refetchOnFocus: true });
+  // Highlight words that just moved to "known" (from the tutor, or since this page was last loaded).
+  const [fresh, setFresh] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!data) return;
+    const known = data.known.map((w) => w.lemma);
+    const f = justLearned(known);
+    setFresh(f);
+    saveKnownSnapshot(known, f);
+  }, [data]);
+  const freshWords = data ? data.known.filter((w) => fresh.has(w.lemma)) : [];
+
   const total = data ? data.counts.learning + data.counts.known + data.counts.mastered : 0;
   return (
     <>
@@ -20,7 +33,13 @@ export default function Page() {
       {data && total === 0 && data.streakDays === 0 && (
         <EmptyState>No words yet. Read a page with Parrot switched on and hover a Spanish word to start.</EmptyState>
       )}
-      {data && (total > 0 || data.streakDays > 0) && <VocabLists data={data} />}
+      {freshWords.length > 0 && (
+        <p role="status" className="mb-4 rounded-xl bg-green-50 p-4 text-lg text-green-900">
+          🎉 New in your vocabulary:{" "}
+          <strong>{freshWords.map((w) => (w.article ? `${w.article} ${w.lemma}` : w.lemma) + ` (${w.english})`).join(", ")}</strong>
+        </p>
+      )}
+      {data && (total > 0 || data.streakDays > 0) && <VocabLists data={data} fresh={fresh} />}
     </>
   );
 }
