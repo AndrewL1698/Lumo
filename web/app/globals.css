@@ -257,6 +257,19 @@ ruby.fix rt {
   100% { opacity: 0; }
 }
 
+/* Home page only: the firefly cursor. The home page root carries .home-firefly; other pages keep the
+   normal cursor. Hotspot (6,6) is the firefly's head. Links and buttons get a brighter-glow firefly;
+   text fields keep the I-beam. */
+body:has(.home-firefly) {
+  cursor: url("/cursors/firefly.svg") 6 6, auto;
+}
+body:has(.home-firefly) :is(a, button, summary, label, [role="button"]) {
+  cursor: url("/cursors/firefly-link.svg") 6 6, pointer;
+}
+body:has(.home-firefly) :is(input, textarea, select, [contenteditable="true"]) {
+  cursor: text;
+}
+
 /* "Your jar" lights up when a spark lands in it */
 .jar-lit {
   background: var(--color-glow);
