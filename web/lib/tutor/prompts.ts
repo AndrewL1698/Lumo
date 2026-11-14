@@ -32,13 +32,13 @@ Fields
 - severity: 1 small slip, 2 clear error, 3 the meaning is unclear.
 - lemma: dictionary form of the corrected word, or null.
 - target_words_used: for each word in <target_words> the learner actually said, in any
-  form: the lemma, \`form\` exactly as spoken, and \`correct\` (right meaning and right form
-  in this sentence). Leave out target words they did not say.`;
+  form: the lemma copied exactly as written in <target_words>, \`form\` exactly as spoken,
+  and \`correct\` (right meaning and right form in this sentence). Leave out target words
+  they did not say.`;
 
 export function buildCorrectorPrompt(args: CorrectorPromptArgs): { system: string; user: string } {
-  const words = args.targetWords
-    .map((w) => `${w.article ? `${w.article} ` : ""}${w.lemma} (${w.english})`)
-    .join("; ");
+  // No article: Haiku copied "la casa" back as the lemma for target "casa".
+  const words = args.targetWords.map((w) => `${w.lemma} (${w.english})`).join("; ");
   const parts = [`<level>${args.level}</level>`, `<target_words>${words}</target_words>`];
   if (args.tutorPrevious) parts.push(`<tutor_said>${args.tutorPrevious}</tutor_said>`);
   parts.push(`<transcript>${args.rawText}</transcript>`);

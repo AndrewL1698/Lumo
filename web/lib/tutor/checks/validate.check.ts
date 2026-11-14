@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { correctResponseFixture, rawTextFixture, tutorContextFixture } from "@parrot/shared";
 import type { CorrectionError } from "@parrot/shared";
 import type { ModelCorrection, ModelCorrectionError } from "../types";
-import { normalize, validateCorrection, validateTargetWords } from "../validate";
+import { canonicalLemma, lemmaKey, normalize, validateCorrection, validateTargetWords } from "../validate";
 
 const err = (over: Partial<ModelCorrectionError>): ModelCorrectionError => ({
   span: "yo tiene",
@@ -113,5 +113,26 @@ assert.deepEqual(ev({ alreadyCredited: ["huelga"] }), [null]);
 
 // Same lemma reported twice in one utterance is credited once.
 assert.deepEqual(ev({ used: [use("huelga", "huelga"), use("huelga", "huelga")] }), ["spoken_correct", null]);
+
+// ---- lemmaKey / canonicalLemma (the model may echo the article or change case/accents) ----
+assert.equal(lemmaKey("La Casa"), "casa");
+assert.equal(lemmaKey("  los   Problemas "), "problemas");
+assert.equal(lemmaKey("la"), "la"); // a bare article is not stripped
+assert.equal(lemmaKey("casá"), "casa");
+assert.equal(canonicalLemma("la casa", targets), "casa");
+assert.equal(canonicalLemma("Huelga", targets), "huelga");
+assert.equal(canonicalLemma("perro", targets), "perro");
+assert.deepEqual(run({ used: [use("la huelga", "huelga")] }), [{ lemma: "huelga", event: "spoken_correct", reason: "ok" }]);
+
+// ---- echo rule: the form is in the tutor's last line and the learner added < 3 words of their own ----
+const tutorPrevious = "¿Y qué piensas de la Huelga de hoy?";
+assert.deepEqual(run({ rawText: "pienso que la huelga de hoy", tutorPrevious }), [
+  { lemma: "huelga", event: null, reason: "echo of the tutor" },
+]);
+assert.deepEqual(ev({ rawText: "creo que la huelga de hoy es terrible", tutorPrevious }), ["spoken_correct"]); // 3 new words
+assert.deepEqual(ev({ rawText: "hoy en la ciudad huelga", tutorPrevious: "¿Qué pasó hoy en la ciudad?" }), ["spoken_correct"]); // form not in tutor line
+assert.deepEqual(ev({ rawText: "pienso que la huelga de hoy" }), ["spoken_correct"]); // no tutorPrevious
+// An echo with a confident error on the word is still spoken_incorrect.
+assert.deepEqual(ev({ rawText: "pienso que la huelga de hoy", tutorPrevious, kept: [kerr({})] }), ["spoken_incorrect"]);
 
 console.log("ok");

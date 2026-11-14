@@ -59,6 +59,8 @@ export type ValidateTargetWordsArgs = {
   used: TargetWordUse[];
   kept: CorrectionError[];
   alreadyCredited: string[]; // lemmas credited earlier this session
+  /** The tutor's previous reply, for the echo rule (task 12). */
+  tutorPrevious?: string;
 };
 
 // ---------- policy (policy.ts, pure) ----------
