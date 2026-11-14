@@ -1,4 +1,4 @@
-import { ApiError, EventsRequest, EventsResponse } from "@parrot/shared";
+import { ApiError, EventsResponse, ExtensionEvent } from "@parrot/shared";
 import { checkExtensionToken } from "@/lib/auth";
 import { DEMO_USER_ID } from "@/lib/config";
 import { getDb } from "@/lib/db";
@@ -6,27 +6,78 @@ import { json, parseBody, preflight, withCors } from "@/lib/http";
 import { applyEvents } from "@/lib/learner/record";
 import { isNeverListed } from "@/lib/neverlist";
 import { NextResponse } from "next/server";
+import { z } from "zod";
 
 export const OPTIONS = preflight;
 
+// Validate each event on its own, so one malformed event can't make the extension's queue retry the whole batch
+// forever (a "poison" event). Same request shape as EventsRequest; invalid events are logged and dropped.
+const Envelope = z.object({ events: z.array(z.unknown()).min(1) });
+const REPEAT_READING_MS = 60 * 60 * 1000;
+
 // Every request is DEMO_USER_ID; the extension token is required.
-// Never-list (4.2): reading events from a never-list domain are dropped, along with any event in the batch on
-// that article. They count as accepted so the extension doesn't retry them.
+// Dropped events (invalid, never-list, repeat "reading" within the hour) count as accepted so the extension
+// doesn't retry them. Never-list (4.2): a reading from a never-list domain drops every event in the batch on
+// that article.
 export async function POST(req: Request) {
   const denied = checkExtensionToken(req);
   if (denied) return denied;
-  const body = await parseBody(req, EventsRequest);
-  if (body instanceof NextResponse) return withCors(body);
+  const body = await parseBody(req, Envelope);
+  if (body instanceof NextResponse) {
+    console.warn("[api/events] rejected batch: not { events: [...] }");
+    return withCors(body);
+  }
 
   const userId = DEMO_USER_ID;
-  const all = [...new Map(body.events.map((e) => [e.id, e])).values()];
+  const total = body.events.length;
+  const valid: ExtensionEvent[] = [];
+  let invalid = 0;
+  for (const raw of body.events) {
+    const parsed = ExtensionEvent.safeParse(raw);
+    if (parsed.success) valid.push(parsed.data);
+    else {
+      invalid++;
+      const type = (raw as { type?: unknown } | null)?.type;
+      console.warn(`[api/events] dropped invalid event (type=${String(type)}):`, z.prettifyError(parsed.error).replace(/\n/g, " "));
+    }
+  }
+
+  const all = [...new Map(valid.map((e) => [e.id, e])).values()];
   const blockedKeys = new Set(
     all.filter((e) => e.type === "reading" && e.meta?.domain && isNeverListed(e.meta.domain)).map((e) => e.articleKey),
   );
-  const unique = all.filter((e) => !blockedKeys.has(e.articleKey));
+  let unique = all.filter((e) => !blockedKeys.has(e.articleKey));
   const blocked = all.length - unique.length;
-  if (unique.length === 0) return withCors(json({ accepted: blocked, duplicates: body.events.length - blocked }, EventsResponse));
   const db = getDb();
+
+  // One "reading" per article per hour: the extension sends one on every page load.
+  let repeats = 0;
+  const readingKeys = [...new Set(unique.filter((e) => e.type === "reading").map((e) => e.articleKey))];
+  if (readingKeys.length) {
+    const recent = await db
+      .from("events")
+      .select("article_key")
+      .eq("user_id", userId)
+      .eq("type", "reading")
+      .in("article_key", readingKeys)
+      .gte("ts", new Date(Date.now() - REPEAT_READING_MS).toISOString());
+    const seenKeys = new Set((recent.data ?? []).map((r) => r.article_key as string));
+    const keep = new Set<string>();
+    const before = unique.length;
+    unique = unique.filter((e) => {
+      if (e.type !== "reading") return true;
+      if (seenKeys.has(e.articleKey) || keep.has(e.articleKey)) return false;
+      keep.add(e.articleKey);
+      return true;
+    });
+    repeats = before - unique.length;
+  }
+
+  const dropped = invalid + blocked + repeats;
+  if (unique.length === 0) {
+    console.log(`[api/events] stored nothing; dropped invalid=${invalid} never-list=${blocked} repeat-reading=${repeats}`);
+    return withCors(json({ accepted: dropped, duplicates: total - dropped }, EventsResponse));
+  }
 
   // Idempotent insert: on conflict (id) do nothing. Only newly inserted rows come back.
   const { data: inserted, error } = await db
@@ -53,7 +104,8 @@ export async function POST(req: Request) {
   const fresh = unique.filter((e) => insertedIds.has(e.id));
 
   try {
-    const reading = fresh.filter((e) => e.type === "reading");
+    // Only readings with a title become articles; a title-less reading would show as a blank row on "What Parrot knows".
+    const reading = fresh.filter((e) => e.type === "reading" && e.meta?.title);
     if (reading.length) {
       const articles = [...new Map(reading.map((e) => [e.articleKey, e])).values()].map((e) => ({
         user_id: userId,
@@ -71,5 +123,7 @@ export async function POST(req: Request) {
     console.error("[api/events] learner update failed", err);
   }
 
-  return withCors(json({ accepted: insertedIds.size + blocked, duplicates: body.events.length - insertedIds.size - blocked }, EventsResponse));
+  const counts = fresh.reduce<Record<string, number>>((c, e) => ((c[e.type] = (c[e.type] ?? 0) + 1), c), {});
+  console.log(`[api/events] stored ${JSON.stringify(counts)}; dropped invalid=${invalid} never-list=${blocked} repeat-reading=${repeats}`);
+  return withCors(json({ accepted: insertedIds.size + dropped, duplicates: total - insertedIds.size - dropped }, EventsResponse));
 }
