@@ -281,7 +281,17 @@ function sweep(root: Node): void {
 
 function injectStyle(): void {
   const style = document.createElement("style");
-  style.textContent = `[${MARK_ATTR}]{border-bottom:1px dotted currentColor;cursor:help}`;
+  // A dotted underline was invisible in body text, which made working swaps look like a broken
+  // extension. Translucent amber so it reads on both light and dark pages, and a solid underline
+  // that survives even where the tint is washed out. Text keeps the page's own colour, so
+  // contrast is never worse than the surrounding paragraph.
+  style.textContent =
+    `[${MARK_ATTR}]{` +
+    `background:rgba(255,193,7,.28);` +
+    `border-bottom:2px solid rgba(214,146,0,.95);` +
+    `border-radius:3px;padding:0 .12em;cursor:help;` +
+    `}` +
+    `[${MARK_ATTR}]:hover{background:rgba(255,193,7,.55)}`;
   document.head.appendChild(style);
 }
 
