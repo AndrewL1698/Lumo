@@ -30,10 +30,11 @@ function assertAlternates(messages: ClaudeMessage[]) {
   assert.ok(user.includes(`<level>${ctx.level}</level>`));
   assert.ok(
     user.includes(
-      "<target_words>la huelga (strike); aprovechar (to make the most of); la casa (house)</target_words>",
+      "<target_words>huelga (strike); aprovechar (to make the most of); casa (house)</target_words>",
     ),
   );
   assert.ok(!user.includes("<tutor_said>"));
+  assert.ok(system.includes("copied exactly as written in <target_words>"));
 
   // Raw text is byte-for-byte: odd spacing, capitals and punctuation survive.
   const messy = "  Yo  tiene la problema,  eh... ";

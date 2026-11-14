@@ -1,11 +1,13 @@
 import { CorrectRequest, CorrectResponse, correctResponseFixture } from "@parrot/shared";
 import { NextResponse } from "next/server";
 import { ClaudeRefusalError, correctUtterance } from "@/lib/claude";
-import { isTutorMock, TUTOR } from "@/lib/config";
+import { DEMO_USER_ID, isTutorMock, TUTOR } from "@/lib/config";
 import { json, parseBody } from "@/lib/http";
+import { recordTutorEvent } from "@/lib/learner/record";
 import { recordCorrection, getSession } from "@/lib/tutor/session";
+import { creditTargetWords } from "@/lib/tutor/targetWords";
 import type { ValidatedCorrection } from "@/lib/tutor/types";
-import { validateCorrection } from "@/lib/tutor/validate";
+import { canonicalLemma, validateCorrection } from "@/lib/tutor/validate";
 
 const EMPTY: ValidatedCorrection = { shown: [], kept: [], target_words_used: [], overall_ok: true };
 const FAILED_HEADER = { "X-Correction-Failed": "1" };
@@ -52,6 +54,9 @@ export async function POST(req: Request) {
       signal: ac.signal,
     });
     v = validateCorrection(rawText, model);
+    // "la casa" / "Casa" → the session's exact lemma, for the policy, the response and the learner model.
+    const targets = session.context.targetWords;
+    v.target_words_used = v.target_words_used.map((u) => ({ ...u, lemma: canonicalLemma(u.lemma, targets) }));
     // Check the outgoing shape now, so a bad model field becomes an empty correction, not a 500.
     CorrectResponse.shape.correction.parse({
       utterance_id: utteranceId,
@@ -70,9 +75,22 @@ export async function POST(req: Request) {
   // Exactly once per request, also on failure: it advances the turn counter.
   recordCorrection(sessionId, v.kept, v.target_words_used);
 
+  // Never throws; each DB write is capped at TUTOR.recordTimeoutMs.
+  const wordUpdates = failed
+    ? []
+    : await creditTargetWords({
+        sessionId,
+        userId: DEMO_USER_ID,
+        rawText,
+        tutorPrevious,
+        kept: v.kept,
+        used: v.target_words_used,
+        record: recordTutorEvent,
+      });
+
   const serverMs = Date.now() - t0;
   console.log(
-    `[correct] ${utteranceId} stt=${sttPath} shown=${v.shown.length} kept=${v.kept.length} serverMs=${serverMs}${failed ? " FAILED" : ""}`,
+    `[correct] ${utteranceId} stt=${sttPath} shown=${v.shown.length} kept=${v.kept.length} words=${wordUpdates.length} serverMs=${serverMs}${failed ? " FAILED" : ""}`,
   );
   return json(
     {
@@ -82,7 +100,7 @@ export async function POST(req: Request) {
         target_words_used: v.target_words_used,
         overall_ok: v.overall_ok,
       },
-      wordUpdates: [], // TODO(demo): task 12 — validateTargetWords → Karthik's recordTutorEvent
+      wordUpdates,
       serverMs,
     },
     CorrectResponse,

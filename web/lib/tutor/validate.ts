@@ -2,7 +2,7 @@
  * Server checks after the corrector model (voice-plan §1.6, §5a). Pure functions, no I/O.
  * The raw transcript and the spans are never modified here.
  */
-import type { CorrectionError, TargetWordUse } from "@parrot/shared";
+import type { CorrectionError, TargetWord, TargetWordUse } from "@parrot/shared";
 import { TUTOR } from "../config";
 import type { ModelCorrection, TargetWordVerdict, ValidatedCorrection, ValidateTargetWordsArgs } from "./types";
 
@@ -61,12 +61,29 @@ function ranges(hay: string, needle: string): [number, number][] {
   return out;
 }
 
-const sameLemma = (a: string | null | undefined, b: string) => !!a && a.trim().toLowerCase() === b.trim().toLowerCase();
+/** Comparison key for a lemma: normalize(), then drop one leading article ("la casa" → "casa"). */
+export function lemmaKey(s: string): string {
+  return normalize(s).replace(/^(?:el|la|los|las|un|una|unos|unas) /, "");
+}
+
+const sameLemma = (a: string | null | undefined, b: string) => !!a && lemmaKey(a) === lemmaKey(b);
+
+/** The matching session target's exact lemma (so "la casa" or "Casa" becomes "casa"), else `lemma` unchanged. */
+export function canonicalLemma(lemma: string, targets: TargetWord[]): string {
+  return targets.find((t) => sameLemma(t.lemma, lemma))?.lemma ?? lemma;
+}
+
+/** Echo rule: a learner turn that repeats the tutor needs at least this many words of its own to earn credit. */
+const ECHO_MIN_NEW_WORDS = 3;
 
 export function validateTargetWords(args: ValidateTargetWordsArgs): TargetWordVerdict[] {
-  const { rawText, targets, used, kept, alreadyCredited } = args;
+  const { rawText, targets, used, kept, alreadyCredited, tutorPrevious } = args;
   const lowerRaw = rawText.toLowerCase();
-  const wordCount = normalize(rawText).split(" ").filter(Boolean).length;
+  const rawTokens = normalize(rawText).split(" ").filter(Boolean);
+  const wordCount = rawTokens.length;
+  const tutorNorm = tutorPrevious ? ` ${normalize(tutorPrevious)} ` : null;
+  const tutorTokens = new Set(tutorNorm?.split(" ").filter(Boolean));
+  const newWords = rawTokens.filter((t) => !tutorTokens.has(t)).length;
   const seen: string[] = [];
 
   return used.map((u): TargetWordVerdict => {
@@ -92,6 +109,10 @@ export function validateTargetWords(args: ValidateTargetWordsArgs): TargetWordVe
     if (blocking.length > 0) return { lemma, event: null, reason: "low-confidence error on this word" };
     if (!u.correct) return { lemma, event: null, reason: "marked incorrect, no confident error" };
     if (wordCount < 4) return { lemma, event: null, reason: "utterance under 4 words" };
+    // The form appears in the tutor's last line and the learner added fewer than 3 words of their own.
+    const formNorm = normalize(form);
+    if (tutorNorm && formNorm && tutorNorm.includes(` ${formNorm} `) && newWords < ECHO_MIN_NEW_WORDS)
+      return { lemma, event: null, reason: "echo of the tutor" };
     if (alreadyCredited.some((c) => sameLemma(c, lemma)))
       return { lemma, event: null, reason: "already credited this session" };
     return { lemma, event: "spoken_correct", reason: "ok" };

@@ -59,6 +59,8 @@ async function main() {
   assert.deepEqual(body.correction.target_words_used, []);
   assert.equal(body.correction.overall_ok, true);
   assert.deepEqual(body.wordUpdates, []);
+  assert.equal(fetchCalls, 0, "failure path must not touch the DB or the network");
+  assert.deepEqual(getSession("check_session").creditedLemmas, []);
   assert.equal(getSession("check_session").policy.turnIndex, before + 1);
   assert.ok(elapsed < 6000, `failure path took ${elapsed}ms`);
 
