@@ -10,6 +10,7 @@ import type { Candidate, ExtensionEvent } from "@parrot/shared";
 import { send } from "../messages";
 import { neverListReason, neverListPageReason } from "../neverlist";
 import { installHoverCard, type HoverTarget } from "./hovercard";
+import { watchSeen } from "./seen";
 import wordindex from "../wordindex.json";
 
 /** Bump when changing this file, so a stale bundle in Chrome is obvious in the console. */
@@ -35,6 +36,8 @@ let swapCount = 0;
 let lastSwapWordIndex = -Infinity;
 let articleKey = "";
 const swappedLemmas = new Set<string>();
+/** Registers a new swap with the `seen` observer; set once main() starts (brief 3.2). */
+let observeForSeen: ((el: HTMLElement) => void) | undefined;
 /** Text nodes already examined, so repeat sweeps only look at genuinely new content. */
 const seenNodes = new WeakSet<Text>();
 
@@ -249,6 +252,7 @@ function applySwap(m: Match, span: string, replacement: string): boolean {
   swapCount++;
   swappedLemmas.add(m.lemma);
   lastSwapWordIndex = m.wordIndex;
+  observeForSeen?.(el);
   return true;
 }
 
@@ -359,6 +363,7 @@ async function main(): Promise<void> {
   articleKey = await computeArticleKey();
   injectStyle();
   wireHoverCard();
+  observeForSeen = watchSeen((lemma) => queue(newEvent("seen", { lemma })));
   watchForNewText();
 
   // One reading event per page: title and domain only, never the URL (specs §5.1).
