@@ -1,7 +1,7 @@
 "use client";
 import { DataDeleteResponse, DataResponse, type DataDeleteRequest } from "@parrot/shared";
 import { KnownData } from "@/components/privacy/KnownData";
-import { ErrorState, PageHeader } from "@/components/ui/PageHeader";
+import { ErrorState, LoadingState, PageHeader } from "@/components/ui/PageHeader";
 import { useFetch } from "@/components/useFetch";
 
 export default function Page() {
@@ -30,7 +30,7 @@ export default function Page() {
   return (
     <>
       <PageHeader title="What Parrot knows" subtitle="Everything Parrot has stored about you, with a delete button for each item." />
-      {loading && <p className="text-slate-500">Loading…</p>}
+      {loading && <LoadingState />}
       {error && <ErrorState message={error} onRetry={() => void reload()} />}
       {data && <KnownData data={data} onDelete={onDelete} />}
     </>
