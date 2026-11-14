@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { Settings } from "@parrot/shared";
 import { LevelPicker } from "./LevelPicker";
 import { PairingCode } from "./PairingCode";
+import { ReadingSites } from "./ReadingSites";
 import { ReadingToggle } from "./ReadingToggle";
 
 // TODO(demo): hard-coded until Karthik picks the demo pairing code (no endpoint gives one yet).
@@ -25,6 +26,7 @@ export function OnboardingForm({
       <LevelPicker value={level} onChange={setLevel} />
       <ReadingToggle checked={useReading} onChange={setUseReading} />
       <PairingCode code={pairingCode} />
+      <ReadingSites allowlist={initial.allowlist} />
       <button
         type="button"
         onClick={() => onSubmit({ ...initial, level, useReadingInLessons: useReading })}
