@@ -1,0 +1,23 @@
+[
+  {
+    "id": "dev1",
+    "text": "yo tiene la problema porque la huelga no termina",
+    "error_span": "la problema",
+    "corrected_span": "el problema",
+    "error_type": "agreement"
+  },
+  {
+    "id": "dev2",
+    "text": "ayer nosotros come arroz con pollo en la casa de mi abuela",
+    "error_span": "nosotros come",
+    "corrected_span": "nosotros comimos",
+    "error_type": "conjugation"
+  },
+  {
+    "id": "dev3",
+    "text": "mañana voy a visitar a mis primos en la ciudad",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null
+  }
+]
