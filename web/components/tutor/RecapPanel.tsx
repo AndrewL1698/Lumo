@@ -1,23 +1,31 @@
 import type { Recap } from "@parrot/shared";
+import { btn } from "@/components/ui/PageHeader";
+
+const label = "font-mono text-xs uppercase tracking-wider text-muted";
 
 export function RecapPanel({ recap, onClose }: { recap: Recap; onClose?: () => void }) {
   return (
-    <section className="space-y-5 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-2xl font-bold text-slate-900">Session recap</h2>
-      {recap.summary_en && <p className="text-slate-700">{recap.summary_en}</p>}
+    <section className="space-y-8">
+      <div className="border-b border-line pb-6">
+        <h2 className="text-3xl font-bold tracking-tight">Session recap</h2>
+        {recap.summary_en && <p className="mt-3 max-w-2xl text-lg text-muted">{recap.summary_en}</p>}
+      </div>
 
       <div>
-        <h3 className="mb-2 font-semibold text-slate-900">Mistakes to watch</h3>
+        <h3 className={label}>Mistakes to watch</h3>
         {recap.topErrors.length === 0 ? (
-          <p className="text-sm text-slate-500">No repeated mistakes this session. Nice work.</p>
+          <p className="mt-3 text-muted">No repeated mistakes this session.</p>
         ) : (
-          <ul className="space-y-2">
+          <ul className="mt-3 divide-y divide-line border-y border-line">
             {recap.topErrors.map((e, i) => (
-              <li key={i} className="rounded-lg bg-slate-50 px-4 py-2">
-                <span className="text-red-700 line-through">{e.span}</span> →{" "}
-                <span className="font-semibold text-green-700">{e.correction}</span>
-                {e.count > 1 && <span className="ml-2 text-xs text-slate-500">×{e.count}</span>}
-                <p className="text-sm text-slate-600">{e.explanation_en}</p>
+              <li key={i} className="py-3">
+                <p className="text-lg">
+                  <s className="text-stop decoration-stop">{e.span}</s>
+                  <span className="mx-2 text-muted">→</span>
+                  <span className="font-bold text-go">{e.correction}</span>
+                  {e.count > 1 && <span className="ml-3 font-mono text-sm text-muted">{e.count} times</span>}
+                </p>
+                <p className="mt-1 text-muted">{e.explanation_en}</p>
               </li>
             ))}
           </ul>
@@ -26,35 +34,34 @@ export function RecapPanel({ recap, onClose }: { recap: Recap; onClose?: () => v
 
       {recap.tips.length > 0 && (
         <div>
-          <h3 className="mb-2 font-semibold text-slate-900">Quick tips</h3>
-          <ul className="list-disc space-y-1 pl-5 text-slate-700">
+          <h3 className={label}>Tips</h3>
+          <ul className="mt-3 space-y-2">
             {recap.tips.map((t, i) => (
-              <li key={i}>{t}</li>
+              <li key={i} className="text-ink">
+                {t}
+              </li>
             ))}
           </ul>
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-8 border-t border-line pt-6 md:grid-cols-2">
         <div>
-          <h3 className="mb-2 font-semibold text-slate-900">Now in your vocabulary</h3>
-          {recap.wordsNowKnown.length ? (
-            <p className="text-green-800">{recap.wordsNowKnown.join(", ")}</p>
-          ) : (
-            <p className="text-sm text-slate-500">No new words yet. Use a target word correctly to earn one.</p>
-          )}
+          <h3 className={label}>Now in your vocabulary</h3>
+          <p className={`mt-2 text-lg ${recap.wordsNowKnown.length ? "text-go" : "text-muted"}`}>
+            {recap.wordsNowKnown.length ? recap.wordsNowKnown.join(", ") : "No new words yet. Use a target word correctly to earn one."}
+          </p>
         </div>
         <div>
-          <h3 className="mb-2 font-semibold text-slate-900">Review tomorrow</h3>
-          {recap.reviewTomorrow.length ? (
-            <p className="text-slate-800">{recap.reviewTomorrow.join(", ")}</p>
-          ) : (
-            <p className="text-sm text-slate-500">Nothing due.</p>
-          )}
+          <h3 className={label}>Review tomorrow</h3>
+          <p className={`mt-2 text-lg ${recap.reviewTomorrow.length ? "text-wait" : "text-muted"}`}>
+            {recap.reviewTomorrow.length ? recap.reviewTomorrow.join(", ") : "Nothing due."}
+          </p>
         </div>
       </div>
+
       {onClose && (
-        <button type="button" onClick={onClose} className="rounded-lg bg-indigo-600 px-5 py-2 font-semibold text-white hover:bg-indigo-700">
+        <button type="button" onClick={onClose} className={btn.primary}>
           Start a new session
         </button>
       )}

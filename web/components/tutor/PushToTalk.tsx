@@ -2,10 +2,17 @@
 import { useEffect } from "react";
 import type { TutorStatus } from "@/app/tutor/session";
 
-const LABEL: Record<TutorStatus, string> = {
+const BUTTON: Record<TutorStatus, string> = {
   idle: "Hold to talk",
-  listening: "Listening… release to send",
-  checking: "Checking your Spanish…",
+  listening: "Release to send",
+  checking: "Checking",
+  speaking: "Hold to talk",
+};
+
+const STATUS: Record<TutorStatus, string> = {
+  idle: "Ready. Hold the button or the Space bar.",
+  listening: "Listening",
+  checking: "Checking your Spanish",
   speaking: "Tutor is speaking",
 };
 
@@ -44,7 +51,7 @@ export function PushToTalk({
   }, [onPress, onRelease, listening, disabled]);
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-wrap items-center gap-5">
       <button
         type="button"
         disabled={disabled}
@@ -54,14 +61,18 @@ export function PushToTalk({
         }}
         onPointerUp={() => listening && onRelease()}
         aria-pressed={listening}
-        className={`h-24 w-24 rounded-full text-4xl shadow-lg transition select-none touch-none ${
-          listening ? "scale-110 bg-red-500 text-white" : disabled ? "bg-slate-300 text-slate-500" : "bg-indigo-600 text-white hover:bg-indigo-700"
+        className={`h-16 min-w-56 select-none touch-none rounded-sm px-8 text-xl font-bold transition-colors duration-150 ${
+          listening
+            ? "bg-wait text-bg"
+            : disabled
+              ? "cursor-not-allowed border border-line text-muted"
+              : "bg-ink text-bg hover:bg-[#c9ced5]"
         }`}
       >
-        🎤
+        {BUTTON[status]}
       </button>
-      <p className="text-sm font-medium text-slate-700" aria-live="polite">
-        {LABEL[status]} {status === "idle" && <span className="text-slate-400">(or hold Space)</span>}
+      <p className={`font-mono text-sm ${listening ? "text-wait" : "text-muted"}`} aria-live="polite">
+        {STATUS[status]}
       </p>
     </div>
   );

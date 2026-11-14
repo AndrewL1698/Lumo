@@ -12,12 +12,12 @@ const LINKS = [
 export function Nav() {
   const path = usePathname();
   return (
-    <header className="border-b border-slate-200 bg-white">
-      <nav className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-        <Link href="/" className="text-2xl font-extrabold text-indigo-600">
-          🦜 Parrot
+    <header className="border-b border-line">
+      <nav className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-8 gap-y-2 px-4 py-4">
+        <Link href="/" className="text-xl font-bold tracking-tight text-ink">
+          Parrot
         </Link>
-        <ul className="flex flex-wrap gap-x-5 gap-y-1">
+        <ul className="flex flex-wrap gap-x-6 gap-y-1">
           {LINKS.map((l) => {
             const active = path === l.href || path.startsWith(`${l.href}/`);
             return (
@@ -25,7 +25,9 @@ export function Nav() {
                 <Link
                   href={l.href}
                   aria-current={active ? "page" : undefined}
-                  className={`font-medium ${active ? "text-indigo-700 underline underline-offset-8" : "text-slate-600 hover:text-slate-900"}`}
+                  className={`transition-colors duration-150 ${
+                    active ? "text-ink underline decoration-1 underline-offset-[10px]" : "text-muted hover:text-ink"
+                  }`}
                 >
                   {l.label}
                 </Link>

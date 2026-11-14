@@ -29,12 +29,12 @@ export default function Page() {
   return (
     <>
       <PageHeader title="Settings" subtitle="Level, swap intensity and reading options." />
-      {loading && <LoadingState />}
+      {loading && <LoadingState shape="form" />}
       {error && !data && <ErrorState message={error} onRetry={() => void reload()} />}
       {data && <SettingsForm initial={data} onSave={save} />}
       {saveError && <div className="mt-4"><ErrorState message={saveError} /></div>}
       {saved && (
-        <p role="status" className="mt-4 rounded-xl bg-green-50 p-4 text-green-800">
+        <p role="status" className="mt-6 rounded-sm border border-go px-5 py-4 text-ink">
           Saved.
         </p>
       )}

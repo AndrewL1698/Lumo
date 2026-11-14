@@ -1,7 +1,7 @@
 "use client";
 import { useState, type ReactNode } from "react";
 import type { DataDeleteRequest, DataResponse } from "@parrot/shared";
-import { EmptyState } from "@/components/ui/PageHeader";
+import { btn, EmptyState } from "@/components/ui/PageHeader";
 
 const fmt = (iso: string) => new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
@@ -18,11 +18,17 @@ const EVENT_LABEL: Record<string, string> = {
   spoken_incorrect: "Used a word incorrectly in speech",
 };
 
+const STATE_TONE: Record<string, string> = { learning: "text-wait", known: "text-go", mastered: "text-ink" };
+
+const deleteLink =
+  "shrink-0 font-mono text-xs uppercase tracking-wider text-muted transition-colors duration-150 hover:text-stop disabled:opacity-40";
+
 function Section({ title, count, children }: { title: string; count: number; children: ReactNode }) {
   return (
-    <section className="mb-8">
-      <h2 className="mb-3 text-xl font-bold text-slate-900">
-        {title} <span className="text-base font-normal text-slate-500">({count})</span>
+    <section className="mb-10">
+      <h2 className="mb-3 flex items-baseline gap-3 border-b border-line pb-3">
+        <span className="text-xl font-bold text-ink">{title}</span>
+        <span className="font-mono text-muted">{count}</span>
       </h2>
       {children}
     </section>
@@ -31,22 +37,16 @@ function Section({ title, count, children }: { title: string; count: number; chi
 
 function Row({ children, onDelete, busy, label }: { children: ReactNode; onDelete: () => void; busy: boolean; label: string }) {
   return (
-    <li className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3">
+    <li className="flex items-center justify-between gap-4 border-b border-line py-3">
       <div className="min-w-0">{children}</div>
-      <button
-        type="button"
-        disabled={busy}
-        aria-label={`Delete ${label}`}
-        onClick={onDelete}
-        className="shrink-0 rounded-lg border border-red-200 px-3 py-1 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-      >
+      <button type="button" disabled={busy} aria-label={`Delete ${label}`} onClick={onDelete} className={deleteLink}>
         Delete
       </button>
     </li>
   );
 }
 
-// `onDelete` resolves true when the server accepted the delete; the page then updates its local list.
+// `onDelete` resolves true when the server accepted the delete; the page then refetches.
 export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (req: DataDeleteRequest) => Promise<boolean> }) {
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -63,19 +63,21 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
 
   return (
     <div>
-      <p className="mb-6 rounded-xl bg-indigo-50 p-4 text-slate-700">
-        Parrot stores the words you look up and practice, a short log of those actions, the title and website of articles you read, and your tutor conversations (what you said, plus the corrections).
-        It never stores full page text or what you type on other sites.
+      <p className="mb-8 max-w-3xl text-lg text-ink">
+        Parrot stores the words you look up and practise, a short log of those actions, the title and website of articles
+        you read, and your tutor conversations (what you said, plus the corrections).{" "}
+        <span className="text-muted">It never stores full page text or what you type on other sites.</span>
       </p>
 
-      <p className="mb-6 text-lg font-medium text-slate-800">
-        {data.words.length} words · {data.events.length} activity {data.events.length === 1 ? "entry" : "entries"} · {data.articles.length}{" "}
+      <p className="mb-10 font-mono text-muted">
+        <span className="text-ink">{data.words.length}</span> words, <span className="text-ink">{data.events.length}</span> activity{" "}
+        {data.events.length === 1 ? "entry" : "entries"}, <span className="text-ink">{data.articles.length}</span>{" "}
         {data.articles.length === 1 ? "article" : "articles"}
       </p>
 
       {failed && (
-        <p role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-red-800">
-          That didn't work. Nothing was removed, so please try again.
+        <p role="alert" className="mb-6 rounded-sm border border-stop/60 px-4 py-3 text-ink">
+          That did not work. Nothing was removed. Try again.
         </p>
       )}
 
@@ -83,24 +85,26 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
         {data.words.length === 0 ? (
           <EmptyState>No words stored yet.</EmptyState>
         ) : (
-          // Compact chips so words, activity and articles all fit on one screen (it's a glance in the demo).
-          <ul className="flex flex-wrap gap-2">
+          // A dense grid so words, activity and articles fit in one glance during the demo.
+          <ul className="grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
             {data.words.map((w) => (
               <li
                 key={w.lemma}
-                title={`${w.state}${w.lastHoverAt ? ` · last looked up ${fmt(w.lastHoverAt)}` : ""}`}
-                className="flex items-center gap-1 rounded-full border border-slate-200 bg-white py-1 pl-3 pr-1"
+                title={w.lastHoverAt ? `Last looked up ${fmt(w.lastHoverAt)}` : undefined}
+                className="flex items-baseline justify-between gap-3 border-b border-line py-2"
               >
-                <span className="font-semibold text-slate-900">{w.lemma}</span>
-                <span className="text-xs text-slate-500">{w.state}</span>
+                <span>
+                  <span className="font-bold text-ink">{w.lemma}</span>
+                  <span className={`ml-2 font-mono text-xs ${STATE_TONE[w.state] ?? "text-muted"}`}>{w.state}</span>
+                </span>
                 <button
                   type="button"
                   disabled={busy}
                   aria-label={`Delete ${w.lemma}`}
                   onClick={() => void run({ kind: "word", lemma: w.lemma })}
-                  className="ml-1 rounded-full px-2 text-lg leading-none text-red-600 hover:bg-red-50 disabled:opacity-50"
+                  className={deleteLink}
                 >
-                  ×
+                  Delete
                 </button>
               </li>
             ))}
@@ -112,12 +116,12 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
         {data.events.length === 0 ? (
           <EmptyState>No activity stored yet.</EmptyState>
         ) : (
-          <ul className="space-y-2">
+          <ul>
             {data.events.map((e) => (
-              <Row key={e.id} busy={busy} label={`${e.type} event`} onDelete={() => void run({ kind: "event", id: e.id })}>
-                <span className="text-slate-900">{EVENT_LABEL[e.type] ?? e.type}</span>
-                {e.lemma && <span className="ml-2 font-semibold text-slate-900">{e.lemma}</span>}
-                <span className="ml-2 text-sm text-slate-500">{fmt(e.ts)}</span>
+              <Row key={e.id} busy={busy} label={`${EVENT_LABEL[e.type] ?? e.type} entry`} onDelete={() => void run({ kind: "event", id: e.id })}>
+                <span className="mr-4 font-mono text-sm text-muted">{fmt(e.ts)}</span>
+                <span className="text-ink">{EVENT_LABEL[e.type] ?? e.type}</span>
+                {e.lemma && <span className="ml-2 font-bold text-ink">{e.lemma}</span>}
               </Row>
             ))}
           </ul>
@@ -128,12 +132,12 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
         {data.articles.length === 0 ? (
           <EmptyState>No articles stored yet.</EmptyState>
         ) : (
-          <ul className="space-y-2">
+          <ul>
             {data.articles.map((a) => (
               <Row key={a.id} busy={busy} label={a.title} onDelete={() => void run({ kind: "article", id: a.id })}>
-                <span className="text-slate-900">{a.title}</span>
-                <span className="ml-2 text-sm text-slate-500">
-                  {a.domain} · {fmt(a.ts)}
+                <span className="text-ink">{a.title}</span>
+                <span className="ml-3 font-mono text-sm text-muted">
+                  {a.domain} {fmt(a.ts)}
                 </span>
               </Row>
             ))}
@@ -141,30 +145,28 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
         )}
       </Section>
 
-      <div className="rounded-xl border border-red-200 bg-red-50 p-4">
+      <div className="rounded-sm border border-line px-5 py-5">
         {!confirming ? (
-          <button
-            type="button"
-            disabled={busy || total === 0}
-            onClick={() => setConfirming(true)}
-            className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 disabled:opacity-50"
-          >
-            Delete everything
-          </button>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <p className="text-muted">Remove everything Parrot has stored. Your settings are kept.</p>
+            <button type="button" disabled={busy || total === 0} onClick={() => setConfirming(true)} className={btn.danger}>
+              Delete everything
+            </button>
+          </div>
         ) : (
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="font-medium text-red-900">This deletes every word Parrot has tracked, your activity, the articles you've read, and your tutor sessions and transcripts. Your settings are kept. This can't be undone. Continue?</p>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void run({ kind: "all" })}
-              className="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700 disabled:opacity-50"
-            >
-              Yes, delete everything
-            </button>
-            <button type="button" onClick={() => setConfirming(false)} className="rounded-lg border border-slate-300 bg-white px-4 py-2 font-medium text-slate-700">
-              Cancel
-            </button>
+          <div className="space-y-4">
+            <p className="text-ink">
+              This deletes every word Parrot has tracked, your activity, the articles you&apos;ve read, and your tutor sessions and
+              transcripts. Your settings are kept. This can&apos;t be undone.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <button type="button" disabled={busy} onClick={() => void run({ kind: "all" })} className={btn.dangerSolid}>
+                Yes, delete everything
+              </button>
+              <button type="button" onClick={() => setConfirming(false)} className={btn.secondary}>
+                Cancel
+              </button>
+            </div>
           </div>
         )}
       </div>

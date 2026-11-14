@@ -3,7 +3,7 @@ import { VocabResponse } from "@parrot/shared";
 import { useEffect, useState } from "react";
 import { VocabLists } from "@/components/vocab/VocabLists";
 import { justLearned, saveKnownSnapshot } from "@/components/vocab/justLearned";
-import { EmptyState, ErrorState, LoadingState, PageHeader } from "@/components/ui/PageHeader";
+import { btn, EmptyState, ErrorState, LoadingState, PageHeader } from "@/components/ui/PageHeader";
 import { useFetch } from "@/components/useFetch";
 
 export default function Page() {
@@ -23,20 +23,26 @@ export default function Page() {
   const total = data ? data.counts.learning + data.counts.known + data.counts.mastered : 0;
   return (
     <>
-      <PageHeader title="Your vocabulary" subtitle="Words you're learning, words you know, and words you've mastered.">
-        <button type="button" onClick={() => void reload()} className="rounded-lg border border-slate-300 px-4 py-1.5 font-medium text-slate-700 hover:bg-slate-100">
+      <PageHeader title="Your vocabulary" subtitle="A word moves to Your vocabulary only after you use it correctly out loud.">
+        <button type="button" onClick={() => void reload()} className={btn.secondary}>
           Refresh
         </button>
       </PageHeader>
-      {loading && <LoadingState />}
+      {loading && <LoadingState shape="columns" />}
       {error && !data && <ErrorState message={error} onRetry={() => void reload()} />}
       {data && total === 0 && data.streakDays === 0 && (
         <EmptyState>No words yet. Read a page with Parrot switched on and hover a Spanish word to start.</EmptyState>
       )}
       {freshWords.length > 0 && (
-        <p role="status" className="mb-4 rounded-xl bg-green-50 p-4 text-lg text-green-900">
-          🎉 New in your vocabulary:{" "}
-          <strong>{freshWords.map((w) => (w.article ? `${w.article} ${w.lemma}` : w.lemma) + ` (${w.english})`).join(", ")}</strong>
+        <p role="status" className="mb-6 rounded-sm border border-go px-5 py-4 text-lg">
+          <span className="mr-3 font-mono text-xs uppercase tracking-wider text-go">Just learned</span>
+          {freshWords.map((w, i) => (
+            <span key={w.lemma}>
+              {i > 0 && ", "}
+              <strong>{w.article ? `${w.article} ${w.lemma}` : w.lemma}</strong>
+              <span className="text-muted"> {w.english}</span>
+            </span>
+          ))}
         </p>
       )}
       {data && (total > 0 || data.streakDays > 0) && <VocabLists data={data} fresh={fresh} />}

@@ -1,24 +1,20 @@
 import type { TargetWord } from "@parrot/shared";
 
+// Words the tutor will steer toward. A word turns green once it has been used correctly out loud.
 export function TargetChips({ words, known = [] }: { words: TargetWord[]; known?: string[] }) {
   if (words.length === 0) return null;
   return (
-    <div>
-      <p className="mb-2 text-sm font-medium text-slate-600">Try to use these words today</p>
-      <ul className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2 border-b border-line pb-4">
+      <p className="font-mono text-xs uppercase tracking-wider text-muted">Target words</p>
+      <ul className="flex flex-wrap gap-x-6 gap-y-2">
         {words.map((w) => {
           const done = known.includes(w.lemma);
           return (
-            <li
-              key={w.lemma}
-              className={`rounded-full border px-3 py-1 text-sm ${
-                done ? "border-green-400 bg-green-50 text-green-800" : "border-slate-300 bg-white text-slate-800"
-              }`}
-            >
-              {done ? "✓ " : ""}
-              {w.article ? `${w.article} ` : ""}
+            <li key={w.lemma} className={done ? "text-go" : "text-ink"}>
+              {w.article ? <span className={done ? "" : "text-muted"}>{w.article} </span> : null}
               <strong>{w.lemma}</strong>
-              <span className="text-slate-500"> · {w.english}</span>
+              <span className={done ? "" : "text-muted"}> {w.english}</span>
+              {done && <span className="ml-2 font-mono text-xs uppercase tracking-wider">used</span>}
             </li>
           );
         })}

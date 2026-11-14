@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { TutorSession } from "@/app/tutor/session";
+import { btn } from "@/components/ui/PageHeader";
 import { CorrectionCards } from "./CorrectionCards";
 import { KnownToast } from "./KnownToast";
 import { PushToTalk } from "./PushToTalk";
@@ -9,6 +10,8 @@ import { TargetChips } from "./TargetChips";
 import { TranscriptView } from "./TranscriptView";
 import { newlyKnown } from "./wordUpdates";
 import { rememberLearned } from "@/components/vocab/justLearned";
+
+const speaker = "font-mono text-xs uppercase tracking-wider pt-2";
 
 // Pure view over a TutorSession. Pass useMockTutorSession() or Andrew's real useTutorSession().
 export function TutorPage({ session }: { session: TutorSession }) {
@@ -49,7 +52,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
 
   if (recap) {
     return (
-      <div className="mx-auto max-w-3xl p-4">
+      <div className="mx-auto max-w-3xl">
         <RecapPanel recap={recap} onClose={() => window.location.reload()} />
       </div>
     );
@@ -57,10 +60,11 @@ export function TutorPage({ session }: { session: TutorSession }) {
 
   if (!begun) {
     return (
-      <div className="mx-auto max-w-xl space-y-4 p-8 text-center">
-        <h2 className="text-2xl font-bold text-slate-900">Ready to practice?</h2>
-        <p className="text-slate-600">
-          Your tutor will start a short Spanish chat about what you read. Hold the button to talk. English translations appear after you answer.
+      <div className="mx-auto max-w-3xl border-b border-line pb-10">
+        <h1 className="text-3xl font-bold tracking-tight">Talk about what you read</h1>
+        <p className="mt-3 max-w-xl text-lg text-muted">
+          The tutor opens a short Spanish conversation about your reading today. Hold Space or the button to answer. Each
+          mistake is marked in your own words, with the fix above it and an English reason below.
         </p>
         <button
           type="button"
@@ -68,7 +72,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
             setBegun(true);
             void start();
           }}
-          className="rounded-xl bg-indigo-600 px-8 py-4 text-xl font-semibold text-white hover:bg-indigo-700"
+          className={`${btn.primary} mt-8 h-14 px-8 text-lg`}
         >
           Start lesson
         </button>
@@ -77,40 +81,44 @@ export function TutorPage({ session }: { session: TutorSession }) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-4">
+    <div className="mx-auto max-w-3xl space-y-6">
       {notice && (
-        <p role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-amber-900">
+        <p role="status" className="rounded-sm border border-wait/70 px-4 py-3 text-ink">
           {notice}
         </p>
       )}
 
       <TargetChips words={targetWords} known={known} />
 
-      <ol className="space-y-6">
+      <ol className="divide-y divide-line">
         {turns.map((t, i) => (
-          <li key={t.id} className="space-y-3">
+          <li key={t.id} className="space-y-6 py-6 first:pt-2">
             {t.rawText && (
-              <div className="rounded-xl bg-slate-50 p-4">
-                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-slate-500">You said</p>
-                <TranscriptView raw={t.rawText} result={t.correction} />
-                {!t.correction && <p className="mt-2 text-sm text-slate-500">Checking…</p>}
+              <div className="grid gap-2 sm:grid-cols-[5rem_1fr] sm:gap-4">
+                <p className={`${speaker} text-muted`}>You</p>
+                <div className="space-y-3">
+                  <TranscriptView raw={t.rawText} result={t.correction} />
+                  {!t.correction && <p className="font-mono text-sm text-muted">Checking</p>}
+                  {t.correctionFailed && <p className="text-muted">This answer could not be checked. It was still received.</p>}
+                  <CorrectionCards raw={t.rawText} result={t.correction} />
+                </div>
               </div>
             )}
-            {t.correctionFailed && <p className="text-sm text-slate-500">We couldn&apos;t check this one, but your answer was received.</p>}
-            <CorrectionCards raw={t.rawText} result={t.correction} />
             {t.tutorText && (
-              <div className="rounded-xl bg-indigo-50 p-4">
-                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-indigo-600">Tutor</p>
-                <p className="text-xl text-slate-900">{t.tutorText}</p>
-                {t.tutorEnglish &&
-                  (turns.slice(i + 1).some((x) => x.rawText) ? (
-                    <p className="mt-2 text-base text-slate-600">
-                      <span className="font-medium text-indigo-600">In English: </span>
-                      {t.tutorEnglish}
-                    </p>
-                  ) : (
-                    <p className="mt-2 text-sm text-slate-400">English appears after you answer.</p>
-                  ))}
+              <div className="grid gap-2 sm:grid-cols-[5rem_1fr] sm:gap-4">
+                <p className={`${speaker} text-ink`}>Tutor</p>
+                <div>
+                  <p className="text-2xl leading-snug text-ink">{t.tutorText}</p>
+                  {t.tutorEnglish &&
+                    (turns.slice(i + 1).some((x) => x.rawText) ? (
+                      <p className="mt-3 text-lg text-muted">
+                        <span className="mr-2 font-mono text-xs uppercase tracking-wider">English</span>
+                        {t.tutorEnglish}
+                      </p>
+                    ) : (
+                      <p className="mt-3 font-mono text-xs uppercase tracking-wider text-muted">English shows after you answer</p>
+                    ))}
+                </div>
               </div>
             )}
           </li>
@@ -118,48 +126,45 @@ export function TutorPage({ session }: { session: TutorSession }) {
       </ol>
 
       {status === "listening" && (
-        <p className="rounded-xl border border-dashed border-red-300 p-4 text-xl text-slate-800">
-          {partial || "…"}
-        </p>
+        <div className="grid gap-2 border-t border-line pt-6 sm:grid-cols-[5rem_1fr] sm:gap-4">
+          <p className={`${speaker} text-wait`}>You</p>
+          <p className="text-2xl text-muted">{partial || "Listening"}</p>
+        </div>
       )}
 
       {/* Controls stay pinned to the bottom of the screen so the demo never needs scrolling. */}
-      <div className="sticky bottom-0 -mx-4 space-y-2 border-t border-slate-200 bg-slate-50/95 px-4 pb-3 pt-3 backdrop-blur">
-      <div className="flex items-center justify-between">
-        <PushToTalk status={status} onPress={pressTalk} onRelease={releaseTalk} />
-        <button
-          type="button"
-          onClick={() => void end()}
-          disabled={turns.length < 2}
-          className="rounded-lg border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-40"
-        >
-          End session
-        </button>
-      </div>
-
-      <details className="text-slate-700">
-        <summary className="cursor-pointer text-sm font-medium">Type your answer instead</summary>
-        <form
-          className="mt-2 flex gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const text = typed.trim();
-            if (!text) return;
-            sendText(text);
-            setTyped("");
-          }}
-        >
-          <input
-            value={typed}
-            onChange={(e) => setTyped(e.target.value)}
-            placeholder="Escribe en español…"
-            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2"
-          />
-          <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700">
-            Send
+      <div className="sticky bottom-0 -mx-4 space-y-3 border-t border-line bg-bg px-4 pb-4 pt-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <PushToTalk status={status} onPress={pressTalk} onRelease={releaseTalk} />
+          <button type="button" onClick={() => void end()} disabled={turns.length < 2} className={btn.secondary}>
+            End session
           </button>
-        </form>
-      </details>
+        </div>
+
+        <details className="text-muted">
+          <summary className="cursor-pointer text-sm transition-colors duration-150 hover:text-ink">Type your answer instead</summary>
+          <form
+            className="mt-3 flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              const text = typed.trim();
+              if (!text) return;
+              sendText(text);
+              setTyped("");
+            }}
+          >
+            <input
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              placeholder="Escribe en español"
+              aria-label="Your answer in Spanish"
+              className="min-w-0 flex-1 rounded-sm border border-line bg-bg px-3 py-2 text-ink placeholder:text-muted focus:border-muted focus:outline-none"
+            />
+            <button type="submit" className={btn.primary}>
+              Send
+            </button>
+          </form>
+        </details>
       </div>
 
       <KnownToast lemma={toasts[0] ?? null} onDone={dismissToast} />
