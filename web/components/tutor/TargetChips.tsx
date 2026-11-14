@@ -1,4 +1,4 @@
-import type { TargetWord } from "../../lib/tutor/types";
+import type { TargetWord } from "@parrot/shared";
 
 export function TargetChips({ words, known = [] }: { words: TargetWord[]; known?: string[] }) {
   if (words.length === 0) return null;

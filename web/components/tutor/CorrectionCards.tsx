@@ -1,5 +1,5 @@
-import { visibleErrors } from "../../lib/tutor/highlight";
-import type { CorrectionResult } from "../../lib/tutor/types";
+import type { CorrectionResult } from "@parrot/shared";
+import { visibleErrors } from "./highlight";
 
 const TYPE_LABEL: Record<string, string> = {
   conjugation: "Verb form",

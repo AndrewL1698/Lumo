@@ -1,6 +1,6 @@
 "use client";
 import { useEffect } from "react";
-import type { TutorStatus } from "../../lib/tutor/types";
+import type { TutorStatus } from "@/app/tutor/session";
 
 const LABEL: Record<TutorStatus, string> = {
   idle: "Hold to talk",

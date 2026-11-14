@@ -1,20 +1,22 @@
 "use client";
 import { useState } from "react";
-import { MOCK_PAIRING_CODE, MOCK_SETTINGS } from "../../lib/mocks";
-import type { SettingsMock } from "../../lib/mocks/types";
+import type { Settings } from "@parrot/shared";
 import { LevelPicker } from "./LevelPicker";
 import { PairingCode } from "./PairingCode";
 import { ReadingToggle } from "./ReadingToggle";
 
-// TODO(demo): onSubmit should PUT /api/settings; defaults to a console.log under mocks.
+// TODO(demo): hard-coded until Karthik picks the demo pairing code (no endpoint gives one yet).
+export const DEMO_PAIRING_CODE = "482913";
+
+// The page loads `initial` from GET /api/settings and saves with PUT /api/settings (full object).
 export function OnboardingForm({
-  initial = MOCK_SETTINGS,
-  pairingCode = MOCK_PAIRING_CODE,
-  onSubmit = (s: SettingsMock) => console.log("onboarding settings", s),
+  initial,
+  pairingCode = DEMO_PAIRING_CODE,
+  onSubmit,
 }: {
-  initial?: SettingsMock;
+  initial: Settings;
   pairingCode?: string;
-  onSubmit?: (s: SettingsMock) => void;
+  onSubmit: (s: Settings) => void;
 }) {
   const [level, setLevel] = useState(initial.level);
   const [useReading, setUseReading] = useState(initial.useReadingInLessons);

@@ -1,4 +1,4 @@
-import type { CorrectionError, CorrectionResult } from "./types";
+import type { CorrectionError, CorrectionResult } from "@parrot/shared";
 
 export const MIN_CONFIDENCE = 0.7;
 

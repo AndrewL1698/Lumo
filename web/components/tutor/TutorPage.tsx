@@ -1,13 +1,13 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { newlyKnown } from "../../lib/tutor/wordUpdates";
-import type { TutorSession } from "../../lib/tutor/types";
+import type { TutorSession } from "@/app/tutor/session";
 import { CorrectionCards } from "./CorrectionCards";
 import { KnownToast } from "./KnownToast";
 import { PushToTalk } from "./PushToTalk";
 import { RecapPanel } from "./RecapPanel";
 import { TargetChips } from "./TargetChips";
 import { TranscriptView } from "./TranscriptView";
+import { newlyKnown } from "./wordUpdates";
 
 // Pure view over a TutorSession. Pass useMockTutorSession() or Andrew's real useTutorSession().
 export function TutorPage({ session }: { session: TutorSession }) {

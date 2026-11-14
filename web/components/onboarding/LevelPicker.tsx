@@ -1,5 +1,5 @@
 "use client";
-import type { Level } from "../../lib/tutor/types";
+import type { Level } from "@parrot/shared";
 
 // Descriptions from specs §4.1.
 export const LEVELS: { value: Level; title: string; blurb: string }[] = [

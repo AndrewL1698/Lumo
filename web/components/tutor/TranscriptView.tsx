@@ -1,5 +1,5 @@
-import { segmentTranscript } from "../../lib/tutor/highlight";
-import type { CorrectionResult } from "../../lib/tutor/types";
+import type { CorrectionResult } from "@parrot/shared";
+import { segmentTranscript } from "./highlight";
 
 // Renders the RAW transcript (what is graded) with confident errors highlighted inline.
 // Shows the fix right after each span so it is readable without hovering (judges).

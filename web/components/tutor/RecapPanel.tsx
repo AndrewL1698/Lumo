@@ -1,4 +1,4 @@
-import type { Recap } from "../../lib/tutor/types";
+import type { Recap } from "@parrot/shared";
 
 export function RecapPanel({ recap, onClose }: { recap: Recap; onClose?: () => void }) {
   return (
@@ -23,6 +23,17 @@ export function RecapPanel({ recap, onClose }: { recap: Recap; onClose?: () => v
           </ul>
         )}
       </div>
+
+      {recap.tips.length > 0 && (
+        <div>
+          <h3 className="mb-2 font-semibold text-slate-900">Quick tips</h3>
+          <ul className="list-disc space-y-1 pl-5 text-slate-700">
+            {recap.tips.map((t, i) => (
+              <li key={i}>{t}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <div>

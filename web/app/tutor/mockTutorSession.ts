@@ -1,23 +1,25 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  MOCK_CORRECT_RESPONSE,
-  MOCK_CORRECT_RESPONSE_CLEAN,
-  MOCK_RAW_TRANSCRIPT,
-  MOCK_RECAP,
-  MOCK_TUTOR_CONTEXT,
-  MOCK_TUTOR_OPENER,
-  MOCK_TUTOR_REPLY,
-} from "../mocks";
-import type { CorrectResponse, TutorSession, TutorStatus, TutorTurn } from "./types";
+  correctResponseCleanFixture,
+  correctResponseFixture,
+  rawTextFixture,
+  recapFixture,
+  replyTextFixture,
+  tutorContextFixture,
+} from "@parrot/shared";
+import type { CorrectResponse } from "@parrot/shared";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { TutorSession, TutorStatus, TutorTurn } from "./session";
 
 // HACK: scripted stand-in for Andrew's useTutorSession (voice-plan §8). No mic, no network, no API credits.
-// Same shape as TutorSession so the real hook can replace it with a one-line import change.
+// Same shape as TutorSession so the real hook replaces it with a one-line import change (see page.tsx).
 // The opener is a turn with rawText "" (tutor-only), mirroring /reply with utteranceId null.
 
+const OPENER = "Vi que hoy leíste sobre la huelga del transporte. ¿Qué opinas?";
+
 const SCRIPT: { raw: string; response: CorrectResponse }[] = [
-  { raw: MOCK_RAW_TRANSCRIPT, response: MOCK_CORRECT_RESPONSE },
-  { raw: "me gusta mucho la casa grande", response: MOCK_CORRECT_RESPONSE_CLEAN },
+  { raw: rawTextFixture, response: correctResponseFixture },
+  { raw: "me gusta mucho la casa grande", response: correctResponseCleanFixture },
 ];
 
 const PARTIAL_MS = 220;
@@ -61,7 +63,7 @@ export function useMockTutorSession(): TutorSession {
     started.current = true;
     setStatus("speaking");
     setTurns([{ id: "opener", rawText: "" }]);
-    streamCaption("opener", MOCK_TUTOR_OPENER);
+    streamCaption("opener", OPENER);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -84,7 +86,7 @@ export function useMockTutorSession(): TutorSession {
     later(() => {
       patchTurn(id, { correction: step.response.correction, wordUpdates: step.response.wordUpdates });
       setStatus("speaking");
-      streamCaption(id, MOCK_TUTOR_REPLY);
+      streamCaption(id, replyTextFixture);
     }, CHECK_MS);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -97,8 +99,8 @@ export function useMockTutorSession(): TutorSession {
     clearAll();
     setStatus("idle");
     setPartial("");
-    setRecap(MOCK_RECAP);
+    setRecap(recapFixture);
   }, []);
 
-  return { status, partial, turns, targetWords: MOCK_TUTOR_CONTEXT.targetWords, recap, start, pressTalk, releaseTalk, sendText, end };
+  return { status, partial, turns, targetWords: tutorContextFixture.targetWords, recap, start, pressTalk, releaseTalk, sendText, end };
 }

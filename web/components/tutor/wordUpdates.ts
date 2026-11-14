@@ -1,4 +1,4 @@
-import type { WordUpdate } from "./types";
+import type { WordUpdate } from "@parrot/shared";
 
 /** Lemmas that just flipped to "known" (drives the KnownToast). */
 export function newlyKnown(updates: WordUpdate[] | undefined): string[] {

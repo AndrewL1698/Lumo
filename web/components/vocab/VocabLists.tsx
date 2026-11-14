@@ -1,4 +1,4 @@
-import type { VocabResponse, VocabWord } from "../../lib/mocks/types";
+import type { VocabItem, VocabResponse } from "@parrot/shared";
 
 const LISTS: { key: "learning" | "known" | "mastered"; title: string; empty: string; tone: string }[] = [
   { key: "learning", title: "Learning now", empty: "No words in progress yet. Hover a Spanish word while reading to start one.", tone: "border-amber-300" },
@@ -6,14 +6,27 @@ const LISTS: { key: "learning" | "known" | "mastered"; title: string; empty: str
   { key: "mastered", title: "Mastered", empty: "No mastered words yet. Words you keep remembering over weeks show up here.", tone: "border-indigo-400" },
 ];
 
-function WordRow({ w }: { w: VocabWord }) {
+// "due now" / "due tomorrow" / "due in 5 days" / "" for null.
+function dueLabel(dueAt: string | null, now = Date.now()): string {
+  if (!dueAt) return "";
+  const days = Math.ceil((new Date(dueAt).getTime() - now) / 86_400_000);
+  if (days <= 0) return "due now";
+  if (days === 1) return "due tomorrow";
+  return `due in ${days} days`;
+}
+
+function WordRow({ w }: { w: VocabItem }) {
+  const due = dueLabel(w.dueAt);
   return (
     <li className="flex items-baseline justify-between gap-3 border-b border-slate-100 py-2 last:border-0">
       <span className="text-lg font-semibold text-slate-900">
         {w.article ? <span className="font-normal text-slate-500">{w.article} </span> : null}
         {w.lemma}
       </span>
-      <span className="text-sm text-slate-600">{w.english}</span>
+      <span className="text-right text-sm text-slate-600">
+        {w.english}
+        {due && <span className="block text-xs text-slate-400">{due}</span>}
+      </span>
     </li>
   );
 }
@@ -39,7 +52,7 @@ export function VocabLists({ data }: { data: VocabResponse }) {
               <h2 className="flex items-baseline justify-between text-xl font-bold text-slate-900">
                 {title}
                 <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-sm font-medium text-slate-700">
-                  {words.length}
+                  {data.counts[key]}
                 </span>
               </h2>
               {words.length === 0 ? (
