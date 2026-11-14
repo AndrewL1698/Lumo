@@ -1,0 +1,121 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-14T22:00:00-05:00",
+  "title": "Design System: Parrot",
+  "extensions": {
+    "colorMeta": {
+      "ink-ground": { "role": "neutral", "displayName": "Ink Ground" },
+      "panel": { "role": "neutral", "displayName": "Panel" },
+      "off-white-ink": { "role": "neutral", "displayName": "Off-White Ink" },
+      "slate-secondary": { "role": "neutral", "displayName": "Slate Secondary" },
+      "hairline": { "role": "neutral", "displayName": "Hairline" },
+      "go-green": { "role": "primary", "displayName": "Go Green" },
+      "wait-amber": { "role": "secondary", "displayName": "Wait Amber" },
+      "stop-red": { "role": "tertiary", "displayName": "Stop Red" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Home page headline only." },
+      "transcript": { "displayName": "Transcript", "purpose": "What the learner said and the tutor's replies." },
+      "label": { "displayName": "Label", "purpose": "Speaker names, error types, states, counts and dates (B612 Mono)." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.23, 1, 0.32, 1)", "purpose": "The one enter animation (Now known notice, 200ms)." },
+      { "name": "color-hover", "value": "150ms", "purpose": "Hover and active colour changes; nothing moves on hover." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one main action on a screen.",
+      "html": "<button class=\"ds-btn-primary\">Start lesson</button>",
+      "css": ".ds-btn-primary { background: var(--color-ink, #e8ebef); color: var(--color-bg, #0e1013); font-family: var(--font-sans, sans-serif); font-weight: 700; padding: 8px 16px; border: 0; border-radius: 3px; transition: background-color 150ms; } .ds-btn-primary:hover { background: #c9ced5; } .ds-btn-primary:focus-visible { outline: 2px solid #e8ebef; outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Supporting actions (Refresh, End session, Cancel).",
+      "html": "<button class=\"ds-btn-secondary\">End session</button>",
+      "css": ".ds-btn-secondary { background: #0e1013; color: #e8ebef; font-weight: 700; padding: 8px 16px; border: 1px solid #23272d; border-radius: 3px; transition: border-color 150ms; } .ds-btn-secondary:hover { border-color: #8a929d; } .ds-btn-secondary:focus-visible { outline: 2px solid #e8ebef; outline-offset: 2px; }"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive actions such as Delete everything.",
+      "html": "<button class=\"ds-btn-danger\">Delete everything</button>",
+      "css": ".ds-btn-danger { background: #0e1013; color: #d64545; font-weight: 700; padding: 8px 16px; border: 1px solid rgba(214,69,69,0.6); border-radius: 3px; transition: border-color 150ms, background-color 150ms; } .ds-btn-danger:hover { border-color: #d64545; background: rgba(214,69,69,0.1); }"
+    },
+    {
+      "name": "Talk Button",
+      "kind": "custom",
+      "refersTo": "talk-button",
+      "description": "Hold to talk; turns amber while held.",
+      "html": "<button class=\"ds-talk\">Hold to talk</button> <button class=\"ds-talk ds-talk--held\">Release to send</button>",
+      "css": ".ds-talk { height: 64px; min-width: 224px; padding: 0 32px; font-size: 1.25rem; font-weight: 700; background: #e8ebef; color: #0e1013; border: 0; border-radius: 3px; transition: background-color 150ms; } .ds-talk:hover { background: #c9ced5; } .ds-talk--held, .ds-talk--held:hover { background: #d99a1e; }"
+    },
+    {
+      "name": "Interlinear Correction",
+      "kind": "custom",
+      "refersTo": "transcript",
+      "description": "Verbatim transcript; slip struck in red, fix set above in green mono.",
+      "html": "<p class=\"ds-transcript\"><ruby class=\"ds-fix\"><s>yo tiene</s><rt>yo tengo</rt></ruby> porque la huelga no termina</p>",
+      "css": ".ds-transcript { font-size: 1.5rem; line-height: 1.6; padding-top: 12px; color: #e8ebef; } .ds-fix { ruby-position: over; ruby-align: center; } .ds-fix s { color: #d64545; text-decoration-color: #d64545; text-decoration-thickness: 2px; } .ds-fix rt { font-family: var(--font-mono, monospace); font-size: 0.7em; color: #2f9e5b; padding-bottom: 0.15em; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Typed answers and fields.",
+      "html": "<input class=\"ds-input\" placeholder=\"Escribe en español\" />",
+      "css": ".ds-input { background: #0e1013; color: #e8ebef; border: 1px solid #23272d; border-radius: 3px; padding: 8px 12px; } .ds-input::placeholder { color: #8a929d; } .ds-input:focus { outline: none; border-color: #8a929d; }"
+    },
+    {
+      "name": "Navigation",
+      "kind": "nav",
+      "description": "Wordmark plus text links; active link underlined.",
+      "html": "<nav class=\"ds-nav\"><b>Parrot</b><a class=\"is-active\">Tutor</a><a>Vocabulary</a><a>What Parrot knows</a></nav>",
+      "css": ".ds-nav { display: flex; gap: 24px; align-items: center; padding: 16px; border-bottom: 1px solid #23272d; background: #0e1013; color: #e8ebef; } .ds-nav a { color: #8a929d; transition: color 150ms; } .ds-nav a:hover { color: #e8ebef; } .ds-nav a.is-active { color: #e8ebef; text-decoration: underline; text-underline-offset: 10px; text-decoration-thickness: 1px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Corrected Proof",
+    "overview": "Parrot treats what a learner says the way an editor treats a manuscript: the words are kept exactly as spoken, and every judgement is written onto them, never in place of them. A slip is struck through in red and the correct form is set directly above it, the way a teacher marks a page. The ground is a dark, flat instrument surface; panels are separated by single hairlines, type does the structuring, and colour only appears when something has been judged.",
+    "keyCharacteristics": [
+      "Verbatim transcript with interlinear corrections (red strike below, green fix above).",
+      "Dark flat ground, 1px hairlines, no shadows, corners of 2 to 4px.",
+      "Colour carries verdicts only.",
+      "Words instead of icons; no emoji.",
+      "Skeleton placeholders shaped like the content they replace."
+    ],
+    "rules": [
+      { "name": "The Verdict-Only Rule", "body": "Green, amber and red appear only when something has been judged or is waiting on a judgement. A neutral element never borrows a verdict colour for emphasis.", "section": "colors" },
+      { "name": "The No-White Rule", "body": "No surface is pure white. The brightest fill is the off-white ink, and its hover goes darker (#c9ced5), never brighter.", "section": "colors" },
+      { "name": "The Mono-Means-Data Rule", "body": "B612 Mono is for numbers, labels, states and timestamps. Sentences people read are always set in B612.", "section": "typography" },
+      { "name": "The Flat-Ground Rule", "body": "Nothing is raised. If two things need separating, draw a 1px hairline between them.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep the learner's words verbatim and put every judgement on top of them.",
+      "Do use Go Green, Wait Amber and Stop Red only for correct, learning and wrong.",
+      "Do label things with words (\"Delete\", \"Hold to talk\", \"Type your answer instead\"), never icons.",
+      "Do show loading with grey skeleton blocks shaped like the content (rows, columns, word grid, form).",
+      "Do keep hover changes to colour and transitions under 300ms with an ease-out curve."
+    ],
+    "donts": [
+      "Don't add shadows, gradients, glass, glows or rounded pill shapes.",
+      "Don't use emoji, stock icon sets, unicode symbols as icons, or checkmark bullets.",
+      "Don't use a pure white surface or any purple.",
+      "Don't use em dashes in interface copy.",
+      "Don't set Inter, Geist or Space Grotesk.",
+      "Don't add a coloured stripe on the side of a box, or a small label above a heading."
+    ]
+  }
+}

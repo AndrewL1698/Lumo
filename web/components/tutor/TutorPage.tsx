@@ -135,7 +135,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
 
       {/* Controls stay pinned to the bottom of the screen so the demo never needs scrolling. */}
       <div className="sticky bottom-0 -mx-4 space-y-3 border-t border-line bg-bg px-4 pb-4 pt-4">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-3 sm:gap-4">
           <PushToTalk status={status} onPress={pressTalk} onRelease={releaseTalk} />
           <button type="button" onClick={() => void end()} disabled={turns.length < 2} className={btn.secondary}>
             End session

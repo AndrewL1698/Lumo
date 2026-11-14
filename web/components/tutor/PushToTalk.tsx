@@ -51,7 +51,7 @@ export function PushToTalk({
   }, [onPress, onRelease, listening, disabled]);
 
   return (
-    <div className="flex flex-wrap items-center gap-5">
+    <div className="flex min-w-0 flex-1 items-center gap-5 sm:flex-none">
       <button
         type="button"
         disabled={disabled}
@@ -61,7 +61,7 @@ export function PushToTalk({
         }}
         onPointerUp={() => listening && onRelease()}
         aria-pressed={listening}
-        className={`h-16 min-w-56 select-none touch-none rounded-sm px-8 text-xl font-bold transition-colors duration-150 ${
+        className={`h-16 flex-1 select-none touch-none rounded-sm px-6 text-xl font-bold sm:min-w-56 sm:flex-none sm:px-8 transition-colors duration-150 ${
           listening
             ? "bg-wait text-bg"
             : disabled
@@ -71,7 +71,8 @@ export function PushToTalk({
       >
         {BUTTON[status]}
       </button>
-      <p className={`font-mono text-sm ${listening ? "text-wait" : "text-muted"}`} aria-live="polite">
+      {/* On phones the button label carries the state; the sentence would stack the bar into a tall block. */}
+      <p className={`sr-only font-mono text-sm sm:not-sr-only ${listening ? "text-wait" : "text-muted"}`} aria-live="polite">
         {STATUS[status]}
       </p>
     </div>
