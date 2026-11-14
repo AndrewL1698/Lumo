@@ -1,7 +1,7 @@
 // Sanity walk through every row of specs §6.1 / §6.2. Not a test suite; just prints PASS/FAIL.
 //   cd scripts && npm run learner-sanity
 import { applyEvent, MASTERED_STABILITY_DAYS } from "./applyEvent";
-import { emptyUserWord, type EventType, type UserWord } from "./types";
+import { emptyUserWord, type LearnerEventType, type UserWord } from "./types";
 import { pickMix, toCandidate } from "./score";
 
 let failures = 0;
@@ -12,8 +12,8 @@ function check(name: string, ok: boolean, detail = "") {
 
 let clock = new Date("2026-11-14T12:00:00Z");
 let n = 0;
-function ev(w: UserWord, type: EventType, articleKey = "a1", at = clock): UserWord {
-  return applyEvent(w, { id: `e${n++}`, type, lemma: w.lemma, articleKey, ts: at.toISOString() }, at);
+function ev(w: UserWord, type: LearnerEventType, articleKey = "a1", at = clock): UserWord {
+  return applyEvent(w, { id: `e${n++}`, type, lemma: w.lemma, articleKey, ts: at.getTime() }, at);
 }
 
 // new → seen → (passive) learning
@@ -41,24 +41,24 @@ check("knew_it: new → learning (not known)", k.state === "learning");
 // known only via active evidence
 let q = ev(h, "quiz_pass");
 check("quiz_pass → known", q.state === "known");
-let s = ev(h, "speech_correct");
-check("speech_correct → known", s.state === "known");
+let s = ev(h, "spoken_correct");
+check("spoken_correct → known", s.state === "known");
 
 // regressions back to learning
-for (const t of ["hover", "didnt_know", "quiz_fail", "speech_incorrect"] as const) {
+for (const t of ["hover", "didnt_know", "quiz_fail", "spoken_incorrect"] as const) {
   check(`${t}: known → learning`, ev(s, t).state === "learning");
 }
 check("hover: known_assumed → learning", ev({ ...emptyUserWord("agua"), state: "known_assumed" }, "hover").state === "learning");
-check("speech_correct: known_assumed → known", ev({ ...emptyUserWord("agua"), state: "known_assumed" }, "speech_correct").state === "known");
+check("spoken_correct: known_assumed → known", ev({ ...emptyUserWord("agua"), state: "known_assumed" }, "spoken_correct").state === "known");
 check("seen does not touch known", ev(s, "seen").state === "known");
 
 // mastered: keep using it correctly at each due date until stability ≥ 60 days
 let m = s;
 for (let i = 0; i < 12 && m.state !== "mastered"; i++) {
   clock = new Date(m.dueAt!);
-  m = ev(m, "speech_correct", "a1", clock);
+  m = ev(m, "spoken_correct", "a1", clock);
 }
-check(`known → mastered at stability ≥ ${MASTERED_STABILITY_DAYS}d`, m.state === "mastered", `stability=${m.fsrsCard?.stability.toFixed(1)}`);
+check(`known → mastered at stability ≥ ${MASTERED_STABILITY_DAYS}d`, m.state === "mastered", `stability=${(m.fsrsCard as { stability: number } | null)?.stability.toFixed(1)}`);
 check("mastered → learning on didnt_know", ev(m, "didnt_know", "a1", clock).state === "learning");
 
 // reading is a no-op

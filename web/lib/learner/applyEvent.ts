@@ -3,6 +3,9 @@
 import { createEmptyCard, fsrs, Rating, type Card, type Grade } from "ts-fsrs";
 import type { LearnerEvent, UserWord, WordState } from "./types";
 
+// /shared keeps fsrsCard opaque (Record) so it doesn't depend on ts-fsrs; we know its real shape here.
+const asCard = (c: UserWord["fsrsCard"]): Card | null => (c ? (c as unknown as Card) : null);
+
 const scheduler = fsrs();
 
 export const MASTERED_STABILITY_DAYS = 60;
@@ -15,13 +18,13 @@ const RATING: Partial<Record<LearnerEvent["type"], Grade>> = {
   hover: Rating.Again,
   didnt_know: Rating.Again,
   quiz_fail: Rating.Again,
-  speech_incorrect: Rating.Again,
+  spoken_incorrect: Rating.Again,
   knew_it: Rating.Good,
   quiz_pass: Rating.Good,
-  speech_correct: Rating.Easy,
+  spoken_correct: Rating.Easy,
 };
 
-const ACTIVE_KNOWN: ReadonlySet<LearnerEvent["type"]> = new Set(["quiz_pass", "speech_correct"]);
+const ACTIVE_KNOWN: ReadonlySet<LearnerEvent["type"]> = new Set(["quiz_pass", "spoken_correct"]);
 const KNOWNISH: ReadonlySet<WordState> = new Set(["known", "mastered", "known_assumed"]);
 
 function review(card: Card | null, now: Date, grade: Grade): Card {
@@ -52,8 +55,9 @@ export function applyEvent(word: UserWord, event: LearnerEvent, now: Date = new 
 
   if (event.type === "hover") next.lastHoverAt = now.toISOString();
 
-  next.fsrsCard = review(next.fsrsCard, now, grade);
-  next.dueAt = new Date(next.fsrsCard.due).toISOString();
+  const card = review(asCard(next.fsrsCard), now, grade);
+  next.fsrsCard = card as unknown as UserWord["fsrsCard"];
+  next.dueAt = new Date(card.due).toISOString();
 
   if (grade === Rating.Again) {
     // Hover, didn't-know, quiz fail, wrong in speech: (back) to learning, from any state.
@@ -66,7 +70,7 @@ export function applyEvent(word: UserWord, event: LearnerEvent, now: Date = new 
     next.state = "learning";
   }
 
-  if ((next.state === "known" || next.state === "mastered") && next.fsrsCard.stability >= MASTERED_STABILITY_DAYS) {
+  if ((next.state === "known" || next.state === "mastered") && card.stability >= MASTERED_STABILITY_DAYS) {
     next.state = "mastered";
   }
   return next;

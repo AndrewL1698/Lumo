@@ -1,37 +1,16 @@
-// Learner-model types, copied from docs/architecture.md §4.
-// TODO(demo): replace with imports from /shared once Andrew lands the zod schemas.
-import type { Card } from "ts-fsrs";
+// Learner-model types come from /shared (the contract). Only the glue lives here.
+import type { LearnerEventType, UserWord, WordState } from "@parrot/shared";
 
-export type WordState = "new" | "seen" | "learning" | "known" | "mastered" | "known_assumed";
+export type { LearnerEventType, UserWord, WordState };
 
-export type UserWord = {
-  lemma: string;
-  state: WordState;
-  fsrsCard: Card | null; // null until the first active review
-  seenCount: number;
-  seenArticles: string[]; // articleKeys, deduped
-  lastHoverAt: string | null; // ISO
-  dueAt: string | null; // ISO, mirrors fsrsCard.due
-};
-
-// Extension events (specs §5.6) plus the two tutor events (correct / incorrect use in speech).
-export type EventType =
-  | "seen"
-  | "hover"
-  | "knew_it"
-  | "didnt_know"
-  | "quiz_pass"
-  | "quiz_fail"
-  | "speech_correct"
-  | "speech_incorrect"
-  | "reading";
-
+// An event as the learner model consumes it: extension events and tutor events share this shape.
+// `ts` is epoch ms, matching ExtensionEvent in /shared.
 export type LearnerEvent = {
   id: string;
-  type: EventType;
+  type: LearnerEventType;
   lemma?: string;
   articleKey: string;
-  ts: string; // ISO
+  ts: number;
   meta?: Record<string, unknown>;
 };
 
