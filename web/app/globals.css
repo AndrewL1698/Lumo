@@ -188,9 +188,6 @@ ruby.fix rt {
 .luci[data-mood="speaking"] .luci-halo {
   animation-duration: 0.5s;
 }
-.luci[data-mood="speaking"] .luci-mouth {
-  animation: luci-talk 0.35s ease-in-out infinite alternate;
-}
 
 /* reactions, played once */
 .luci-react[data-react="good"] {
@@ -254,10 +251,6 @@ ruby.fix rt {
 @keyframes luci-dot {
   0%, 100% { transform: translateY(0); opacity: 0.4; }
   50% { transform: translateY(-4px); opacity: 1; }
-}
-@keyframes luci-talk {
-  from { transform: scaleY(1); }
-  to { transform: scaleY(1.9); }
 }
 @keyframes luci-hop {
   0% { transform: translateY(0) scale(1); }

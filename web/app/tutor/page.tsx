@@ -13,7 +13,7 @@ function RealTutor() {
 function MockTutor() {
   return (
     <>
-      <p className="mx-auto mb-6 max-w-3xl rounded-sm border border-wait/70 px-4 py-2 text-sm text-ink">
+      <p className="mx-auto mb-6 max-w-4xl rounded-sm border border-wait/70 bg-panel px-4 py-2 text-sm text-ink">
         <span className="mr-2 font-mono text-xs uppercase tracking-wider text-wait">Rehearsal</span>
         A scripted conversation. The mic is off and nothing is saved.
       </p>

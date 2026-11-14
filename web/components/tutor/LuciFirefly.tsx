@@ -1,33 +1,123 @@
+"use client";
+import { useEffect, useRef, useState } from "react";
 import type { TutorStatus } from "@/app/tutor/session";
+import { VOICE_EVENT, voiceLevel, voicePlaying } from "./voiceTap";
 
 export type LuciReaction = "good" | "oops" | "loop" | null;
+
+// Drives the mouth while the tutor speaks: real loudness from the voice tap when ElevenLabs audio plays,
+// otherwise a gentle talking rhythm. One requestAnimationFrame loop, only while speaking.
+function useLipSync(
+  active: boolean,
+  els: {
+    smile: React.RefObject<SVGPathElement | null>;
+    open: React.RefObject<SVGGElement | null>;
+    lips: React.RefObject<SVGEllipseElement | null>;
+    tongue: React.RefObject<SVGEllipseElement | null>;
+  },
+) {
+  useEffect(() => {
+    const apply = (open: number, round: number) => {
+      const { smile, open: g, lips, tongue } = els;
+      if (!smile.current || !g.current || !lips.current || !tongue.current) return;
+      const closed = open < 0.1;
+      smile.current.style.display = closed ? "" : "none";
+      g.current.style.display = closed ? "none" : "";
+      if (closed) return;
+      let rx = 4.5 + 4.5 * open;
+      let ry = 1.6 + 6.4 * open;
+      if (round > 0.5) {
+        rx = 3.6 + 2.2 * open; // "o": narrow and round
+        ry = Math.max(ry, rx + 1);
+      }
+      lips.current.setAttribute("rx", rx.toFixed(2));
+      lips.current.setAttribute("ry", ry.toFixed(2));
+      tongue.current.setAttribute("rx", (rx * 0.6).toFixed(2));
+      tongue.current.setAttribute("ry", (ry * 0.35).toFixed(2));
+      tongue.current.setAttribute("cy", (73 + ry * 0.55).toFixed(2));
+    };
+    if (!active) {
+      apply(0, 0);
+      return;
+    }
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let open = 0;
+    let round = 0;
+    let peak = 0.05;
+    let raf = 0;
+    const frame = (t: number) => {
+      const lvl = voiceLevel();
+      let target: number;
+      let rnd: number;
+      if (lvl) {
+        peak = Math.max(peak * 0.995, lvl.rms, 0.01); // adapts to the voice's loudness
+        const floor = Math.max(0.004, peak * 0.12); // below this counts as a pause
+        target = Math.min(1, Math.max(0, (lvl.rms - floor) / (peak * 0.7)));
+        rnd = lvl.low > 0.6 && target > 0.3 ? 1 : 0;
+      } else {
+        // Fallback: syllable-like rhythm (~4.5 per second) with a slower phrase swell.
+        const s = t / 1000;
+        target = Math.max(0, Math.sin(s * 9)) * (0.55 + 0.35 * Math.sin(s * 2.1 + 1));
+        rnd = Math.sin(s * 1.3) > 0.8 ? 1 : 0;
+      }
+      open += (target - open) * (target > open ? 0.5 : 0.22); // quick to open, softer to close
+      round += (rnd - round) * 0.2;
+      apply(reduce ? Math.min(open, 0.15) : open, round);
+      raf = requestAnimationFrame(frame);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(raf);
+      apply(0, 0);
+    };
+  }, [active, els]);
+}
 
 // Luci the firefly, the tutor's face. Pure SVG + CSS animations (globals.css, "Luci firefly" block).
 // Decorative only: status text elsewhere carries the meaning for screen readers.
 // mood follows the session status; reaction plays once after each answer (changing reactionKey replays it).
+// Size comes from className (responsive), or `size` in px.
 export function LuciFirefly({
   mood = "idle",
   reaction = null,
   reactionKey = 0,
   still = false,
-  size = 72,
+  size,
+  className = "",
 }: {
   mood?: TutorStatus;
   reaction?: LuciReaction;
   reactionKey?: number;
   still?: boolean;
   size?: number;
+  className?: string;
 }) {
+  const smileRef = useRef<SVGPathElement>(null);
+  const openRef = useRef<SVGGElement>(null);
+  const lipsRef = useRef<SVGEllipseElement>(null);
+  const tongueRef = useRef<SVGEllipseElement>(null);
+  const els = useRef({ smile: smileRef, open: openRef, lips: lipsRef, tongue: tongueRef }).current;
+  // Talk while the session says "speaking", and whenever tutor audio is actually playing.
+  const [voiceOn, setVoiceOn] = useState(false);
+  useEffect(() => {
+    if (still) return;
+    const update = () => setVoiceOn(voicePlaying());
+    update();
+    window.addEventListener(VOICE_EVENT, update);
+    return () => window.removeEventListener(VOICE_EVENT, update);
+  }, [still]);
+  useLipSync(!still && (mood === "speaking" || voiceOn), els);
+
   return (
     <div
       aria-hidden="true"
-      className="luci relative shrink-0"
+      className={`luci relative shrink-0 ${className}`}
       data-mood={mood}
       data-still={still ? "" : undefined}
-      style={{ width: size, height: size }}
+      style={size ? { width: size, height: size } : undefined}
     >
       <div key={reactionKey} className="luci-react h-full w-full" data-react={reaction ?? undefined}>
-        <svg viewBox="0 0 120 120" width={size} height={size} overflow="visible">
+        <svg viewBox="0 0 120 120" width="100%" height="100%" overflow="visible">
           <g className="luci-float">
             <g className="luci-lean">
               {/* tail light: a flat halo and the lamp itself */}
@@ -53,7 +143,12 @@ export function LuciFirefly({
               </g>
               <circle cx="42" cy="70" r="3.6" fill="#f0a39a" fillOpacity=".7" />
               <circle cx="78" cy="70" r="3.6" fill="#f0a39a" fillOpacity=".7" />
-              <path className="luci-mouth" d="M54 71 Q60 76 66 71" fill="none" stroke="#fcfcf8" strokeWidth="2.4" strokeLinecap="round" />
+              {/* mouth: a smile when closed; an open oval (wide, or round for "o") while talking */}
+              <path ref={smileRef} d="M54 71 Q60 76 66 71" fill="none" stroke="#fcfcf8" strokeWidth="2.4" strokeLinecap="round" />
+              <g ref={openRef} style={{ display: "none" }}>
+                <ellipse ref={lipsRef} cx="60" cy="73" rx="6" ry="4" fill="#4a1f25" stroke="#fcfcf8" strokeWidth="1.6" />
+                <ellipse ref={tongueRef} cx="60" cy="75" rx="3.5" ry="1.6" fill="#f0a39a" />
+              </g>
             </g>
           </g>
           {/* thinking dots, shown while checking */}
@@ -70,7 +165,7 @@ export function LuciFirefly({
           </g>
         </svg>
         {reaction === "good" && (
-          <span className="luci-bien absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-xs bg-glow px-1.5 font-display text-sm font-extrabold text-ink">
+          <span className="luci-bien absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-xs bg-glow px-2 font-display text-base font-extrabold sm:text-xl text-ink">
             ¡Bien!
           </span>
         )}
