@@ -46,7 +46,7 @@ Who owns what and how we work: see [`plan.md`](plan.md). Technical design: see [
 | Who | Tasks |
 |---|---|
 | Andrew | `/api/stt-token`, `/api/tutor/correct` (Haiku, structured output, span validation), `/api/tutor/reply` (Sonnet streaming → sentence-chunked TTS → audio queue). Push-to-talk loop working in a bare page. |
-| Karthik | `/api/pair`, `/api/events` (batched, idempotent), `/api/candidates`, `/api/translate`. Learner model `applyEvent(userWord, event)` + `ts-fsrs` with vitest coverage of specs §6.1/§6.2. |
+| Karthik | `/api/pair`, `/api/events` (batched, idempotent), `/api/candidates`, `/api/translate`. Learner model `applyEvent(userWord, event)` + `ts-fsrs`, sanity-checked with a quick script against specs §6.1/§6.2. |
 | Naren | Popup pairing. Service worker does **all** fetches. Real candidates + translate. Hover card (500 ms rule, Knew it / Didn't know). Batched event queue. |
 | Shravan | Tutor page UI: push-to-talk button, live transcript with inline correction highlights, tutor captions, recap panel, all driven by a mock `CorrectionResult` stream. |
 

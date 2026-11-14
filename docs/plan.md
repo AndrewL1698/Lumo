@@ -50,7 +50,7 @@ Andrew is the backstop. If anyone is blocked for more than 30 minutes, say so in
 | Photon phone line? | Team, Sat 9pm | No, unless Phase 3 is done |
 
 ## 5. Definition of done (before Sun 3am freeze)
-1. `npm run build` passes in `/web` and `/extension`, and the learner-model unit tests pass (`vitest`).
+1. `npm run build` passes in `/web` and `/extension`. The learner-model sanity script walks a word through new → seen → learning → known.
 2. Load the unpacked extension → pair → grant the demo site → swaps appear with articles. Hover and the Knew it / Didn't know buttons write `events` rows and update `user_words`.
 3. Open the tutor → the opener references the article just read → speak a scripted sentence with a planted agreement error → the correction shows in ≤1.5s and the voice starts in ≤2s (logged). A target word used correctly flips to "known" (toast + vocab page).
 4. "What Parrot knows" → delete everything → tables are empty for `DEMO_USER_ID` → reseed works.

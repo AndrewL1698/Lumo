@@ -1,17 +1,20 @@
 # CLAUDE.md — Parrot (HackPrinceton Fall 2026)
 
-Shared guidance for every teammate's Claude. **`specs.md` is the source of truth** for product
-decisions; this file covers how we work. If they disagree, specs.md wins. Update it instead of
-silently deviating.
+Shared guidance for every teammate's Claude. Planning docs live in `/docs`:
+- `docs/specs.md`: product source of truth (what we're building).
+- `docs/architecture.md`: technical design. **Overrides `specs.md` wherever they disagree** (§11 lists every change).
+- `docs/roadmap.md`: phased schedule and per-person tasks. `docs/plan.md`: ownership and working agreements.
+
+This file covers how we work. Update the docs instead of silently deviating.
 
 ## The clock
 - **Feature freeze: Sun Nov 15, 3:00am.** After that, only bug fixes, demo polish, and the backup video.
 - **Devpost submit by Sun 7:30am** (hard deadline 8:15am). Judging 9:30am.
-- Milestones are in specs.md §13. If we're behind, cut in this order: placement check → typed mode
-  → topic packs → quiz → schedule/peek (§14).
+- Milestones and the cut order are in `docs/roadmap.md`. If we're behind, cut in that order; never cut
+  the items it lists under "Never cut".
 
 **What this means for how you write code:**
-- Optimize for a working 2-minute demo (specs.md §11), not production. Hard-code, stub, and mock
+- Optimize for a working 2-minute demo (docs/specs.md §11), not production. Hard-code, stub, and mock
   freely to unblock yourself. Leave `// HACK:` or `// TODO(demo):` so we can find them.
 - No refactors, abstractions, or "while I'm here" cleanups. Smallest change that works.
 - No unit-test suites. The only tests that matter are the §10 eval numbers in `/eval`.
@@ -20,16 +23,17 @@ silently deviating.
 
 ## Repo layout & ownership
 ```
-/extension   Chrome MV3 extension (TypeScript)              owner: A
-/web         Next.js app: UI + API routes + Supabase        owner: B (API/DB), C (tutor), D (UI)
-/shared      shared TS types: events, word states, correction JSON   everyone; see below
-/scripts     word-list build script                         owner: B
-/eval        §10 test sentences + accuracy/latency scripts  owner: C
+/docs        specs, architecture, roadmap, plan
+/extension   Chrome MV3 extension (TypeScript)              owner: Naren
+/web         Next.js app: UI + API routes + Supabase        owner: Karthik (API/DB), Andrew (tutor), Shravan (UI)
+/shared      zod schemas + TS types (the contract)          owner: Andrew; see below
+/scripts     word-list build + demo seed scripts            owner: Karthik
+/eval        §10 test sentences + accuracy/latency scripts  owner: Naren (sentences), Karthik (accuracy), Andrew (latency)
 ```
 - Stay in your own area. If a change in someone else's area is needed, tell them; don't just edit.
 - **`/shared` is the contract.** Changing a type there breaks other people. Keep changes additive
   (new optional fields), and post in the team chat when you change it.
-- API shapes are defined in specs.md §9; the correction JSON in §7.5; events in §5.6. Match them exactly.
+- API shapes are the zod schemas in `/shared` (endpoint list in `docs/architecture.md` §9). Match them exactly.
 
 ## Git
 - `main` must always run. Pull (`git pull --rebase`) before you start and before you push.
@@ -42,7 +46,8 @@ silently deviating.
 1. **No API keys in the browser or extension.** All Claude and ElevenLabs calls go through `/web`
    API routes. Realtime STT uses a short-lived token or a backend proxy.
 2. **Grade the raw transcript only.** Store the verbatim STT output separately from any display
-   text. The corrector never "fixes" the learner's words (specs.md §7.3).
+   text. The corrector never "fixes" the learner's words (docs/specs.md §7.3), and the server drops
+   any flagged span that isn't a verbatim substring of the raw transcript.
 3. **Never grade accents or punctuation in spoken mode.** STT inserts them itself.
 4. **Extension privacy:** no host access by default, runtime per-site permissions, and the hard
    never-list (email, chat, banking, health, Docs/Canvas/GitHub, login and form pages) is enforced
@@ -54,8 +59,9 @@ silently deviating.
 ## Stack & config
 - TypeScript everywhere. Next.js (App Router) for `/web`; Supabase Postgres for the DB.
 - Claude models: **`claude-haiku-5-5`** for the correction lane (latency ≤1.5s),
-  **`claude-sonnet-5-5`** for the conversation lane (streaming). Keep the model IDs in one config
-  constant, not scattered string literals.
+  **`claude-sonnet-5-5`** for the conversation lane (streaming), both at effort `low` for latency.
+  Keep the model IDs in one config constant, not scattered string literals. No assistant prefill
+  (it returns a 400 on these models); get JSON via structured outputs.
 - Correction output must be validated JSON. Show only errors with `confidence >= 0.7`.
 - ElevenLabs: Scribe v2 Realtime (STT) + TTS. **STT and TTS share one credit pool.** Cache all
   repeated audio (hover-card pronunciations), use the cheapest/fastest voice model during dev, and

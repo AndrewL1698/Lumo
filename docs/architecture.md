@@ -104,7 +104,7 @@ settings     (user_id PK, data jsonb)
 
 ## 7. Learner model
 
-- Implemented as pure functions in `/web/lib/learner/`: `applyEvent(userWord, event, now) → userWord`, with vitest tests covering every row of specs §6.1 and §6.2.
+- Implemented as pure functions in `/web/lib/learner/`: `applyEvent(userWord, event, now) → userWord`, plus a small sanity script that exercises every row of specs §6.1 and §6.2 (no test suite, per `CLAUDE.md`).
 - Uses `ts-fsrs`. Only active evidence creates reviews (hover/didn't-know/quiz-fail/wrong-in-speech = Again; knew-it/quiz-pass = Good; correct unprompted speech = Easy). `seen` only increments counts.
 - `known` requires active evidence (a quiz pass or correct use in speech). Not hovering never makes a word known.
 - **Demo seed (`scripts/seed-demo`):** backdates FSRS review history for ~20 words so that "due" and "mastered" states exist during the demo. Neither can happen naturally in one weekend.
