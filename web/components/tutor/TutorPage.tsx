@@ -130,7 +130,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
         {turns.map((t, i) => (
           <li key={t.id} className="space-y-6 py-6 first:pt-2">
             {t.rawText && (
-              <div className="grid gap-2 sm:grid-cols-[5rem_1fr] sm:gap-4">
+              <div className="grid gap-2 sm:grid-cols-[6rem_1fr] sm:gap-4">
                 <p className={`${speaker} text-muted`}>You</p>
                 <div className="space-y-3">
                   <TranscriptView raw={t.rawText} result={t.correction} />
@@ -142,16 +142,16 @@ export function TutorPage({ session }: { session: TutorSession }) {
             )}
             {t.tutorText && (
               <div className="flex items-start gap-3 sm:gap-4" data-luci-live={t.id === liveTutorTurn ? "" : undefined}>
-                <div className="flex w-14 shrink-0 justify-center pt-1 sm:w-[5rem]">
+                <div className="flex w-16 shrink-0 justify-center pt-1 sm:w-24">
                   {t.id === liveTutorTurn ? (
-                    <LuciFirefly mood={status} reaction={reaction.kind} reactionKey={reaction.n} size={68} />
+                    <LuciFirefly mood={status} reaction={reaction.kind} reactionKey={reaction.n} size={84} />
                   ) : (
-                    <LuciFirefly still size={44} />
+                    <LuciFirefly still size={52} />
                   )}
                 </div>
-                <div className="relative min-w-0 flex-1 rounded-md border border-sun-line bg-sun px-5 py-4 before:absolute before:-left-[7px] before:top-6 before:h-3 before:w-3 before:rotate-45 before:border-b before:border-l before:border-sun-line before:bg-sun">
+                <div className="relative min-w-0 flex-1 rounded-md border border-sun-line bg-sun px-4 py-3 sm:px-5 sm:py-4 before:absolute before:-left-[7px] before:top-6 before:h-3 before:w-3 before:rotate-45 before:border-b before:border-l before:border-sun-line before:bg-sun">
                   <p className="sr-only">Tutor</p>
-                  <p className="relative text-2xl leading-snug text-ink">{t.tutorText}</p>
+                  <p className="relative text-xl leading-snug text-ink sm:text-2xl">{t.tutorText}</p>
                   {t.tutorEnglish &&
                     (turns.slice(i + 1).some((x) => x.rawText) ? (
                       <p className="mt-3 text-lg text-muted">
@@ -169,7 +169,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
       </ol>
 
       {status === "listening" && (
-        <div className="grid gap-2 border-t border-line pt-6 sm:grid-cols-[5rem_1fr] sm:gap-4">
+        <div className="grid gap-2 border-t border-line pt-6 sm:grid-cols-[6rem_1fr] sm:gap-4">
           <p className={`${speaker} text-accent`}>You</p>
           <p className="text-2xl text-muted">{partial || "Listening"}</p>
         </div>
