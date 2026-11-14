@@ -69,8 +69,19 @@ pairBtn.addEventListener("click", () => {
     pairResult.textContent = "enter the 6-digit code from the web app";
     return;
   }
-  // TODO(naren): POST /api/pair via the service worker
-  pairResult.textContent = "pairing not implemented yet";
+  pairBtn.disabled = true;
+  pairResult.textContent = "pairing…";
+  send({ type: "PAIR", code })
+    .then((res) => {
+      pairResult.textContent = res.ok ? "paired" : (res.error ?? "pairing failed");
+      if (res.ok) pairedEl.textContent = "paired: yes";
+    })
+    .catch((err: unknown) => {
+      pairResult.textContent = err instanceof Error ? err.message : "pairing failed";
+    })
+    .finally(() => {
+      pairBtn.disabled = false;
+    });
 });
 
 void init();

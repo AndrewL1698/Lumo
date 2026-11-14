@@ -1,159 +1,90 @@
 // Parrot content script. Injected only on origins the user enabled from the popup
 // (registered at runtime via chrome.scripting.registerContentScripts). No network calls here:
-// everything goes through the service worker.
+// everything goes through the service worker, so the token never enters the page.
 //
-// Phase 1.1: hard-coded swaps. The pipeline below (walk -> match -> space -> swap) is the one
-// from docs/architecture.md §6; Phase 2.2 replaces SWAPS with wordindex.json lookups plus a
-// /api/translate batch through the service worker.
-//
-// TODO(naren): 2.2 tokenize + look up English forms in wordindex.json (Karthik generates it).
-// TODO(naren): 2.2 score candidates via the SW's cached /api/candidates (specs §5.2, 70/30 mix).
-// TODO(naren): 2.2 send chosen sentences to the SW for ONE /api/translate batch; swap only after.
-// TODO(naren): 2.3 hover card (Spanish + article, meaning, TTS, Knew it / Didn't know, 500 ms).
+// Pipeline (docs/architecture.md §6):
+//   walk visible text -> match English forms in wordindex -> score with the §5.2 weights and the
+//   70/30 mix -> space them out -> ONE /api/translate batch -> apply swaps only after it returns.
 
+import type { Candidate, ExtensionEvent } from "@parrot/shared";
+import { send } from "../messages";
 import { neverListReason, neverListPageReason } from "../neverlist";
-
-/**
- * Hard-coded English -> Spanish, noun with its article (specs §5.2.8). Replaced by
- * wordindex.json + /api/translate in 2.2.
- *
- * Plurals matter more than they look: news writing leans on them ("prices", "homes",
- * "workers"), and a singular-only list swapped nothing at all on two of six real NPR
- * articles I measured.
- */
-const SWAPS: Readonly<Record<string, string>> = {
-  // people
-  "the people": "la gente",
-  "the man": "el hombre",
-  "the men": "los hombres",
-  "the woman": "la mujer",
-  "the women": "las mujeres",
-  "the child": "el niño",
-  "the children": "los niños",
-  "the family": "la familia",
-  "the families": "las familias",
-  "the student": "el estudiante",
-  "the students": "los estudiantes",
-  "the teacher": "el maestro",
-  "the teachers": "los maestros",
-  "the doctor": "el doctor",
-  "the doctors": "los doctores",
-  "the worker": "el trabajador",
-  "the workers": "los trabajadores",
-  "the president": "el presidente",
-  "the police": "la policía",
-  "the group": "el grupo",
-  "the groups": "los grupos",
-  "the team": "el equipo",
-  "the teams": "los equipos",
-  // places
-  "the house": "la casa",
-  "the houses": "las casas",
-  "the home": "la casa",
-  "the homes": "las casas",
-  "the city": "la ciudad",
-  "the cities": "las ciudades",
-  "the country": "el país",
-  "the countries": "los países",
-  "the state": "el estado",
-  "the states": "los estados",
-  "the world": "el mundo",
-  "the street": "la calle",
-  "the streets": "las calles",
-  "the school": "la escuela",
-  "the schools": "las escuelas",
-  "the place": "el lugar",
-  // money and work
-  "the money": "el dinero",
-  "the price": "el precio",
-  "the prices": "los precios",
-  "the cost": "el costo",
-  "the costs": "los costos",
-  "the rate": "la tasa",
-  "the rates": "las tasas",
-  "the market": "el mercado",
-  "the markets": "los mercados",
-  "the economy": "la economía",
-  "the company": "la empresa",
-  "the companies": "las empresas",
-  "the business": "el negocio",
-  "the industry": "la industria",
-  "the work": "el trabajo",
-  "the job": "el trabajo",
-  "the jobs": "los trabajos",
-  // government and news
-  "the government": "el gobierno",
-  "the law": "la ley",
-  "the laws": "las leyes",
-  "the court": "la corte",
-  "the election": "la elección",
-  "the war": "la guerra",
-  "the news": "las noticias",
-  "the report": "el informe",
-  "the reports": "los informes",
-  "the plan": "el plan",
-  "the plans": "los planes",
-  "the story": "la historia",
-  "the question": "la pregunta",
-  "the questions": "las preguntas",
-  "the answer": "la respuesta",
-  "the answers": "las respuestas",
-  // everyday
-  "the water": "el agua",
-  "the food": "la comida",
-  "the health": "la salud",
-  "the book": "el libro",
-  "the books": "los libros",
-  "the game": "el juego",
-  "the problem": "el problema",
-  "the problems": "los problemas",
-  "the system": "el sistema",
-  "the number": "el número",
-  "the time": "el tiempo",
-  "the day": "el día",
-  "the days": "los días",
-  "the night": "la noche",
-  "the week": "la semana",
-  "the weeks": "las semanas",
-  "the year": "el año",
-  "the years": "los años",
-};
+import { installHoverCard, type HoverTarget } from "./hovercard";
+import wordindex from "../wordindex.json";
 
 /** Bump when changing this file, so a stale bundle in Chrome is obvious in the console. */
-const BUILD = "1.1-d";
+const BUILD = "2.2-a";
 
 const PER_PAGE_CAP = 25;
 /** Words that must sit between two swaps, so they are never adjacent (specs §5.2.7). */
 const MIN_WORD_GAP = 12;
 const DEBOUNCE_MS = 300;
+/** Aim for this share of review/learning words; the rest are new (specs §5.2.6). */
+const REVIEW_SHARE = 0.7;
+/** Re-run for text that arrives after load. Each pass costs one translate batch, so keep it short. */
+const SWEEP_DELAYS_MS = [0, 1500, 4000];
 
 const SKIP_SELECTOR =
   "a, button, input, textarea, select, code, pre, script, style, [contenteditable], form, [data-parrot]";
 
 const MARK_ATTR = "data-parrot";
-const ORIGINAL_ATTR = "data-parrot-en";
 
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-// Longest phrases first so "the house" wins over a future "house".
-const PHRASE_RE = new RegExp(
-  `\\b(${Object.keys(SWAPS)
-    .sort((a, b) => b.length - a.length)
-    .map(escapeRegExp)
-    .join("|")})\\b`,
-  "gi",
-);
+const FORMS: Record<string, string[]> = wordindex;
 
 let swapCount = 0;
-/** Global word index of the last applied swap, so swaps stay spaced across nodes. */
 let lastSwapWordIndex = -Infinity;
-let wordsWalked = 0;
+let articleKey = "";
+const swappedLemmas = new Set<string>();
+/** Text nodes already examined, so repeat sweeps only look at genuinely new content. */
+const seenNodes = new WeakSet<Text>();
 
-function countWords(text: string): number {
-  const trimmed = text.trim();
-  return trimmed ? trimmed.split(/\s+/).length : 0;
+// ---------------------------------------------------------------- page identity
+
+/**
+ * articleKey = SHA-256 hex of `hostname\ntitle` (agreed with Karthik so live hovers join the
+ * seeded article). URLs and page text are never sent (specs §5.1).
+ */
+async function computeArticleKey(): Promise<string> {
+  const input = `${location.hostname}\n${document.title}`;
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function newEvent(type: ExtensionEvent["type"], extra: Partial<ExtensionEvent> = {}): ExtensionEvent {
+  return { id: crypto.randomUUID(), type, articleKey, ts: Date.now(), ...extra };
+}
+
+function queue(...events: ExtensionEvent[]): void {
+  void send({ type: "QUEUE_EVENTS", events }).catch(() => {
+    /* the SW keeps its own queue; losing one message is not worth surfacing on the page */
+  });
+}
+
+// ---------------------------------------------------------------- walking
+
+function isVisible(element: Element): boolean {
+  return element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true });
+}
+
+function collectTextNodes(root: Node): Text[] {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+    acceptNode(node: Node): number {
+      const text = node.nodeValue;
+      if (!text || text.trim().length < 12) return NodeFilter.FILTER_REJECT;
+      const parent = (node as Text).parentElement;
+      if (!parent) return NodeFilter.FILTER_REJECT;
+      if (parent.closest(SKIP_SELECTOR)) return NodeFilter.FILTER_REJECT;
+      if (!isVisible(parent)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
+  const nodes: Text[] = [];
+  let current = walker.nextNode();
+  while (current) {
+    nodes.push(current as Text);
+    current = walker.nextNode();
+  }
+  return nodes;
 }
 
 /** Index of the sentence `offset` falls in, within one text node. */
@@ -167,124 +98,126 @@ function sentenceIndexAt(text: string, offset: number): number {
   return index;
 }
 
-/**
- * Every phrase is "the <noun>", so a capital on the noun means a proper name:
- * "Industrial Workers of the World" must not become "...of el mundo". A capital on the
- * leading "The" is just sentence case and is fine.
- */
-function isProperNoun(match: string): boolean {
-  return match
-    .split(/\s+/)
-    .slice(1)
-    .some((word) => /^[A-Z]/.test(word));
+/** The sentence around `offset`, taken from the containing block so Claude gets real context. */
+function sentenceAround(node: Text, offset: number): string {
+  const block = node.parentElement?.closest("p, li, h1, h2, h3, blockquote") ?? node.parentElement;
+  const full = (block?.textContent ?? node.nodeValue ?? "").replace(/\s+/g, " ").trim();
+  const needle = (node.nodeValue ?? "").slice(Math.max(0, offset - 20), offset + 40).trim();
+  const at = needle ? full.indexOf(needle.split(/\s+/)[0] ?? "") : -1;
+  const pivot = at < 0 ? 0 : at;
+  let start = full.lastIndexOf(".", pivot);
+  start = start < 0 ? 0 : start + 1;
+  let end = full.indexOf(".", pivot);
+  end = end < 0 ? full.length : end + 1;
+  const sentence = full.slice(start, end).trim();
+  return sentence.length > 20 ? sentence.slice(0, 400) : full.slice(0, 400);
 }
 
-function matchCase(original: string, replacement: string): string {
-  const first = original[0];
-  if (first && first === first.toUpperCase() && first !== first.toLowerCase()) {
-    return replacement[0].toUpperCase() + replacement.slice(1);
-  }
-  return replacement;
+// ---------------------------------------------------------------- matching and scoring
+
+interface Match {
+  node: Text;
+  englishMatch: string;
+  lemma: string;
+  sentence: string;
+  wordIndex: number;
+  sentenceKey: string;
+  isReview: boolean;
+  score: number;
 }
 
-function isVisible(element: Element): boolean {
-  return element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true });
+/** specs §5.2.5, plus a little jitter so the same page is not identical every load. */
+function scoreOf(c: Candidate | undefined): number {
+  const jitter = Math.random() * 0.4;
+  if (!c) return 1.0 + jitter; // unknown to the learner model: treat as new in band
+  return (
+    (c.isDue ? 3.0 : 0) +
+    (c.hoveredRecently ? 2.0 : 0) +
+    (c.onWeakList ? 1.5 : 0) +
+    (c.isNewInBand ? 1.0 : 0) +
+    (c.isMastered ? -5.0 : 0) +
+    jitter
+  );
 }
 
-function collectTextNodes(root: Node): Text[] {
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
-    acceptNode(node: Node): number {
-      const text = node.nodeValue;
-      if (!text || !text.trim()) return NodeFilter.FILTER_REJECT;
+function findMatches(nodes: Text[], byLemma: Map<string, Candidate>): Match[] {
+  const found: Match[] = [];
+  let wordsWalked = 0;
 
-      const parent = (node as Text).parentElement;
-      if (!parent) return NodeFilter.FILTER_REJECT;
-      if (parent.closest(SKIP_SELECTOR)) return NodeFilter.FILTER_REJECT;
-      if (!isVisible(parent)) return NodeFilter.FILTER_REJECT;
-
-      return NodeFilter.FILTER_ACCEPT;
-    },
-  });
-
-  const nodes: Text[] = [];
-  let current = walker.nextNode();
-  while (current) {
-    nodes.push(current as Text);
-    current = walker.nextNode();
-  }
-  return nodes;
-}
-
-/** Replace one match inside a single text node. Never spans elements (architecture §6.6). */
-function applySwap(node: Text, start: number, end: number, spanish: string): void {
-  const english = node.nodeValue!.slice(start, end);
-  const tail = node.splitText(start);
-  tail.nodeValue = tail.nodeValue!.slice(end - start);
-
-  const span = document.createElement("span");
-  span.setAttribute(MARK_ATTR, "");
-  span.setAttribute(ORIGINAL_ATTR, english);
-  span.textContent = matchCase(english, spanish);
-  node.parentNode!.insertBefore(span, tail);
-}
-
-function processNode(node: Text): void {
-  const text = node.nodeValue;
-  if (!text) return;
-
-  const nodeWordStart = wordsWalked;
-  wordsWalked += countWords(text);
-  if (swapCount >= PER_PAGE_CAP) return;
-
-  PHRASE_RE.lastIndex = 0;
-  const usedSentences = new Set<number>();
-
-  // One swap per text node keeps the offsets valid after the DOM split; re-walking on the next
-  // mutation tick picks up anything else worth swapping.
-  let match: RegExpExecArray | null;
-  while ((match = PHRASE_RE.exec(text))) {
-    if (isProperNoun(match[0])) continue;
-
-    // "the company's clients" would become "la empresa's clients". Leave possessives alone;
-    // the Spanish form differs and 2.2's translate call is what should handle them.
-    if (/^['’]s\b/i.test(text.slice(match.index + match[0].length))) continue;
-
-    const sentence = sentenceIndexAt(text, match.index);
-    if (usedSentences.has(sentence)) continue;
-
-    const wordIndex = nodeWordStart + countWords(text.slice(0, match.index));
-    if (wordIndex - lastSwapWordIndex < MIN_WORD_GAP) continue;
-
-    const spanish = SWAPS[match[0].toLowerCase()];
-    if (!spanish) continue;
-
-    applySwap(node, match.index, match.index + match[0].length, spanish);
-    usedSentences.add(sentence);
-    lastSwapWordIndex = wordIndex;
-    swapCount++;
-    return;
-  }
-}
-
-/** Set by sweep() so the console line can say why a page produced nothing. */
-let lastSweepConsidered = 0;
-
-function sweep(root: Node): void {
-  if (swapCount >= PER_PAGE_CAP) return;
-  const nodes = collectTextNodes(root);
-  lastSweepConsidered = nodes.length;
   for (const node of nodes) {
-    if (swapCount >= PER_PAGE_CAP) break;
-    processNode(node);
+    const text = node.nodeValue ?? "";
+    const nodeStart = wordsWalked;
+    let wordInNode = 0;
+
+    for (const m of text.matchAll(/[A-Za-z][A-Za-z'’-]*/g)) {
+      wordInNode++;
+      const token = m[0];
+      const lemmas = FORMS[token.toLowerCase()];
+      if (!lemmas?.length) continue;
+      // Proper nouns mid-sentence are names, not vocabulary.
+      if (m.index > 0 && /^[A-Z]/.test(token) && !/[.!?]\s+$/.test(text.slice(0, m.index))) continue;
+
+      const lemma = lemmas
+        .map((l) => ({ l, s: scoreOf(byLemma.get(l)) }))
+        .sort((a, b) => b.s - a.s)[0];
+      if (!lemma) continue;
+
+      const state = byLemma.get(lemma.l)?.state;
+      found.push({
+        node,
+        englishMatch: token,
+        lemma: lemma.l,
+        sentence: sentenceAround(node, m.index),
+        wordIndex: nodeStart + wordInNode,
+        sentenceKey: `${nodeStart}:${sentenceIndexAt(text, m.index)}`,
+        isReview: Boolean(state && state !== "new"),
+        score: lemma.s,
+      });
+    }
+    wordsWalked += wordInNode;
   }
+  return found;
 }
+
+/** Spacing rules plus the 70/30 mix, applied over the whole page in document order. */
+function select(matches: Match[], budget: number): Match[] {
+  const review = matches.filter((m) => m.isReview).sort((a, b) => b.score - a.score);
+  const fresh = matches.filter((m) => !m.isReview).sort((a, b) => b.score - a.score);
+
+  const wantReview = Math.round(budget * REVIEW_SHARE);
+  const ranked = [
+    ...review.slice(0, wantReview),
+    ...fresh.slice(0, budget - Math.min(wantReview, review.length)),
+  ];
+  const keep = new Set(ranked);
+
+  // Walk in document order so the gap and one-per-sentence rules mean what they say.
+  const chosen: Match[] = [];
+  const usedSentences = new Set<string>();
+  const usedLemmas = new Set<string>(swappedLemmas);
+  let last = lastSwapWordIndex;
+
+  for (const m of matches.sort((a, b) => a.wordIndex - b.wordIndex)) {
+    if (chosen.length >= budget) break;
+    if (!keep.has(m)) continue;
+    if (usedSentences.has(m.sentenceKey)) continue;
+    if (usedLemmas.has(m.lemma)) continue; // one swap per lemma per page
+    if (m.wordIndex - last < MIN_WORD_GAP) continue;
+    chosen.push(m);
+    usedSentences.add(m.sentenceKey);
+    usedLemmas.add(m.lemma);
+    last = m.wordIndex;
+  }
+  return chosen;
+}
+
+// ---------------------------------------------------------------- swapping
 
 function injectStyle(): void {
   const style = document.createElement("style");
   // A dotted underline was invisible in body text, which made working swaps look like a broken
-  // extension. Translucent amber so it reads on both light and dark pages, and a solid underline
-  // that survives even where the tint is washed out. Text keeps the page's own colour, so
-  // contrast is never worse than the surrounding paragraph.
+  // extension. Translucent amber reads on both light and dark pages, and the solid underline
+  // survives where the tint washes out. Text keeps the page's own colour.
   style.textContent =
     `[${MARK_ATTR}]{` +
     `background:rgba(255,193,7,.28);` +
@@ -295,7 +228,76 @@ function injectStyle(): void {
   document.head.appendChild(style);
 }
 
-let timer: number | undefined;
+/** Replace `span` inside one text node. Never spans elements (architecture §6.6). */
+function applySwap(m: Match, span: string, replacement: string): boolean {
+  const text = m.node.nodeValue;
+  if (!text) return false;
+  const start = text.indexOf(span);
+  if (start < 0) return false; // span crosses an inline element: skip rather than guess
+
+  const tail = m.node.splitText(start);
+  tail.nodeValue = tail.nodeValue!.slice(span.length);
+
+  const el = document.createElement("span");
+  el.setAttribute(MARK_ATTR, "");
+  el.dataset.parrotEn = span;
+  el.dataset.parrotLemma = m.lemma;
+  el.dataset.parrotSentence = m.sentence;
+  el.textContent = replacement;
+  m.node.parentNode?.insertBefore(el, tail);
+
+  swapCount++;
+  swappedLemmas.add(m.lemma);
+  lastSwapWordIndex = m.wordIndex;
+  return true;
+}
+
+async function sweep(root: Node): Promise<void> {
+  if (swapCount >= PER_PAGE_CAP) return;
+
+  const nodes = collectTextNodes(root).filter((n) => !seenNodes.has(n));
+  for (const n of nodes) seenNodes.add(n);
+  if (!nodes.length) return;
+
+  const candidates = await send({ type: "GET_CANDIDATES" }).catch(() => null);
+  const byLemma = new Map((candidates?.candidates ?? []).map((c) => [c.lemma, c]));
+
+  const matches = findMatches(nodes, byLemma);
+  const chosen = select(matches, PER_PAGE_CAP - swapCount);
+  if (!chosen.length) {
+    console.log(`[parrot] ${nodes.length} new text node(s), nothing worth swapping`);
+    return;
+  }
+
+  // ONE batch for the page. Swaps appear only after it returns; load is never blocked.
+  const res = await send({
+    type: "TRANSLATE",
+    articleKey,
+    items: chosen.map((m) => ({
+      sentence: m.sentence,
+      lemma: m.lemma,
+      englishMatch: m.englishMatch,
+    })),
+  }).catch(() => null);
+
+  if (!res) {
+    console.log("[parrot] translate unavailable, leaving the page alone");
+    return;
+  }
+
+  let applied = 0;
+  res.items.forEach((item, i) => {
+    const m = chosen[i];
+    if (!item || !m) return; // null = sense mismatch, don't swap
+    if (swapCount >= PER_PAGE_CAP) return;
+    if (applySwap(m, item.span, item.replacement)) applied++;
+  });
+  console.log(`[parrot] swapped ${applied} of ${chosen.length} (page total ${swapCount})`);
+}
+
+// ---------------------------------------------------------------- observers
+
+let timer: ReturnType<typeof setTimeout> | undefined;
 function watchForNewText(): void {
   const observer = new MutationObserver((records) => {
     if (swapCount >= PER_PAGE_CAP) {
@@ -309,63 +311,52 @@ function watchForNewText(): void {
 
     clearTimeout(timer);
     timer = setTimeout(() => {
-      // SPA navigation can land on a never-listed URL after load.
       if (neverListReason(location.href)) {
         observer.disconnect();
         return;
       }
-      for (const root of roots) {
-        if (root.isConnected) sweep(root);
-      }
-    }, DEBOUNCE_MS) as unknown as number;
+      for (const root of roots) if (root.isConnected) void sweep(root);
+    }, DEBOUNCE_MS);
   });
-
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
-/**
- * News sites render the article body at wildly different times: some at parse, some after
- * hydration, some after a lazy chunk lands seconds later. Rather than depend on one sweep at
- * one moment, re-sweep on a short schedule. Cheap (each pass stops at the cap and skips
- * already-swapped spans) and it removes the whole class of "ran too early, found nothing".
- */
-const SWEEP_DELAYS_MS = [0, 600, 1800, 4000];
+function wireHoverCard(): void {
+  installHoverCard(MARK_ATTR, {
+    onHover(t: HoverTarget) {
+      queue(newEvent("hover", { lemma: t.lemma, meta: { sentence: t.sentence } }));
+    },
+    onVerdict(t: HoverTarget, verdict) {
+      queue(newEvent(verdict, { lemma: t.lemma, meta: { sentence: t.sentence } }));
+    },
+  });
+}
 
-function main(): void {
-  console.log(
-    `[parrot] running on ${location.hostname} · ${Object.keys(SWAPS).length} phrases · build ${BUILD}`,
-  );
+async function main(): Promise<void> {
+  console.log(`[parrot] running on ${location.hostname} · build ${BUILD}`);
 
   const blocked = neverListReason(location.href) ?? neverListPageReason(document);
   if (blocked) {
     console.log("[parrot] never-list, leaving this page alone:", blocked);
     return;
   }
-  if (!document.body) {
-    console.log("[parrot] no document.body, nothing to do");
-    return;
-  }
+  if (!document.body) return;
 
+  articleKey = await computeArticleKey();
   injectStyle();
+  wireHoverCard();
   watchForNewText();
+
+  // One reading event per page: title and domain only, never the URL (specs §5.1).
+  queue(newEvent("reading", { meta: { title: document.title, domain: location.hostname } }));
 
   for (const delay of SWEEP_DELAYS_MS) {
     setTimeout(() => {
-      if (swapCount >= PER_PAGE_CAP) return;
-      try {
-        sweep(document.body);
-        console.log(
-          `[parrot] sweep@${delay}ms: considered ${lastSweepConsidered} text nodes, ${swapCount} swap(s) total`,
-        );
-      } catch (err) {
-        console.error(`[parrot] sweep@${delay}ms THREW:`, err);
-      }
+      void sweep(document.body).catch((err: unknown) => {
+        console.error(`[parrot] sweep@${delay}ms failed:`, err);
+      });
     }, delay);
   }
 }
 
-try {
-  main();
-} catch (err) {
-  console.error("[parrot] startup THREW:", err);
-}
+void main().catch((err: unknown) => console.error("[parrot] startup failed:", err));
