@@ -64,6 +64,79 @@ export async function todaysArticleTitles(userId: string, now: Date = new Date()
   return data.map((r) => r.title as string | null).filter((t): t is string => !!t);
 }
 
+export type TutorContextData = {
+  level: Settings["level"];
+  /** Last 24h, newest first, one per lemma. hoveredAt/articleTitle are for J2's "hovered at 9:12 in …". */
+  hoveredWords: { lemma: string; sentence?: string; hoveredAt: string; articleTitle?: string }[];
+  /** Most overdue first. */
+  dueWords: { lemma: string; dueAt: string }[];
+  /** Today's article titles; [] when Settings.useReadingInLessons is off. */
+  articleTitles: string[];
+};
+
+/** Everything Andrew's /api/tutor/context needs from the DB, in one call. Throws on DB error. */
+export async function getTutorContextData(
+  userId: string,
+  opts: { now?: Date; maxHovers?: number; maxDue?: number } = {},
+): Promise<TutorContextData> {
+  const { now = new Date(), maxHovers = 10, maxDue = 20 } = opts;
+  const db = getDb();
+  const since = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+
+  const [settings, hovers, due] = await Promise.all([
+    getSettings(userId),
+    db
+      .from("events")
+      .select("lemma, article_key, ts, meta")
+      .eq("user_id", userId)
+      .eq("type", "hover")
+      .not("lemma", "is", null)
+      .gte("ts", since)
+      .order("ts", { ascending: false })
+      .limit(maxHovers * 5),
+    db
+      .from("user_words")
+      .select("lemma, due_at")
+      .eq("user_id", userId)
+      .lte("due_at", now.toISOString())
+      .order("due_at", { ascending: true })
+      .limit(maxDue),
+  ]);
+  if (hovers.error) throw hovers.error;
+  if (due.error) throw due.error;
+
+  // One row per lemma (newest hover wins).
+  const latest = new Map<string, (typeof hovers.data)[number]>();
+  for (const h of hovers.data) if (!latest.has(h.lemma as string) && latest.size < maxHovers) latest.set(h.lemma as string, h);
+
+  // Article titles for those hovers.
+  const keys = [...new Set([...latest.values()].map((h) => h.article_key as string | null).filter((k): k is string => !!k))];
+  const titles = new Map<string, string>();
+  if (keys.length) {
+    const arts = await db.from("articles").select("article_key, title").eq("user_id", userId).in("article_key", keys);
+    if (arts.error) throw arts.error;
+    for (const a of arts.data) if (a.title) titles.set(a.article_key as string, a.title as string);
+  }
+
+  const hoveredWords = [...latest.values()].map((h) => {
+    const sentence = (h.meta as { sentence?: unknown } | null)?.sentence;
+    const articleTitle = titles.get(h.article_key as string);
+    return {
+      lemma: h.lemma as string,
+      hoveredAt: new Date(h.ts as string).toISOString(),
+      ...(typeof sentence === "string" && { sentence }),
+      ...(articleTitle && { articleTitle }),
+    };
+  });
+
+  return {
+    level: settings.level,
+    hoveredWords,
+    dueWords: due.data.map((r) => ({ lemma: r.lemma as string, dueAt: new Date(r.due_at as string).toISOString() })),
+    articleTitles: settings.useReadingInLessons ? await todaysArticleTitles(userId, now) : [],
+  };
+}
+
 /** Dictionary details for a list of lemmas (unknown lemmas are omitted). */
 export async function wordDetails(lemmas: string[]): Promise<{ lemma: string; article: string | null; english: string[] }[]> {
   if (lemmas.length === 0) return [];
