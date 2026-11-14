@@ -29,19 +29,19 @@ check("≥3 seens across ≥2 articles → learning", w.state === "learning");
 check("seen_articles deduped", w.seenArticles.length === 2);
 
 // hover → learning with an Again review
-let h = ev(emptyUserWord("perro"), "hover");
+const h = ev(emptyUserWord("perro"), "hover");
 check("hover: new → learning", h.state === "learning");
 check("hover: creates FSRS review + dueAt", h.fsrsCard !== null && h.dueAt !== null);
 check("hover: sets lastHoverAt", h.lastHoverAt !== null);
 
 // knew_it never makes known
-let k = ev(emptyUserWord("libro"), "knew_it");
+const k = ev(emptyUserWord("libro"), "knew_it");
 check("knew_it: state unchanged (new stays new, never known)", k.state === "new" && k.fsrsCard !== null);
 
 // known only via active evidence
-let q = ev(h, "quiz_pass");
+const q = ev(h, "quiz_pass");
 check("quiz_pass → known", q.state === "known");
-let s = ev(h, "spoken_correct");
+const s = ev(h, "spoken_correct");
 check("spoken_correct → known", s.state === "known");
 
 // regressions back to learning
