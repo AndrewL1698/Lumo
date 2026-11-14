@@ -257,17 +257,77 @@ ruby.fix rt {
   100% { opacity: 0; }
 }
 
-/* Home page only: the firefly cursor. The home page root carries .home-firefly; other pages keep the
-   normal cursor. Hotspot (6,6) is the firefly's head. Links and buttons get a brighter-glow firefly;
-   text fields keep the I-beam. */
-body:has(.home-firefly) {
-  cursor: url("/cursors/firefly.svg") 6 6, auto;
+/* Firefly cursor on every page (components/FireflyCursor.tsx). The component adds html.firefly-cursor
+   only on devices with a mouse; the native cursor is hidden, except the I-beam in text fields. */
+html.firefly-cursor,
+html.firefly-cursor * {
+  cursor: none !important;
 }
-body:has(.home-firefly) :is(a, button, summary, label, [role="button"]) {
-  cursor: url("/cursors/firefly-link.svg") 6 6, pointer;
+html.firefly-cursor
+  :is(
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+    textarea,
+    [contenteditable="true"]
+  ) {
+  cursor: text !important;
 }
-body:has(.home-firefly) :is(input, textarea, select, [contenteditable="true"]) {
-  cursor: text;
+.firefly-cursor-el {
+  will-change: transform;
+  transition: opacity 120ms ease;
+}
+.firefly-cursor-el[data-state="hidden"],
+.firefly-cursor-el[data-state="text"] {
+  opacity: 0;
+}
+.firefly-cursor-el .ff-tail {
+  fill: #ffd23a;
+  transition: fill 150ms ease;
+}
+.firefly-cursor-el .ff-halo {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+/* over links and buttons: brighter glow */
+.firefly-cursor-el[data-state="link"] .ff-tail {
+  fill: #ffe46b;
+}
+.firefly-cursor-el[data-state="link"] .ff-halo {
+  opacity: 0.95;
+}
+/* quick, light wing flutter; the body never moves */
+.firefly-cursor-el .ff-wing {
+  transform-box: fill-box;
+  animation: ff-flap-l 150ms ease-in-out infinite alternate;
+}
+.firefly-cursor-el .ff-wing-l {
+  transform-origin: 90% 85%;
+}
+.firefly-cursor-el .ff-wing-r {
+  transform-origin: 10% 85%;
+  animation-name: ff-flap-r;
+}
+@keyframes ff-flap-l {
+  to { transform: rotate(-14deg) scaleY(0.6); }
+}
+@keyframes ff-flap-r {
+  to { transform: rotate(14deg) scaleY(0.6); }
+}
+/* trail dots: deep amber, reused from a fixed pool */
+.firefly-dot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: #c98a00;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+@media (prefers-reduced-motion: reduce) {
+  .firefly-cursor-el .ff-wing {
+    animation: none !important;
+  }
 }
 
 /* "Your jar" lights up when a spark lands in it */

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Atkinson_Hyperlegible, Bricolage_Grotesque, IBM_Plex_Mono } from "next/font/google";
 import type { ReactNode } from "react";
+import { FireflyCursor } from "@/components/FireflyCursor";
 import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
 import "./globals.css";
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <Nav />
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">{children}</main>
         <Footer />
+        <FireflyCursor />
       </body>
     </html>
   );
