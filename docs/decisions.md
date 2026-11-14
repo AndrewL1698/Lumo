@@ -13,3 +13,8 @@ Short entries. Newest at the bottom. Format: **ID · date · owner**, decision, 
 **Decision:** STT provider.
 **Why:** _Fill in: % of planted errors surviving in TTS-read pass and teammate-read pass._
 **Alternatives:** _Scribe v2 Realtime vs. batch fallback / other._
+
+### D-003 · _proposed_ · Karthik
+**Decision:** Rename Parrot to **Luci** (firefly mascot). Glow brightness on swapped words shows `WordState`, and a glowworm underline is the swap marker. Full concept in `docs/brand/`.
+**Why:** The name ties to Spanish (*luciérnaga*, *lucía* = "it shone") and makes the "known needs active evidence" rule visible on the page.
+**Alternatives:** Keep Parrot. Monarca (caterpillar-to-butterfly life cycle) was the runner-up.

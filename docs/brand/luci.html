@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Luci Brand Concept</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* Layout: one hero concept (Luci, built out as a system), then a grid of alternate ideas, then the glowworm */
+/* Single light look by choice: no dark theme */
+:root{
+  --bg:#f6f7f2; --surface:#ffffff; --fg:#1a2028; --muted:#5f6772; --line:#e2e3da;
+  --sun:#fff7d9; --sun-line:#f1e2a6; --glow:#ffd23a; --glow-soft:#ffe9a0; --accent:#9a6a00;
+  --display:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --body:Inter,system-ui,-apple-system,sans-serif;
+  color-scheme:light;
+}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.55}
+main{max-width:920px;margin:0 auto;padding-block:40px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:32px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+h1{font-size:2.1rem;font-weight:800;letter-spacing:-.01em}
+.lede{color:var(--muted);max-width:64ch;margin:6px 0 0}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+
+/* hero: warm sunlit panel */
+.hero{background:var(--sun);border:1px solid var(--sun-line);color:var(--fg);border-radius:16px;padding:28px;display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:start}
+.hero h2{font-size:2.4rem;font-weight:800}
+.hero .say{color:var(--muted);font-size:13px}
+.hero .tag{font-family:var(--display);font-weight:600;font-size:1.25rem;color:var(--accent);margin:6px 0 14px}
+.hero ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.icons{display:flex;align-items:flex-end;gap:14px}
+.icons figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.icons figcaption{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.icons svg{display:block}
+.txt{min-width:0}
+
+/* glow states demo */
+.states{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px;display:flex;flex-direction:column;gap:16px}
+.states p{margin:0;max-width:66ch}
+.page{font-family:Georgia,"Times New Roman",serif;font-size:1.15rem;line-height:1.9;background:var(--bg);border-radius:10px;padding:18px 20px}
+.w{padding:1px 4px;border-radius:4px;cursor:default}
+.w.seen{background:color-mix(in srgb,var(--glow) 18%,transparent)}
+.w.learning{background:color-mix(in srgb,var(--glow) 38%,transparent);animation:flicker 2.4s ease-in-out infinite}
+.w.known{background:var(--glow);color:#1a1400;box-shadow:0 0 14px color-mix(in srgb,var(--glow) 70%,transparent)}
+@keyframes flicker{0%,100%{opacity:1}45%{opacity:.55}55%{opacity:.9}}
+.legend{display:flex;flex-wrap:wrap;gap:10px 22px;font-size:13px;color:var(--muted)}
+.legend span{display:flex;align-items:center;gap:8px}
+.legend i{display:inline-block;width:28px;height:14px;border-radius:4px}
+.callout{font-family:var(--display);font-weight:600;font-size:1.15rem}
+
+/* system table */
+.sys{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.sys div{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+.sys h3{font-size:1rem;margin-bottom:4px}
+.sys p{margin:0;color:var(--muted);font-size:14px}
+.sys .es{font-style:italic;color:var(--fg)}
+
+/* alternates */
+.alts{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.alt{border-top:2px solid var(--fg);padding-top:12px;display:flex;flex-direction:column;gap:6px}
+.alt h3{font-size:1.35rem}
+.alt .m{font-size:13px;color:var(--muted)}
+.alt p{margin:0;font-size:14px}
+.alt .why{color:var(--muted)}
+.section-head{display:flex;flex-direction:column;gap:4px}
+
+/* glowworm: sunlit panel matching the hero */
+.worm-panel{background:var(--sun);border:1px solid var(--sun-line);color:var(--fg);border-radius:16px;padding:28px;display:flex;flex-direction:column;gap:18px}
+.worm-panel h2{font-size:2rem;font-weight:800}
+.worm-panel .tag{font-family:var(--display);font-weight:600;font-size:1.15rem;color:var(--accent);margin:0}
+.worm-panel p{margin:0;max-width:66ch}
+.worm-stage{background:var(--surface);border:1px solid var(--sun-line);border-radius:12px;padding:34px 20px 30px;display:flex;justify-content:center}
+.reading{font-family:Georgia,"Times New Roman",serif;font-size:1.4rem;color:var(--fg);margin:0;text-align:center}
+.wordwrap{position:relative;display:inline-block;padding:0 3px}
+.lit{border-radius:4px;padding:0 3px;animation:lit 4.5s ease-in-out infinite alternate}
+@keyframes lit{0%{background:transparent;box-shadow:none}100%{background:color-mix(in srgb,var(--glow) 55%,transparent);box-shadow:0 0 16px color-mix(in srgb,var(--glow) 45%,transparent)}}
+.worm{position:absolute;left:0;bottom:-12px;display:flex;gap:2px;animation:crawl 4.5s ease-in-out infinite alternate}
+.worm i{width:8px;height:8px;border-radius:50%;background:var(--glow);box-shadow:0 0 0 1.5px #d9a800,0 0 8px var(--glow);animation:bob .5s ease-in-out infinite alternate}
+.worm i:nth-child(2){animation-delay:.1s}.worm i:nth-child(3){animation-delay:.2s}.worm i:nth-child(4){animation-delay:.3s}
+.worm i:nth-child(5){animation-delay:.4s;background:#fff4c2;width:10px;height:10px;margin-top:-1px}
+@keyframes crawl{from{transform:translateX(0)}to{transform:translateX(3.2em)}}
+@keyframes bob{from{transform:translateY(0)}to{transform:translateY(-4px)}}
+.life{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.life div{background:var(--surface);border:1px solid var(--sun-line);border-radius:10px;padding:14px 12px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.life svg{width:64px;height:40px}
+.life b{font-size:14px}
+.life span{font-size:12.5px;color:var(--muted);line-height:1.4}
+
+@media (prefers-reduced-motion:reduce){.w.learning,.lit,.worm,.worm i{animation:none}.lit{background:color-mix(in srgb,var(--glow) 55%,transparent)}}
+@media (max-width:640px){.hero{grid-template-columns:1fr}.life{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="glow"><stop offset="0" stop-color="#ffe46b"/><stop offset=".45" stop-color="#ffd23a" stop-opacity=".55"/><stop offset="1" stop-color="#ffd23a" stop-opacity="0"/></radialGradient>
+    <!-- LUCI v2: firefly whose glow trail is a text highlight bar -->
+    <symbol id="luci" viewBox="0 0 128 128">
+      <rect width="128" height="128" rx="28" fill="#fff3c4"/>
+      <circle cx="78" cy="86" r="42" fill="url(#glow)"/>
+      <rect x="22" y="94" width="84" height="14" rx="5" fill="#ffd23a"/>
+      <g transform="rotate(40 64 60)">
+        <ellipse cx="64" cy="78" rx="13" ry="17" fill="#ffe46b"/>
+        <ellipse cx="64" cy="56" rx="12" ry="15" fill="#2a3a4a"/>
+        <ellipse cx="48" cy="54" rx="9" ry="19" fill="#6fa8d6" fill-opacity=".8" transform="rotate(-22 48 54)"/>
+        <ellipse cx="80" cy="54" rx="9" ry="19" fill="#6fa8d6" fill-opacity=".8" transform="rotate(22 80 54)"/>
+        <circle cx="64" cy="37" r="10" fill="#2a3a4a"/>
+        <path d="M60 29 C56 19 50 15 44 14 M68 29 C72 19 78 15 84 14" fill="none" stroke="#6fa8d6" stroke-width="3.5" stroke-linecap="round"/>
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<main>
+  <header>
+    <span class="eyebrow">Round 2</span>
+    <h1>Luci, built out</h1>
+    <p class="lede">The name carries more than it seems to at first. Below: why it works, a glow system that maps to the product's real word states, a few alternates, and Luci's glowworm stage at the end.</p>
+  </header>
+
+  <section class="hero">
+    <div class="icons">
+      <figure><svg width="128" height="128"><use href="#luci"/></svg><figcaption>128</figcaption></figure>
+      <figure><svg width="48" height="48"><use href="#luci"/></svg><figcaption>48</figcaption></figure>
+      <figure><svg width="16" height="16"><use href="#luci"/></svg><figcaption>16</figcaption></figure>
+    </div>
+    <div class="txt">
+      <h2>Lucía <span class="say">· "Luci" for short</span></h2>
+      <p class="tag">Read it. Say it. Light it up.</p>
+      <ul>
+        <li><b>A firefly:</b> luciérnaga, the bug that glows on your page.</li>
+        <li><b>A real name:</b> Lucía is one of the most common girls' names in the Spanish-speaking world, so the tutor has a name, not a brand.</li>
+        <li><b>A verb:</b> <i>lucía</i> means "it shone." The word itself is past tense of glowing.</li>
+        <li><b>A reading saint:</b> Santa Lucía is the patron saint of eyes and sight. Fitting for an app that learns from what you read.</li>
+        <li><b>The root is light:</b> lux, luz. One-liner for judges: <i>"Luci sheds light on the words you're ready for."</i></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="states">
+    <span class="eyebrow">The clever part</span>
+    <h2>Glow brightness is the learning state</h2>
+    <p>Every swapped word on the page glows, and how bright it glows tells you how well you know it. This makes the evidence rule a visible feature instead of a hidden one.</p>
+    <div class="page">
+      I walked into the <span class="w seen">cocina</span> and found the old <span class="w learning">mesa</span> still covered in letters from my <span class="w known">abuela</span>.
+    </div>
+    <div class="legend">
+      <span><i style="background:color-mix(in srgb,var(--glow) 18%,transparent)"></i>Seen: a faint glow</span>
+      <span><i style="background:color-mix(in srgb,var(--glow) 38%,transparent)"></i>Learning: it flickers</span>
+      <span><i style="background:var(--glow)"></i>Known: a steady light</span>
+    </div>
+    <p class="callout">"Luci can't light it for you. You light it by saying it out loud."</p>
+    <p style="color:var(--muted);font-size:14px">This matches the spec exactly: hovering can make a word flicker (learning), but only a quiz pass or correct use in speech makes it glow steady (known).</p>
+  </section>
+
+  <section class="section-head">
+    <span class="eyebrow">The rest of the system</span>
+    <h2>Names for every screen</h2>
+  </section>
+  <section class="sys">
+    <div><h3>Your jar</h3><p><span class="es">el frasco</span>: the vocabulary page. Catching fireflies in a jar is a childhood memory everyone has. Each known word is a firefly in it.</p></div>
+    <div><h3>Sparks</h3><p><span class="es">chispas</span>: the words swapped on today's pages. "Luci left 8 sparks on this article."</p></div>
+    <div><h3>Night session</h3><p>The voice tutor. Read by day, and the fireflies come out at night for the conversation. Matches the pitch line word for word.</p></div>
+    <div><h3>Lights out</h3><p>The privacy pause. One click and Luci goes dark on this site. Never-list sites are "always dark."</p></div>
+  </section>
+
+  <section class="section-head">
+    <span class="eyebrow">Other directions</span>
+    <h2>If you want to keep looking</h2>
+  </section>
+  <section class="alts">
+    <div class="alt">
+      <h3>Foco</h3><span class="m">FOH-ko · lightbulb (Latin America)</span>
+      <p>In English it reads as "focus." In Mexico, <i>se me prendió el foco</i> means "the lightbulb went on," the moment you get it.</p>
+      <p class="why">Pairs with Luci: the firefly is the mascot, Foco the moment a word clicks.</p>
+    </div>
+    <div class="alt">
+      <h3>Chispa</h3><span class="m">CHEES-pa · spark</span>
+      <p><i>Tener chispa</i> means to be quick and witty. Your Spanish gets its spark.</p>
+      <p class="why">Strong as the name for swapped words, a little generic as the product name.</p>
+    </div>
+    <div class="alt">
+      <h3>Beelingual</h3><span class="m">a bee · English pun</span>
+      <p>The bee gathers words from every page you visit and turns them into honey, which is fluency. Plus "spelling bee."</p>
+      <p class="why">The pun lands instantly with English-speaking judges, but it's a pun many apps have tried.</p>
+    </div>
+    <div class="alt">
+      <h3>Tela</h3><span class="m">TEH-la · web, and fabric</span>
+      <p>A small spider weaving words into the World Wide Web. <i>Tela de araña</i> is a spider web.</p>
+      <p class="why">Very clever about the browser, but spiders aren't cute to everyone.</p>
+    </div>
+    <div class="alt">
+      <h3>Oruga</h3><span class="m">oh-ROO-ga · caterpillar</span>
+      <p>Each word starts as a caterpillar and becomes a <i>mariposa</i> once you say it. The progress meter is a metamorphosis.</p>
+      <p class="why">Good mechanic, weaker name. The glowworm below brings this idea into Luci.</p>
+    </div>
+    <div class="alt">
+      <h3>Debug</h3><span class="m">a bug that catches bugs</span>
+      <p>The bug in your browser finds the bugs in your Spanish. Programmers at a hackathon will smile.</p>
+      <p class="why">Funny for this room, but it says "coding," not "language."</p>
+    </div>
+  </section>
+
+  <!-- GLOWWORM -->
+  <section class="worm-panel">
+    <span class="eyebrow">Luci's first stage</span>
+    <h2>The glowworm</h2>
+    <p class="tag">Before Luci flies, she crawls.</p>
+    <p>Firefly larvae are called <b>glowworms</b>, and they look like small glowing caterpillars. So Luci starts life as a glowworm and grows into a firefly. That puts the Oruga idea inside Luci without changing the name.</p>
+    <div class="worm-stage">
+      <p class="reading">the old <span class="wordwrap"><span class="lit">mesa</span><span class="worm"><i></i><i></i><i></i><i></i><i></i></span></span> was still there</p>
+    </div>
+    <p><b>The glowworm is the underline.</b> It crawls under a swapped word, and the word lights up behind it. The extension already needs some kind of underline for swapped words, so this mascot costs almost nothing to build.</p>
+    <div class="life">
+      <div>
+        <svg viewBox="0 0 64 40"><g fill="#ffd23a"><circle cx="14" cy="24" r="5"/><circle cx="24" cy="22" r="5"/><circle cx="34" cy="24" r="5"/><circle cx="44" cy="22" r="5"/></g><circle cx="53" cy="22" r="6" fill="#fff4c2"/></svg>
+        <b>Glowworm</b><span>Seen and learning words. Luci crawls under them.</span>
+      </div>
+      <div>
+        <svg viewBox="0 0 64 40"><path d="M32 6 C44 12 44 30 32 36 C20 30 20 12 32 6Z" fill="#ffd23a" fill-opacity=".55"/><path d="M32 6 C44 12 44 30 32 36" fill="none" stroke="#ffd23a" stroke-width="2"/></svg>
+        <b>Glowing cocoon</b><span>Up for review. The tutor will ask you to use it.</span>
+      </div>
+      <div>
+        <svg viewBox="0 0 128 128"><use href="#luci"/></svg>
+        <b>Firefly</b><span>Known. You said it out loud, and it flies into your jar.</span>
+      </div>
+    </div>
+  </section>
+</main>
+</body>
+</html>
