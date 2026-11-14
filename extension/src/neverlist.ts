@@ -18,6 +18,7 @@ const BLOCKED_DOMAINS: ReadonlyArray<readonly [string, string]> = [
   ["proton.me", "email"],
   ["protonmail.com", "email"],
   ["zoho.com", "email"],
+  ["icloud.com", "email"],
   // chat / messaging
   ["slack.com", "chat"],
   ["discord.com", "chat"],
@@ -43,6 +44,7 @@ const BLOCKED_DOMAINS: ReadonlyArray<readonly [string, string]> = [
   ["robinhood.com", "banking"],
   ["fidelity.com", "banking"],
   ["schwab.com", "banking"],
+  ["vanguard.com", "banking"],
   // health / insurance
   ["mychart.com", "health"],
   ["cigna.com", "health"],
@@ -56,6 +58,8 @@ const BLOCKED_DOMAINS: ReadonlyArray<readonly [string, string]> = [
   ["docs.google.com", "work tool"],
   ["drive.google.com", "work tool"],
   ["accounts.google.com", "login"],
+  ["classroom.google.com", "school tool"],
+  ["dropbox.com", "work tool"],
   ["github.com", "work tool"],
   ["gitlab.com", "work tool"],
   ["overleaf.com", "work tool"],
