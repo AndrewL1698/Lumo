@@ -57,7 +57,7 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
   return (
     <div>
       <p className="mb-6 rounded-xl bg-indigo-50 p-4 text-slate-700">
-        Parrot stores the words you look up and practice, a short log of those actions, and the title and website of articles you read.
+        Parrot stores the words you look up and practice, a short log of those actions, the title and website of articles you read, and your tutor conversations (what you said, plus the corrections).
         It never stores full page text or what you type on other sites.
       </p>
 
@@ -129,7 +129,7 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
           </button>
         ) : (
           <div className="flex flex-wrap items-center gap-3">
-            <p className="font-medium text-red-900">This permanently removes all your words, activity and articles. Continue?</p>
+            <p className="font-medium text-red-900">This deletes every word Parrot has tracked, your activity, the articles you've read, and your tutor sessions and transcripts. Your settings are kept. This can't be undone. Continue?</p>
             <button
               type="button"
               disabled={busy}

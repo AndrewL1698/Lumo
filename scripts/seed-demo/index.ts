@@ -3,6 +3,7 @@
 //   cd scripts && npm run seed-demo            (needs web/.env.local + seeded `words`)
 //   cd scripts && npm run seed-demo -- --dry   (print the plan, no DB writes)
 import "../build-wordlist/lib.ts"; // loads web/.env.local
+import { settingsFixture } from "@parrot/shared";
 import { applyEvent, isDue } from "../../web/lib/learner/applyEvent.ts";
 import { emptyUserWord, type LearnerEventType, type UserWord } from "../../web/lib/learner/types.ts";
 
@@ -93,3 +94,11 @@ await rest("user_words", {
   ),
 });
 console.log(`seed-demo: wrote ${rows.length} user_words for ${userId}`);
+
+// Settings row for the demo user (brief 0.1), reset to the fixture values on every run.
+await rest("settings?on_conflict=user_id", {
+  method: "POST",
+  headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+  body: JSON.stringify({ user_id: userId, data: settingsFixture }),
+});
+console.log(`seed-demo: wrote settings for ${userId}`);

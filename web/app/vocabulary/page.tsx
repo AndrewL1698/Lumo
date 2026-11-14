@@ -1,7 +1,7 @@
 "use client";
 import { VocabResponse } from "@parrot/shared";
 import { VocabLists } from "@/components/vocab/VocabLists";
-import { EmptyState, ErrorState, PageHeader } from "@/components/ui/PageHeader";
+import { EmptyState, ErrorState, LoadingState, PageHeader } from "@/components/ui/PageHeader";
 import { useFetch } from "@/components/useFetch";
 
 export default function Page() {
@@ -15,7 +15,7 @@ export default function Page() {
           Refresh
         </button>
       </PageHeader>
-      {loading && <p className="text-slate-500">Loading…</p>}
+      {loading && <LoadingState />}
       {error && !data && <ErrorState message={error} onRetry={() => void reload()} />}
       {data && total === 0 && data.streakDays === 0 && (
         <EmptyState>No words yet. Read a page with Parrot switched on and hover a Spanish word to start.</EmptyState>

@@ -28,3 +28,14 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
     </div>
   );
 }
+
+// Grey pulsing blocks shown while a page waits for its data.
+export function LoadingState({ rows = 3 }: { rows?: number }) {
+  return (
+    <div role="status" aria-label="Loading" className="space-y-3">
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className="h-16 animate-pulse rounded-xl bg-slate-200" />
+      ))}
+    </div>
+  );
+}

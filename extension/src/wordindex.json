@@ -784,8 +784,7 @@
     "anuncio"
   ],
   "annoy": [
-    "molestar",
-    "joder"
+    "molestar"
   ],
   "annoyance": [
     "molestia"
@@ -797,18 +796,15 @@
     "molesto",
     "enojado",
     "enfadado",
-    "molestar",
-    "joder"
+    "molestar"
   ],
   "annoying": [
     "molesto",
     "pesado",
-    "molestar",
-    "joder"
+    "molestar"
   ],
   "annoys": [
-    "molestar",
-    "joder"
+    "molestar"
   ],
   "answer": [
     "respuesta",
@@ -978,6 +974,9 @@
   ],
   "archives": [
     "archivo"
+  ],
+  "ardent": [
+    "ardiente"
   ],
   "are": [
     "ser",
@@ -1175,9 +1174,6 @@
   "aspects": [
     "aspecto"
   ],
-  "ass": [
-    "culo"
-  ],
   "assassinate": [
     "asesinar"
   ],
@@ -1201,9 +1197,6 @@
   ],
   "assaults": [
     "asalto"
-  ],
-  "asses": [
-    "culo"
   ],
   "asset": [
     "activo"
@@ -1618,6 +1611,12 @@
   "ballerinas": [
     "bailarina"
   ],
+  "ballet": [
+    "ballet"
+  ],
+  "ballets": [
+    "ballet"
+  ],
   "balloon": [
     "globo"
   ],
@@ -1703,14 +1702,6 @@
   ],
   "basketball": [
     "baloncesto"
-  ],
-  "bastard": [
-    "bastardo",
-    "cabrón"
-  ],
-  "bastards": [
-    "bastardo",
-    "cabrón"
   ],
   "bath": [
     "baño"
@@ -2144,14 +2135,6 @@
   "bit": [
     "pedazo"
   ],
-  "bitch": [
-    "puta",
-    "perra"
-  ],
-  "bitches": [
-    "puta",
-    "perra"
-  ],
   "bits": [
     "pedazo"
   ],
@@ -2365,22 +2348,18 @@
   ],
   "bother": [
     "molestar",
-    "molestia",
-    "joder"
+    "molestia"
   ],
   "bothered": [
     "molesto",
-    "molestar",
-    "joder"
+    "molestar"
   ],
   "bothering": [
-    "molestar",
-    "joder"
+    "molestar"
   ],
   "bothers": [
     "molestar",
-    "molestia",
-    "joder"
+    "molestia"
   ],
   "bottle": [
     "botella"
@@ -2692,7 +2671,8 @@
   ],
   "burning": [
     "quemar",
-    "arder"
+    "arder",
+    "ardiente"
   ],
   "burns": [
     "quemar",
@@ -2741,7 +2721,6 @@
     "ocupar"
   ],
   "butt": [
-    "culo",
     "trasero"
   ],
   "butter": [
@@ -2750,9 +2729,6 @@
   "butters": [
     "mantequilla"
   ],
-  "buttocks": [
-    "culo"
-  ],
   "button": [
     "botón"
   ],
@@ -2760,7 +2736,6 @@
     "botón"
   ],
   "butts": [
-    "culo",
     "trasero"
   ],
   "buy": [
@@ -2845,7 +2820,8 @@
   "calm": [
     "tranquilo",
     "calma",
-    "tranquilidad"
+    "tranquilidad",
+    "sereno"
   ],
   "calms": [
     "calma"
@@ -5003,7 +4979,8 @@
     "cubierto",
     "cubrir",
     "tapa",
-    "cobertura"
+    "cobertura",
+    "portada"
   ],
   "coverage": [
     "cobertura"
@@ -5021,7 +4998,8 @@
     "cubierto",
     "cubrir",
     "tapa",
-    "cobertura"
+    "cobertura",
+    "portada"
   ],
   "cow": [
     "vaca"
@@ -5057,11 +5035,7 @@
     "galleta"
   ],
   "crap": [
-    "mierda",
     "porquería"
-  ],
-  "craps": [
-    "mierda"
   ],
   "crash": [
     "choque"
@@ -5119,12 +5093,6 @@
   "credits": [
     "crédito"
   ],
-  "cretin": [
-    "cretino"
-  ],
-  "cretins": [
-    "cretino"
-  ],
   "crew": [
     "tripulación"
   ],
@@ -5147,10 +5115,12 @@
     "delito"
   ],
   "criminal": [
-    "criminal"
+    "criminal",
+    "delincuente"
   ],
   "criminals": [
-    "criminal"
+    "criminal",
+    "delincuente"
   ],
   "crises": [
     "crisis"
@@ -5300,9 +5270,6 @@
   "curse": [
     "maldición"
   ],
-  "cursed": [
-    "maldito"
-  ],
   "curses": [
     "maldición"
   ],
@@ -5372,13 +5339,7 @@
     "daño"
   ],
   "damn": [
-    "maldito",
-    "maldición",
-    "jodidamente"
-  ],
-  "damned": [
-    "maldito",
-    "jodido"
+    "maldición"
   ],
   "damns": [
     "maldición"
@@ -5534,6 +5495,12 @@
   ],
   "debts": [
     "deuda"
+  ],
+  "decade": [
+    "década"
+  ],
+  "decades": [
+    "década"
   ],
   "deceive": [
     "engañar"
@@ -5721,6 +5688,12 @@
   "delights": [
     "encantar",
     "encanto"
+  ],
+  "delinquent": [
+    "delincuente"
+  ],
+  "delinquents": [
+    "delincuente"
   ],
   "deliver": [
     "entregar"
@@ -5993,6 +5966,18 @@
   "devils": [
     "demonio",
     "diablo"
+  ],
+  "dial": [
+    "marcar"
+  ],
+  "dialed": [
+    "marcar"
+  ],
+  "dialing": [
+    "marcar"
+  ],
+  "dials": [
+    "marcar"
   ],
   "diamond": [
     "diamante"
@@ -6603,7 +6588,6 @@
     "duque"
   ],
   "dumb": [
-    "estúpido",
     "tonto",
     "bobo"
   ],
@@ -6804,6 +6788,9 @@
   ],
   "electricity": [
     "electricidad"
+  ],
+  "electronic": [
+    "electrónico"
   ],
   "elects": [
     "elegir"
@@ -7134,11 +7121,17 @@
   "entry": [
     "ingreso"
   ],
+  "envies": [
+    "envidia"
+  ],
   "environment": [
     "ambiente"
   ],
   "environments": [
     "ambiente"
+  ],
+  "envy": [
+    "envidia"
   ],
   "episode": [
     "episodio",
@@ -7273,6 +7266,9 @@
   ],
   "events": [
     "evento"
+  ],
+  "eventually": [
+    "eventualmente"
   ],
   "evidence": [
     "prueba",
@@ -7425,13 +7421,26 @@
     "esperar"
   ],
   "expected": [
-    "esperar"
+    "esperar",
+    "previsto"
   ],
   "expecting": [
     "esperar"
   ],
   "expects": [
     "esperar"
+  ],
+  "expel": [
+    "expulsar"
+  ],
+  "expelled": [
+    "expulsar"
+  ],
+  "expelling": [
+    "expulsar"
+  ],
+  "expels": [
+    "expulsar"
   ],
   "expense": [
     "gasto",
@@ -7642,7 +7651,8 @@
     "fallar"
   ],
   "failed": [
-    "fallar"
+    "fallar",
+    "fracasado"
   ],
   "failing": [
     "fallar"
@@ -9398,7 +9408,11 @@
     "crecer"
   ],
   "growth": [
-    "desarrollo"
+    "desarrollo",
+    "crecimiento"
+  ],
+  "growths": [
+    "crecimiento"
   ],
   "guarantee": [
     "garantía",
@@ -10369,19 +10383,6 @@
   "identity": [
     "identidad"
   ],
-  "idiot": [
-    "idiota",
-    "imbécil",
-    "gilipollas",
-    "cretino",
-    "pendejo"
-  ],
-  "idiots": [
-    "idiota",
-    "gilipollas",
-    "cretino",
-    "pendejo"
-  ],
   "idol": [
     "ídolo"
   ],
@@ -10396,9 +10397,6 @@
   ],
   "illegal": [
     "ilegal"
-  ],
-  "illegitimate": [
-    "bastardo"
   ],
   "illness": [
     "enfermedad"
@@ -11070,8 +11068,12 @@
   "jealous": [
     "celoso"
   ],
+  "jealousies": [
+    "envidia"
+  ],
   "jealousy": [
-    "celo"
+    "celo",
+    "envidia"
   ],
   "jean": [
     "jean"
@@ -11081,16 +11083,10 @@
     "vaquero"
   ],
   "jerk": [
-    "cabrón",
-    "desgraciado",
-    "gilipollas",
-    "pendejo"
+    "desgraciado"
   ],
   "jerks": [
-    "cabrón",
-    "desgraciado",
-    "gilipollas",
-    "pendejo"
+    "desgraciado"
   ],
   "jersey": [
     "jersey"
@@ -12118,6 +12114,12 @@
   "literally": [
     "literalmente"
   ],
+  "literature": [
+    "literatura"
+  ],
+  "literatures": [
+    "literatura"
+  ],
   "little": [
     "poco",
     "pequeño"
@@ -12484,6 +12486,9 @@
   "maintains": [
     "mantener"
   ],
+  "maintenance": [
+    "mantenimiento"
+  ],
   "majesties": [
     "majestad"
   ],
@@ -12571,8 +12576,7 @@
   "manners": [
     "manera",
     "modo",
-    "educación",
-    "modal"
+    "educación"
   ],
   "mansion": [
     "mansión"
@@ -12627,7 +12631,11 @@
     "marina"
   ],
   "mark": [
-    "marca"
+    "marca",
+    "marcar"
+  ],
+  "marked": [
+    "marcar"
   ],
   "market": [
     "mercado",
@@ -12637,8 +12645,12 @@
     "mercado",
     "feria"
   ],
+  "marking": [
+    "marcar"
+  ],
   "marks": [
-    "marca"
+    "marca",
+    "marcar"
   ],
   "marriage": [
     "matrimonio"
@@ -14196,6 +14208,12 @@
   "oranges": [
     "naranja"
   ],
+  "orbit": [
+    "órbita"
+  ],
+  "orbits": [
+    "órbita"
+  ],
   "order": [
     "orden",
     "pedir",
@@ -14729,12 +14747,6 @@
   "pending": [
     "pendiente"
   ],
-  "penis": [
-    "pene"
-  ],
-  "penises": [
-    "pene"
-  ],
   "pennies": [
     "centavo"
   ],
@@ -14968,6 +14980,12 @@
   "photograph": [
     "fotografía"
   ],
+  "photographer": [
+    "fotógrafo"
+  ],
+  "photographers": [
+    "fotógrafo"
+  ],
   "photographs": [
     "fotografía"
   ],
@@ -15177,7 +15195,8 @@
     "planeta"
   ],
   "planned": [
-    "planear"
+    "planear",
+    "previsto"
   ],
   "planner": [
     "agenda"
@@ -15224,6 +15243,12 @@
   ],
   "platforms": [
     "plataforma"
+  ],
+  "platter": [
+    "bandeja"
+  ],
+  "platters": [
+    "bandeja"
   ],
   "play": [
     "juego",
@@ -16043,6 +16068,9 @@
   "protections": [
     "protección"
   ],
+  "protective": [
+    "protector"
+  ],
   "protects": [
     "proteger"
   ],
@@ -16498,8 +16526,7 @@
   ],
   "really": [
     "realmente",
-    "verdaderamente",
-    "jodidamente"
+    "verdaderamente"
   ],
   "realm": [
     "reino"
@@ -18115,19 +18142,6 @@
   "screens": [
     "pantalla"
   ],
-  "screw": [
-    "joder"
-  ],
-  "screwed": [
-    "jodido",
-    "joder"
-  ],
-  "screwing": [
-    "joder"
-  ],
-  "screws": [
-    "joder"
-  ],
   "script": [
     "guión"
   ],
@@ -18484,9 +18498,6 @@
   "sexual": [
     "sexual"
   ],
-  "sexy": [
-    "sexy"
-  ],
   "shade": [
     "sombra"
   ],
@@ -18619,12 +18630,6 @@
   "shirts": [
     "camisa",
     "camiseta"
-  ],
-  "shit": [
-    "mierda"
-  ],
-  "shits": [
-    "mierda"
   ],
   "shoe": [
     "zapato"
@@ -19552,11 +19557,19 @@
   ],
   "stamp": [
     "sello",
-    "timbre"
+    "timbre",
+    "marcar"
+  ],
+  "stamped": [
+    "marcar"
+  ],
+  "stamping": [
+    "marcar"
   ],
   "stamps": [
     "sello",
-    "timbre"
+    "timbre",
+    "marcar"
   ],
   "stand": [
     "soportar"
@@ -19976,9 +19989,7 @@
     "apestar"
   ],
   "stupid": [
-    "estúpido",
-    "tonto",
-    "imbécil"
+    "tonto"
   ],
   "stupidities": [
     "estupidez"
@@ -21449,6 +21460,12 @@
     "viaje",
     "viajar"
   ],
+  "tray": [
+    "bandeja"
+  ],
+  "trays": [
+    "bandeja"
+  ],
   "treason": [
     "traición"
   ],
@@ -21858,6 +21875,9 @@
   "unpleasant": [
     "desagradable"
   ],
+  "unsuccessful": [
+    "fracasado"
+  ],
   "unusual": [
     "inusual"
   ],
@@ -21942,12 +21962,6 @@
   ],
   "vacations": [
     "vacación"
-  ],
-  "vagina": [
-    "vagina"
-  ],
-  "vaginas": [
-    "vagina"
   ],
   "vagrant": [
     "vagabundo"
@@ -22604,12 +22618,6 @@
   ],
   "whole": [
     "entero"
-  ],
-  "whore": [
-    "puta"
-  ],
-  "whores": [
-    "puta"
   ],
   "wicked": [
     "malvado"
