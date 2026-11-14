@@ -1,0 +1,182 @@
+[
+  {
+    "id": "e01",
+    "text": "El periodista explicó que la problema del tráfico no tiene solución fácil.",
+    "error_span": "la problema",
+    "corrected_span": "el problema",
+    "error_type": "agreement",
+    "grammar_type": "gender_agreement",
+    "is_control": false
+  },
+  {
+    "id": "e02",
+    "text": "Según el artículo, la crisis económica es muy complicado.",
+    "error_span": "muy complicado",
+    "corrected_span": "muy complicada",
+    "error_type": "agreement",
+    "grammar_type": "gender_agreement",
+    "is_control": false
+  },
+  {
+    "id": "e03",
+    "text": "Los noticias de esta semana fueron bastante tristes.",
+    "error_span": "Los noticias",
+    "corrected_span": "Las noticias",
+    "error_type": "agreement",
+    "grammar_type": "gender_agreement",
+    "is_control": false
+  },
+  {
+    "id": "e04",
+    "text": "La estatua nueva está de bronce, según el artículo que leí.",
+    "error_span": "está de bronce",
+    "corrected_span": "es de bronce",
+    "error_type": "word_choice",
+    "grammar_type": "ser_vs_estar",
+    "is_control": false
+  },
+  {
+    "id": "e05",
+    "text": "Mi jefe es en una reunión y no puede atender llamadas.",
+    "error_span": "es en una reunión",
+    "corrected_span": "está en una reunión",
+    "error_type": "word_choice",
+    "grammar_type": "ser_vs_estar",
+    "is_control": false
+  },
+  {
+    "id": "e06",
+    "text": "Los estudiantes están nerviosos porque el examen está mañana.",
+    "error_span": "está mañana",
+    "corrected_span": "es mañana",
+    "error_type": "word_choice",
+    "grammar_type": "ser_vs_estar",
+    "is_control": false
+  },
+  {
+    "id": "e07",
+    "text": "El gerente dice que ustedes necesita enviar el reporte antes del viernes.",
+    "error_span": "ustedes necesita",
+    "corrected_span": "ustedes necesitan",
+    "error_type": "conjugation",
+    "grammar_type": "verb_conjugation",
+    "is_control": false
+  },
+  {
+    "id": "e08",
+    "text": "Ellos piensa viajar a Perú para visitar Machu Picchu en el verano.",
+    "error_span": "Ellos piensa",
+    "corrected_span": "Ellos piensan",
+    "error_type": "conjugation",
+    "grammar_type": "verb_conjugation",
+    "is_control": false
+  },
+  {
+    "id": "e09",
+    "text": "Cuando empecé la escuela primaria, tuve seis años.",
+    "error_span": "tuve seis años",
+    "corrected_span": "tenía seis años",
+    "error_type": "conjugation",
+    "grammar_type": "preterite_vs_imperfect",
+    "is_control": false
+  },
+  {
+    "id": "e10",
+    "text": "El viernes pasado nosotros veíamos esa película dos veces seguidas en el cine.",
+    "error_span": "nosotros veíamos",
+    "corrected_span": "nosotros vimos",
+    "error_type": "conjugation",
+    "grammar_type": "preterite_vs_imperfect",
+    "is_control": false
+  },
+  {
+    "id": "e11",
+    "text": "Fueron las once de la noche cuando por fin llegamos a casa.",
+    "error_span": "Fueron las once",
+    "corrected_span": "Eran las once",
+    "error_type": "conjugation",
+    "grammar_type": "preterite_vs_imperfect",
+    "is_control": false
+  },
+  {
+    "id": "e12",
+    "text": "Fuimos a playa el fin de semana pasado con toda la familia.",
+    "error_span": "a playa",
+    "corrected_span": "a la playa",
+    "error_type": "missing_word",
+    "grammar_type": "missing_or_wrong_article",
+    "is_control": false
+  },
+  {
+    "id": "e13",
+    "text": "El artículo mencionó que agua es esencial para la salud de los niños.",
+    "error_span": "que agua",
+    "corrected_span": "que el agua",
+    "error_type": "missing_word",
+    "grammar_type": "missing_or_wrong_article",
+    "is_control": false
+  },
+  {
+    "id": "e14",
+    "text": "Me gusta los deportes que mencionan en las noticias todos los días.",
+    "error_span": "Me gusta los",
+    "corrected_span": "Me gustan los",
+    "error_type": "agreement",
+    "grammar_type": "gustar_construction",
+    "is_control": false
+  },
+  {
+    "id": "e15",
+    "text": "A ella le gustan el libro que leyó para la clase de historia.",
+    "error_span": "le gustan el",
+    "corrected_span": "le gusta el",
+    "error_type": "agreement",
+    "grammar_type": "gustar_construction",
+    "is_control": false
+  },
+  {
+    "id": "c01",
+    "text": "El alcalde anunció un nuevo plan para mejorar el transporte público.",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null,
+    "grammar_type": null,
+    "is_control": true
+  },
+  {
+    "id": "c02",
+    "text": "Muchos estudiantes universitarios buscan empleo antes de graduarse este año.",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null,
+    "grammar_type": null,
+    "is_control": true
+  },
+  {
+    "id": "c03",
+    "text": "La empresa decidió abrir una nueva oficina en Bogotá el próximo mes.",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null,
+    "grammar_type": null,
+    "is_control": true
+  },
+  {
+    "id": "c04",
+    "text": "Los científicos descubrieron una especie nueva de rana en la selva amazónica.",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null,
+    "grammar_type": null,
+    "is_control": true
+  },
+  {
+    "id": "c05",
+    "text": "Ustedes deben revisar el informe antes de la reunión de mañana.",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null,
+    "grammar_type": null,
+    "is_control": true
+  }
+]
