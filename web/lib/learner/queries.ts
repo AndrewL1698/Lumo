@@ -80,8 +80,8 @@ export type TutorContextData = {
   topErrors: string[];
 };
 
-/** topErrors of the most recent tutor session that has a valid recap, formatted for the tutor prompt. */
-export async function latestTopErrors(userId: string): Promise<string[]> {
+/** The most recent tutor session recap that parses, or null. */
+export async function latestRecap(userId: string): Promise<Recap | null> {
   const { data, error } = await getDb()
     .from("tutor_sessions")
     .select("recap")
@@ -92,8 +92,26 @@ export async function latestTopErrors(userId: string): Promise<string[]> {
     .limit(1);
   if (error) throw error;
   const parsed = Recap.safeParse(data[0]?.recap);
-  if (!parsed.success) return [];
-  return parsed.data.topErrors.map((e) => `${e.type}: "${e.span}" → "${e.correction}" (${e.count}×)`);
+  return parsed.success ? parsed.data : null;
+}
+
+/** topErrors of the latest recap, formatted for the tutor prompt. */
+export async function latestTopErrors(userId: string): Promise<string[]> {
+  const recap = await latestRecap(userId);
+  return (recap?.topErrors ?? []).map((e) => `${e.type}: "${e.span}" → "${e.correction}" (${e.count}×)`);
+}
+
+/**
+ * Words the learner recently got wrong in speech, for `onWeakList` (brief 3.1): every word in the latest recap's
+ * error spans and corrections, lowercased. TODO(karthik): also read utterances.correction once Andrew writes it.
+ */
+export async function weakWords(userId: string): Promise<Set<string>> {
+  const recap = await latestRecap(userId);
+  const words = new Set<string>();
+  for (const e of recap?.topErrors ?? []) {
+    for (const w of `${e.span} ${e.correction}`.toLowerCase().split(/[^\p{L}]+/u)) if (w) words.add(w);
+  }
+  return words;
 }
 
 /** Everything Andrew's /api/tutor/context needs from the DB, in one call. Throws on DB error. */

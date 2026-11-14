@@ -20,13 +20,16 @@ export function toCandidate(
   opts: { wordBand: number; userBand: number; weakList: ReadonlySet<string>; now: Date },
 ): Candidate {
   const { wordBand, userBand, weakList, now } = opts;
+  // specs §4: words in bands below the user's level count as known_assumed, unless there's real evidence
+  // (any hover/review moves them past new/seen). Computed on read only, never written.
+  const assumed = (word.state === "new" || word.state === "seen") && wordBand < userBand;
   return {
     lemma: word.lemma,
-    state: word.state,
+    state: assumed ? "known_assumed" : word.state,
     isDue: isDue(word, now),
     hoveredRecently: word.lastHoverAt !== null && now.getTime() - new Date(word.lastHoverAt).getTime() <= WEEK_MS,
     onWeakList: weakList.has(word.lemma),
-    isNewInBand: (word.state === "new" || word.state === "seen") && wordBand === userBand,
+    isNewInBand: word.state === "new" && wordBand === userBand, // brief 3.1: state `new` only
     isMastered: word.state === "mastered",
   };
 }
