@@ -1,7 +1,7 @@
 "use client";
 import { useEffect } from "react";
 
-// "Word is now known" toast. Pipeline passes the lemma from target_words_used[].correct.
+// "Word is now known" toast. Pass a lemma from newlyKnown(wordUpdates) (lib/tutor/wordUpdates.ts).
 export function KnownToast({
   lemma,
   onDone,

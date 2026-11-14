@@ -1,7 +1,10 @@
-// HACK: local mirror of the /shared contract (specs §7.5). Replace with imports from /shared
-// once Andrew's scaffold lands. Field names follow specs (snake_case); adjust if /shared differs.
+// HACK: local mirror of Andrew's contract in docs/voice-plan.md §4 (shared/src/tutor.ts).
+// TODO(demo): replace with imports from /shared once the scaffold lands.
 
-export type ErrorType =
+export type WordState = "new" | "seen" | "learning" | "known" | "mastered" | "known_assumed";
+export type Level = "beginner" | "intermediate" | "upper_intermediate";
+
+export type SpokenErrorType =
   | "conjugation"
   | "agreement"
   | "word_choice"
@@ -10,49 +13,89 @@ export type ErrorType =
   | "extra_word";
 
 export interface CorrectionError {
-  span: string; // verbatim substring of the raw transcript
-  type: ErrorType;
+  span: string; // exact substring of rawText
+  type: SpokenErrorType;
   correction: string;
   explanation_en: string;
-  severity: number;
-  confidence: number;
-  lemma?: string;
+  severity: 1 | 2 | 3;
+  confidence: number; // 0..1
+  lemma: string | null;
+}
+
+export interface TargetWordUse {
+  lemma: string;
+  correct: boolean;
+  form?: string;
 }
 
 export interface CorrectionResult {
   utterance_id: string;
   errors: CorrectionError[];
-  target_words_used: { lemma: string; correct: boolean }[];
+  target_words_used: TargetWordUse[];
   overall_ok: boolean;
 }
 
-// ---- Tutor UI <-> pipeline seam (owned by Shravan; Andrew's real hook supplies the same shape) ----
-
-export type TutorPhase = "idle" | "listening" | "checking" | "speaking";
-
-export interface TutorUtterance {
-  id: string;
-  raw_text: string; // verbatim STT; this is what we render and what is graded
-  correction?: CorrectionResult; // undefined while "checking"
+export interface WordUpdate {
+  lemma: string;
+  from: WordState;
+  to: WordState;
 }
 
-export interface TutorSessionState {
-  phase: TutorPhase;
-  utterances: TutorUtterance[];
-  tutorCaption: string; // streamed tutor text for the current/last turn
-  newlyKnownLemmas: string[]; // drives the "now known" toast
-  recap?: TutorRecap; // set after onEnd
+// POST /api/tutor/correct response (a wrapper, not a bare CorrectionResult)
+export interface CorrectResponse {
+  correction: CorrectionResult;
+  wordUpdates: WordUpdate[];
+  serverMs: number;
 }
 
-export interface TutorRecap {
-  // HACK: no shared type yet (/api/tutor/end); mirrors specs §7.8
-  topErrors: { type: ErrorType; count: number; example?: string }[];
+export interface TargetWord {
+  lemma: string;
+  article?: string;
+  english: string;
+  source: "hovered" | "due";
+}
+
+export interface TutorContext {
+  hoveredWords: { lemma: string; sentence?: string }[];
+  dueWords: string[];
+  articleTitles: string[];
+  level: Level;
+  topErrors: string[];
+  sessionId: string;
+  targetWords: TargetWord[]; // 3–5
+}
+
+export interface Recap {
+  topErrors: { type: SpokenErrorType; span: string; correction: string; explanation_en: string; count: number }[]; // ≤3
   wordsNowKnown: string[];
-  wordsToReview: string[];
+  reviewTomorrow: string[];
+  summary_en: string;
 }
 
-export interface TutorSessionActions {
-  onPressStart: () => void; // push-to-talk down
-  onPressEnd: () => void; // push-to-talk up -> commits utterance
-  onEnd: () => void; // end session -> recap
+// ---- useTutorSession seam (Andrew's hook; voice-plan §8 hand-off) ----
+// Andrew listed only the member names: { status, partial, turns, targetWords, start(), pressTalk(),
+// releaseTalk(), sendText(), end(), recap }. The member TYPES below are my guesses.
+// TODO(demo): confirm status values and Turn shape with Andrew.
+
+export type TutorStatus = "idle" | "listening" | "checking" | "speaking";
+
+export interface TutorTurn {
+  id: string; // utterance id
+  rawText: string; // verbatim STT; rendered and graded
+  correction?: CorrectionResult; // undefined while "checking"
+  wordUpdates?: WordUpdate[];
+  tutorText?: string; // streamed Spanish reply for this turn
+}
+
+export interface TutorSession {
+  status: TutorStatus;
+  partial: string; // live partial transcript while the button is held
+  turns: TutorTurn[];
+  targetWords: TargetWord[];
+  recap: Recap | null;
+  start: () => void | Promise<void>;
+  pressTalk: () => void;
+  releaseTalk: () => void;
+  sendText: (text: string) => void;
+  end: () => void | Promise<void>;
 }

@@ -1,13 +1,11 @@
 "use client";
-import type { SettingsMock } from "../../lib/mocks/types";
-
-type Level = SettingsMock["level"];
+import type { Level } from "../../lib/tutor/types";
 
 // Descriptions from specs §4.1.
 export const LEVELS: { value: Level; title: string; blurb: string }[] = [
   { value: "beginner", title: "Beginner", blurb: "I know some basic words and phrases." },
   { value: "intermediate", title: "Intermediate", blurb: "I can follow simple articles with help." },
-  { value: "upper-intermediate", title: "Upper-intermediate", blurb: "I can read most news but miss some words." },
+  { value: "upper_intermediate", title: "Upper-intermediate", blurb: "I can read most news but miss some words." },
 ];
 
 export function LevelPicker({ value, onChange }: { value: Level; onChange: (l: Level) => void }) {

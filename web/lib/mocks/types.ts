@@ -1,8 +1,6 @@
 // HACK: local mirrors of response shapes that have no /shared schema yet (see docs/plan-shravan.md §2 gaps).
 // TODO(demo): replace with imports from /shared once Andrew/Karthik define them.
-import type { TutorRecap } from "../tutor/types";
-
-export type WordState = "new" | "seen" | "learning" | "known" | "mastered" | "known_assumed";
+import type { Level, WordState } from "../tutor/types";
 
 export interface VocabWord {
   lemma: string;
@@ -33,16 +31,8 @@ export interface DataResponse {
   articles: DataItem[];
 }
 
-export interface TutorContextMock {
-  hoveredWords: { lemma: string; sentence: string }[];
-  dueWords: string[];
-  articleTitles: string[];
-  level: "beginner" | "intermediate" | "upper-intermediate";
-  topErrors: string[];
-}
-
 export interface SettingsMock {
-  level: "beginner" | "intermediate" | "upper-intermediate";
+  level: Level;
   intensity: "off" | "light" | "normal" | "immersion";
   perPageCap: number;
   allowlist: string[];
@@ -50,4 +40,4 @@ export interface SettingsMock {
   useReadingInLessons: boolean;
 }
 
-export type { TutorRecap };
+export type { Level, WordState };
