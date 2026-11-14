@@ -24,6 +24,21 @@ const FALLBACK_TOKEN = "demo-extension-token";
 const FLUSH_INTERVAL_MS = 5000;
 const FLUSH_AT_QUEUED = 20;
 
+/**
+ * Rare, high-value events that must not sit in the queue. MV3 parks an idle service worker
+ * within seconds, and a pending setTimeout dies with it — which is why `reading` (sent while
+ * the worker is busy with page load) was arriving and `hover` (sent later, in a quiet moment)
+ * was not. These are flushed immediately, and the flush is awaited so the open message port
+ * keeps the worker alive until the POST actually lands.
+ */
+const FLUSH_NOW: ReadonlySet<ExtensionEvent["type"]> = new Set([
+  "hover",
+  "knew_it",
+  "didnt_know",
+  "quiz_pass",
+  "quiz_fail",
+]);
+
 /** /api/candidates is stable for a while; cache so each page load is not a round trip. */
 const CANDIDATES_TTL_MS = 60_000;
 
@@ -175,7 +190,9 @@ async function queueEvents(events: ExtensionEvent[]): Promise<ResponseMap["QUEUE
   const merged = [...byId.values()];
   await chrome.storage.local.set({ eventQueue: merged });
 
-  if (merged.length >= FLUSH_AT_QUEUED) {
+  if (events.some((e) => FLUSH_NOW.has(e.type))) {
+    await flush(); // awaited on purpose: see FLUSH_NOW
+  } else if (merged.length >= FLUSH_AT_QUEUED) {
     void flush();
   } else if (!flushTimer) {
     flushTimer = setTimeout(() => void flush(), FLUSH_INTERVAL_MS);

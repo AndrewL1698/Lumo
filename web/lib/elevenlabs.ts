@@ -46,12 +46,20 @@ function ttsCacheDir(): string {
   return path.join(webDir, ".cache", "tts");
 }
 
+/**
+ * Beginner tutor replies mix English into Spanish (D-004), so sentences are left to Flash v2.5's
+ * language detection, which also sounds more natural. Short texts (a hover-card word like "once"
+ * or "pie") could be misdetected as English, so 3 words or fewer stay forced to Spanish.
+ */
+const forceSpanish = (text: string) => text.trim().split(/\s+/).length <= 3;
+
 /** Disk-cache file for one (voice, model, format, text). Exported for the eval check. */
 export function ttsCachePath(text: string, opts?: TtsOpts): string {
   const voiceId = opts?.voiceId ?? process.env.ELEVENLABS_VOICE_ID ?? "";
   const format = opts?.outputFormat ?? ELEVENLABS.ttsOutputFormat;
   const key = createHash("sha256")
-    .update([voiceId, ELEVENLABS.ttsModel, format, text].join("\n"))
+    // "auto" in the key so audio cached while everything was forced to Spanish isn't replayed.
+    .update([voiceId, ELEVENLABS.ttsModel, format, ...(forceSpanish(text) ? [] : ["auto"]), text].join("\n"))
     .digest("hex");
   return path.join(ttsCacheDir(), `${key}.bin`);
 }
@@ -74,7 +82,11 @@ export async function ttsChunk(text: string, opts?: TtsOpts): Promise<ArrayBuffe
   const res = await fetch(url, {
     method: "POST",
     headers: { "xi-api-key": apiKey, "Content-Type": "application/json" },
-    body: JSON.stringify({ text, model_id: ELEVENLABS.ttsModel, language_code: "es" }),
+    body: JSON.stringify({
+      text,
+      model_id: ELEVENLABS.ttsModel,
+      ...(forceSpanish(text) ? { language_code: "es" } : {}),
+    }),
   });
   if (!res.ok) throw await httpError("TTS", res, apiKey);
   const audio = await res.arrayBuffer();
