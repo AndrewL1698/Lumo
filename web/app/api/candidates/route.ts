@@ -1,4 +1,5 @@
-import { CandidatesResponse, Settings, settingsFixture } from "@parrot/shared";
+import { CandidatesResponse } from "@parrot/shared";
+import { getSettings } from "@/lib/learner/queries";
 import { DEMO_USER_ID } from "@/lib/config";
 import { getDb } from "@/lib/db";
 import { json, preflight, withCors } from "@/lib/http";
@@ -18,11 +19,10 @@ export async function GET() {
     const db = getDb();
     const [words, settings] = await Promise.all([
       db.from("user_words").select(`${USER_WORD_COLUMNS}, words(band)`).eq("user_id", DEMO_USER_ID),
-      db.from("settings").select("data").eq("user_id", DEMO_USER_ID).maybeSingle(),
+      getSettings(DEMO_USER_ID),
     ]);
     if (words.error) throw words.error;
-    const parsed = Settings.safeParse(settings.data?.data);
-    const userBand = levelToBand((parsed.success ? parsed.data : settingsFixture).level);
+    const userBand = levelToBand(settings.level);
     const weakList = new Set<string>();
 
     candidates = words.data.map((row) => {
