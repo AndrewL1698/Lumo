@@ -1,20 +1,31 @@
 import { ApiError, EventsRequest, EventsResponse } from "@parrot/shared";
+import { checkExtensionToken } from "@/lib/auth";
 import { DEMO_USER_ID } from "@/lib/config";
 import { getDb } from "@/lib/db";
 import { json, parseBody, preflight, withCors } from "@/lib/http";
 import { applyEvents } from "@/lib/learner/record";
+import { isNeverListed } from "@/lib/neverlist";
 import { NextResponse } from "next/server";
 
 export const OPTIONS = preflight;
 
-// TODO(demo): Bearer token isn't checked yet; every request is DEMO_USER_ID.
-// TODO(karthik): 4.2 never-list check on reading events' meta.domain.
+// Every request is DEMO_USER_ID; the extension token is required.
+// Never-list (4.2): reading events from a never-list domain are dropped, along with any event in the batch on
+// that article. They count as accepted so the extension doesn't retry them.
 export async function POST(req: Request) {
+  const denied = checkExtensionToken(req);
+  if (denied) return denied;
   const body = await parseBody(req, EventsRequest);
   if (body instanceof NextResponse) return withCors(body);
 
   const userId = DEMO_USER_ID;
-  const unique = [...new Map(body.events.map((e) => [e.id, e])).values()];
+  const all = [...new Map(body.events.map((e) => [e.id, e])).values()];
+  const blockedKeys = new Set(
+    all.filter((e) => e.type === "reading" && e.meta?.domain && isNeverListed(e.meta.domain)).map((e) => e.articleKey),
+  );
+  const unique = all.filter((e) => !blockedKeys.has(e.articleKey));
+  const blocked = all.length - unique.length;
+  if (unique.length === 0) return withCors(json({ accepted: blocked, duplicates: body.events.length - blocked }, EventsResponse));
   const db = getDb();
 
   // Idempotent insert: on conflict (id) do nothing. Only newly inserted rows come back.
@@ -60,5 +71,5 @@ export async function POST(req: Request) {
     console.error("[api/events] learner update failed", err);
   }
 
-  return withCors(json({ accepted: insertedIds.size, duplicates: body.events.length - insertedIds.size }, EventsResponse));
+  return withCors(json({ accepted: insertedIds.size + blocked, duplicates: body.events.length - insertedIds.size - blocked }, EventsResponse));
 }
