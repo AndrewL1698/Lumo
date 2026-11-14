@@ -15,7 +15,7 @@ import wordbands from "../wordbands.json";
 import { LEVEL_BAND, MAX_SWAPS, swapBudget } from "../swapBudget";
 
 /** Bump when changing this file, so a stale bundle in Chrome is obvious in the console. */
-const BUILD = "2.3-k";
+const BUILD = "2.4-k";
 
 /** Words that must sit between two swaps, so they are never adjacent (specs §5.2.7). Loosened when the
  * page budget is high, so the popup slider visibly matters (never below 4: still never adjacent). */
@@ -138,9 +138,19 @@ interface Match {
 /** Never-met words easier than the learner's level are assumed known (specs §4): never swapped. */
 const SKIP = -Infinity;
 
-/** specs §5.2.5, plus a little jitter so the same page is not identical every load. */
+/**
+ * Variety without randomness: a stable 0..1 value per (article, lemma). Different articles still vary, but a reload
+ * of the same page picks the same words, so every translation is already cached and swaps appear almost instantly.
+ */
+function steadyRandom(lemma: string): number {
+  let h = 2166136261;
+  for (const ch of articleKey + "|" + lemma) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return (h >>> 0) / 4294967296;
+}
+
+/** specs §5.2.5, plus a little per-article jitter so the same words don't win on every page. */
 function scoreOf(c: Candidate | undefined, lemma: string): number {
-  const jitter = Math.random() * 0.4;
+  const jitter = steadyRandom(lemma) * 0.4;
   if (!c) {
     // Never met: match the learner's level (D-007). Easier = assumed known, harder = only if nothing better.
     const band = BANDS[lemma] ?? userBand;

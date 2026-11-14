@@ -4,12 +4,33 @@ import { checkExtensionToken } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { json, parseBody, preflight, withCors } from "@/lib/http";
 import { NextResponse } from "next/server";
+import { readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 export const OPTIONS = preflight;
 
 // The span and inflection depend on the sentence, so cache per (lemma, match, sentence),
-// not per sense. HACK: in-memory, per server process.
-const cache = new Map<string, TranslateOutput>();
+// not per sense. HACK: in-memory, saved to a file in the OS temp folder so a server restart doesn't make the next
+// page load slow again (outside the repo, so nothing to commit). Open the demo page once before judging to warm it.
+const CACHE_FILE = join(tmpdir(), "parrot-translate-cache.json");
+const cache = new Map<string, TranslateOutput>(loadCache());
+
+function loadCache(): [string, TranslateOutput][] {
+  try {
+    return Object.entries(JSON.parse(readFileSync(CACHE_FILE, "utf8")) as Record<string, TranslateOutput>);
+  } catch {
+    return []; // no file yet, or unreadable: start empty
+  }
+}
+
+function saveCache(): void {
+  try {
+    writeFileSync(CACHE_FILE, JSON.stringify(Object.fromEntries(cache)));
+  } catch (err) {
+    console.warn("[api/translate] could not save cache", err);
+  }
+}
 const keyOf = (it: { lemma: string; englishMatch: string; sentence: string }) =>
   `${it.lemma}|${it.englishMatch.toLowerCase()}|${it.sentence}`;
 
@@ -36,7 +57,12 @@ export async function POST(req: Request) {
       const { data } = await getDb().from("words").select("lemma, english").in("lemma", lemmas);
       const senses = new Map((data ?? []).map((w) => [w.lemma as string, w.english as string[]]));
       const outs = await translateBatch(todo.map(({ it }) => ({ ...it, senses: senses.get(it.lemma) })));
-      todo.forEach(({ it }, n) => cache.set(keyOf(it), check(outs[n], it)));
+      // undefined = that group's call failed: leave it uncached so a reload retries it.
+      todo.forEach(({ it }, n) => {
+        const out = outs[n];
+        if (out !== undefined) cache.set(keyOf(it), check(out, it));
+      });
+      saveCache();
     } catch (err) {
       // Degrade: no swaps for the uncached items (not cached, so a reload retries).
       console.error("[api/translate] failed", err);
