@@ -329,6 +329,20 @@ function wireHoverCard(): void {
     onVerdict(t: HoverTarget, verdict) {
       queue(newEvent(verdict, { lemma: t.lemma, meta: { sentence: t.sentence } }));
     },
+    /** The service worker fetches and caches the audio; we only play it. */
+    async onSpeak(t: HoverTarget) {
+      const res = await send({ type: "TTS", text: t.spanish, lemma: t.lemma }).catch(() => null);
+      if (!res) return false;
+      try {
+        await new Audio(res.dataUrl).play();
+        return true;
+      } catch (err) {
+        // Some pages' CSP blocks media from a data: URL.
+        // TODO(naren): fall back to an offscreen document if a demo site does this.
+        console.warn("[parrot] could not play pronunciation here", err);
+        return false;
+      }
+    },
   });
 }
 
