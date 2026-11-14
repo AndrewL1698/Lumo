@@ -41,7 +41,6 @@ export const MOCK_CORRECTION: CorrectionResult = {
     },
   ],
   target_words_used: [{ lemma: "aprovechar", correct: true }],
-  overall_ok: false,
 };
 
 export const MOCK_CORRECTION_CLEAN: CorrectionResult = {
