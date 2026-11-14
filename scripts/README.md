@@ -12,6 +12,7 @@ npm run build-wordlist:sample   # first 2 Haiku batches, no DB write (sanity che
 npm run build-wordlist          # full build + seed Supabase
 npm run audit-words             # second Haiku pass → build-wordlist/out/audit.json
 npm run seed-words              # re-seed after hand-editing out/words.json
+npm run check-words -- price money tasa   # in the list? band? cognate (tutor skips)? for picking demo pages
 ```
 
 Needs `ANTHROPIC_API_KEY`, `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` in `web/.env.local`, and `web/db/schema.sql` applied first.
