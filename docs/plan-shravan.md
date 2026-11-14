@@ -43,16 +43,16 @@ All calls are same-origin `/web/app/api/*` routes. My code holds no keys and mak
 7. **Level → `known_assumed`:** nothing says who seeds those rows when level is saved (side effect of `PUT /api/settings`?). Karthik.
 8. **Streak:** undefined. Propose: consecutive days with ≥1 event.
 9. **"Delete everything" scope:** user_words, events, articles only, or also tutor_sessions/utterances/settings? plan.md DoD #4 says "tables are empty."
-10. **Tutor UI ↔ pipeline seam:** nothing defines it. I'll export a `TutorView` component driven by a `TutorSessionState` prop + callbacks (`onPressStart/onPressEnd/onEnd`), local to `/web`, with a mock driver. Andrew's real hook supplies the same shape.
-11. **"Now known" toast:** roadmap P3 gives it to Andrew. I build the component; his pipeline triggers it from `target_words_used[].correct` (arch #16).
+10. **Tutor UI ↔ pipeline seam:** nothing defines it. **Resolved:** Andrew's voice-plan §8 defines the hook `useTutorSession` = `{ status, partial, turns, targetWords, start(), pressTalk(), releaseTalk(), sendText(), end(), recap }`. My tutor page consumes that interface (`TutorSession` in `web/lib/tutor/types.ts`) and a mock implementation of it. Member types are still to be confirmed with Andrew.
+11. **"Now known" toast:** roadmap P3 gives it to Andrew. I build the component; it is driven by `wordUpdates` (`to === "known"`) in the `/api/tutor/correct` response (voice-plan §4, arch #16).
 12. **Settings fields:** specs §8 lists daily cap/schedule/study mode; arch §6 trims them. I follow arch's `Settings` only.
 13. **`.gitignore`** doesn't exist yet; Andrew's scaffold should add `.env*`, `node_modules`, `.next`.
 
 ## Decisions (from Shravan, 1am Sat)
 - **Wait for Andrew's scaffold** before step 1. Step 0 happens now; I'll pull `main` once he pushes (pull/rebase only with your OK).
-- **Per-feature branches** off `main`: `shravan/shell`, `shravan/tutor-ui`, `shravan/vocab`, `shravan/onboarding`, `shravan/privacy`, `shravan/settings`, `shravan/polish`. The plan doc is committed on `shravan`. Merges happen only when you say so.
+- **Per-feature branches** named `shravan/<feature>` (plan.md §2): `shravan/tutor-ui`, `shravan/vocab`, `shravan/onboarding`, `shravan/privacy`, `shravan/settings`, `shravan/polish`. Because git can't hold both `shravan` and `shravan/x`, the original branch was renamed `shravan/base` (local only); it holds the plan doc and the early standalone work. Merges happen only when you say so.
 - **Sleep ~3–8am Sat.**
-- **Gap defaults accepted:** static pairing code, render `raw_text`, highlight the first match, `TutorSessionState` seam defined by me. I'll post these in the team chat for Andrew and Karthik.
+- **Gap defaults accepted:** static pairing code, render `raw_text`, highlight the first match, I consume Andrew's `useTutorSession` interface. I'll post these in the team chat for Andrew and Karthik.
 
 ## Schedule
 | Block | Steps | Roadmap gate |
@@ -75,8 +75,8 @@ Steps run in schedule order (above). Each one ends with: build, test the "done w
 | 1 | **Shell:** root layout, nav (Tutor · Vocabulary · What Parrot knows · Settings · Onboarding), Tailwind tokens (colors, type scale big enough for a projector), shared `EmptyState`/`ErrorState`/`Card` | MUST | 45m | `npm run build` passes; all 5 routes render; nav works at 375px and desktop |
 | 2 | **Mocks + typed fetch layer:** fixtures for CorrectionResult (incl. "la problema", a 0.5-confidence error, a span not in the text), TutorContext, vocab, data, recap, settings; `api.ts` fetchers | MUST | 30m | `tsc` passes; fixtures parse with `/shared` zod (or local mirror types marked `// TODO(demo): use @parrot/shared`) |
 | 3 | **Riskiest: transcript + inline correction highlights:** filter `confidence ≥ 0.7`, locate verbatim span in raw text, highlight with correction + `explanation_en` shown inline (not hover-only, for judges); skip unfound spans; multiple/overlapping errors | MUST | 60m | "Creo que la problema es grande" highlights "la problema" → "el problema" + English reason; low-confidence and not-found errors don't render; no crash |
-| 4 | **Tutor page + mock driver:** PTT (hold Space or button; idle/listening/checking/speaking states), opener caption from TutorContext, utterance list, streaming caption, `TutorSessionState` seam (#10) | MUST | 60m | Holding Space on `/tutor` plays a full scripted turn from mocks: transcript → corrections at ~1.2s → caption streams; no mic or API calls |
-| 5 | **"Now known" toast + recap panel:** toast from `target_words_used.correct`; End session → recap (top 3 errors, words now known, review tomorrow) | MUST | 45m | Mock turn using "aprovechar" correctly shows toast; End shows styled recap from mock |
+| 4 | **Tutor page + mock driver:** PTT (hold Space or button; idle/listening/checking/speaking states), opener caption from TutorContext, utterance list, streaming caption, built on Andrew's `useTutorSession` interface (#10) | MUST | 60m | Holding Space on `/tutor` plays a full scripted turn from mocks: transcript → corrections at ~1.2s → caption streams; no mic or API calls |
+| 5 | **"Now known" toast + recap panel:** toast from `wordUpdates` (`to === "known"`); End session → recap (top 3 errors, words now known, review tomorrow) | MUST | 45m | Mock turn using "aprovechar" correctly shows toast; End shows styled recap from mock |
 | 6 | **Vocabulary page (mock):** 3 lists with counts, article + English meaning, streak, per-list empty states, refetch on window focus (for demo step 4) | MUST | 45m | Renders mock with items in every list; empty mock shows 3 empty states |
 | 7 | **What Parrot knows (mock):** words / events / article titles sections, per-item delete (optimistic), "Delete everything" with confirm | MUST | 45m | Deleting one row removes it; delete-all empties all sections with empty states |
 | 8 | **Onboarding (mock):** 3 level cards with specs §4 descriptions, reading-in-lessons toggle + one-sentence explanation, pairing code display, "add sites in the popup" text → `PUT /api/settings` | Pairing code: MUST (setup); rest NICE | 45m | Finishing onboarding sends a valid `Settings` payload (logged under mocks) and shows the code |
@@ -94,7 +94,7 @@ Total ≈ 11h of building, leaving slack for integration, sleep and rehearsal.
 |---|---|
 | Scaffold / `/shared` late (blocks step 1) | Build components that only touch `/web/app/(pages)` and `/web/components`, with local mirror types; don't create `package.json`/config myself unless Andrew says so |
 | `/shared` changes or doesn't match my mocks | Parse every response with the zod schema at the fetch boundary so drift shows up as a clear error; mock fallback keeps pages alive |
-| Tutor seam mismatch at 9pm integration | Agree on the `TutorSessionState` shape at the P2 start; keep the mock driver behind a flag as a rehearsal tool |
+| Tutor seam mismatch at 9pm integration | Confirm the `useTutorSession` member types with Andrew at the P2 start; keep the mock driver behind a flag as a rehearsal tool |
 | API credits burned by UI | React StrictMode double-runs effects in dev, so guard `tutor/context`/session start against double calls; no polling of paid routes; use mocks while styling |
 | Latency looks slow | Corrections render the moment `/correct` returns, independent of voice; show a "checking…" state at release |
 | Merge conflicts | Touch only page/component files; ask before editing `layout.tsx`/Tailwind config after Andrew's scaffold; never `package.json` without announcing; small commits, merge every phase (with your OK) |
