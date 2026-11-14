@@ -67,7 +67,8 @@ export async function DELETE(req: Request) {
 
   try {
     let deleted = 0;
-    if (body.kind === "word") deleted = await del("user_words", { lemma: body.lemma });
+    // A word goes with its events too (hover sentences are the privacy-sensitive part).
+    if (body.kind === "word") deleted = (await del("user_words", { lemma: body.lemma })) + (await del("events", { lemma: body.lemma }));
     else if (body.kind === "event") deleted = await del("events", { id: body.id });
     else if (body.kind === "article") deleted = await del("articles", { id: body.id });
     else {
