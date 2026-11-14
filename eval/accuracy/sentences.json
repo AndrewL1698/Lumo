@@ -1,0 +1,402 @@
+[
+  {
+    "id": "a01",
+    "text": "Mi hermana compró un casa nueva cerca del parque.",
+    "error_span": "un casa",
+    "corrected_span": "una casa",
+    "error_type": "agreement",
+    "is_control": false
+  },
+  {
+    "id": "a02",
+    "text": "Los problemas económicos son muy grave en este país.",
+    "error_span": "muy grave",
+    "corrected_span": "muy graves",
+    "error_type": "agreement",
+    "is_control": false
+  },
+  {
+    "id": "a03",
+    "text": "La agua del río está contaminada desde hace muchos años.",
+    "error_span": "La agua",
+    "corrected_span": "El agua",
+    "error_type": "agreement",
+    "is_control": false
+  },
+  {
+    "id": "a04",
+    "text": "Ellos compraron dos libro para la clase de historia.",
+    "error_span": "dos libro",
+    "corrected_span": "dos libros",
+    "error_type": "agreement",
+    "is_control": false
+  },
+  {
+    "id": "a05",
+    "text": "El profesora explicó la lección con mucha paciencia.",
+    "error_span": "El profesora",
+    "corrected_span": "La profesora",
+    "error_type": "agreement",
+    "is_control": false
+  },
+  {
+    "id": "a06",
+    "text": "Compramos unas zapatos muy cómodos en el centro.",
+    "error_span": "unas zapatos",
+    "corrected_span": "unos zapatos",
+    "error_type": "agreement",
+    "is_control": false
+  },
+  {
+    "id": "a07",
+    "text": "El clima de esta región es muy húmeda durante el verano.",
+    "error_span": "muy húmeda",
+    "corrected_span": "muy húmedo",
+    "error_type": "agreement",
+    "is_control": false
+  },
+  {
+    "id": "a08",
+    "text": "Mis primas llegaron cansados después del viaje largo.",
+    "error_span": "llegaron cansados",
+    "corrected_span": "llegaron cansadas",
+    "error_type": "agreement",
+    "is_control": false
+  },
+  {
+    "id": "a09",
+    "text": "Nosotros fuimos al mercado y compró frutas frescas.",
+    "error_span": "y compró",
+    "corrected_span": "y compramos",
+    "error_type": "conjugation",
+    "is_control": false
+  },
+  {
+    "id": "a10",
+    "text": "Ustedes trabaja demasiado y necesitan descansar un poco.",
+    "error_span": "Ustedes trabaja",
+    "corrected_span": "Ustedes trabajan",
+    "error_type": "conjugation",
+    "is_control": false
+  },
+  {
+    "id": "a11",
+    "text": "Yo no sabo la respuesta a esa pregunta difícil.",
+    "error_span": "no sabo",
+    "corrected_span": "no sé",
+    "error_type": "conjugation",
+    "is_control": false
+  },
+  {
+    "id": "a12",
+    "text": "Ayer nosotros comimos en un restaurante y él pagará la cuenta.",
+    "error_span": "él pagará",
+    "corrected_span": "él pagó",
+    "error_type": "conjugation",
+    "is_control": false
+  },
+  {
+    "id": "a13",
+    "text": "Mi padre tiene cincuenta años y trabajan en una fábrica.",
+    "error_span": "y trabajan",
+    "corrected_span": "y trabaja",
+    "error_type": "conjugation",
+    "is_control": false
+  },
+  {
+    "id": "a14",
+    "text": "Cuando era joven, yo corría mucho y jugué fútbol cada semana.",
+    "error_span": "y jugué",
+    "corrected_span": "y jugaba",
+    "error_type": "conjugation",
+    "is_control": false
+  },
+  {
+    "id": "a15",
+    "text": "Ella no puedo venir a la reunión de mañana.",
+    "error_span": "no puedo",
+    "corrected_span": "no puede",
+    "error_type": "conjugation",
+    "is_control": false
+  },
+  {
+    "id": "a16",
+    "text": "Los niños dormieron toda la noche sin despertarse.",
+    "error_span": "niños dormieron",
+    "corrected_span": "niños durmieron",
+    "error_type": "conjugation",
+    "is_control": false
+  },
+  {
+    "id": "a17",
+    "text": "Mi abuela es en el hospital desde el martes pasado.",
+    "error_span": "es en el hospital",
+    "corrected_span": "está en el hospital",
+    "error_type": "word_choice",
+    "is_control": false
+  },
+  {
+    "id": "a18",
+    "text": "Está mucha gente en la fiesta de mi prima.",
+    "error_span": "Está mucha gente",
+    "corrected_span": "Hay mucha gente",
+    "error_type": "word_choice",
+    "is_control": false
+  },
+  {
+    "id": "a19",
+    "text": "La mesa de la cocina está de madera muy vieja.",
+    "error_span": "está de madera",
+    "corrected_span": "es de madera",
+    "error_type": "word_choice",
+    "is_control": false
+  },
+  {
+    "id": "a20",
+    "text": "Necesito saber a tu hermano antes de la fiesta.",
+    "error_span": "saber a tu hermano",
+    "corrected_span": "conocer a tu hermano",
+    "error_type": "word_choice",
+    "is_control": false
+  },
+  {
+    "id": "a21",
+    "text": "El concierto está el sábado por la noche en el teatro.",
+    "error_span": "está el sábado",
+    "corrected_span": "es el sábado",
+    "error_type": "word_choice",
+    "is_control": false
+  },
+  {
+    "id": "a22",
+    "text": "Voy a la escuela por aprender español este año.",
+    "error_span": "por aprender",
+    "corrected_span": "para aprender",
+    "error_type": "word_choice",
+    "is_control": false
+  },
+  {
+    "id": "a23",
+    "text": "Fuimos a casa de mi tía durante fin de semana.",
+    "error_span": "durante fin",
+    "corrected_span": "durante el fin",
+    "error_type": "missing_word",
+    "is_control": false
+  },
+  {
+    "id": "a24",
+    "text": "Ayer vi película muy interesante sobre la historia de México.",
+    "error_span": "vi película",
+    "corrected_span": "vi una película",
+    "error_type": "missing_word",
+    "is_control": false
+  },
+  {
+    "id": "a25",
+    "text": "Ella llegó tarde porque perdió autobús de las ocho.",
+    "error_span": "perdió autobús",
+    "corrected_span": "perdió el autobús",
+    "error_type": "missing_word",
+    "is_control": false
+  },
+  {
+    "id": "a26",
+    "text": "Voy a hablar con profesor que nos dio el examen final.",
+    "error_span": "con profesor",
+    "corrected_span": "con el profesor",
+    "error_type": "missing_word",
+    "is_control": false
+  },
+  {
+    "id": "a27",
+    "text": "Mi madre quiere trabajar en hospital grande algún día.",
+    "error_span": "en hospital",
+    "corrected_span": "en un hospital",
+    "error_type": "missing_word",
+    "is_control": false
+  },
+  {
+    "id": "a28",
+    "text": "Yo compré un rojo coche el año pasado en Monterrey.",
+    "error_span": "un rojo coche",
+    "corrected_span": "un coche rojo",
+    "error_type": "word_order",
+    "is_control": false
+  },
+  {
+    "id": "a29",
+    "text": "Quiero te ver mañana por la mañana en la oficina.",
+    "error_span": "Quiero te ver",
+    "corrected_span": "Quiero verte",
+    "error_type": "word_order",
+    "is_control": false
+  },
+  {
+    "id": "a30",
+    "text": "Yo como no carne los viernes durante la cuaresma.",
+    "error_span": "como no carne",
+    "corrected_span": "no como carne",
+    "error_type": "word_order",
+    "is_control": false
+  },
+  {
+    "id": "a31",
+    "text": "Voy a lo hacer mañana sin falta antes del mediodía.",
+    "error_span": "a lo hacer",
+    "corrected_span": "a hacerlo",
+    "error_type": "word_order",
+    "is_control": false
+  },
+  {
+    "id": "a32",
+    "text": "Mi amigo se llama a Carlos y vive en Lima.",
+    "error_span": "se llama a Carlos",
+    "corrected_span": "se llama Carlos",
+    "error_type": "extra_word",
+    "is_control": false
+  },
+  {
+    "id": "a33",
+    "text": "Vamos a ir a al cine esta noche con ellos.",
+    "error_span": "a al cine",
+    "corrected_span": "al cine",
+    "error_type": "extra_word",
+    "is_control": false
+  },
+  {
+    "id": "a34",
+    "text": "Pienso de que la reunión será muy larga hoy.",
+    "error_span": "Pienso de que",
+    "corrected_span": "Pienso que",
+    "error_type": "extra_word",
+    "is_control": false
+  },
+  {
+    "id": "a35",
+    "text": "Lo tengo el libro en mi mochila ahora mismo.",
+    "error_span": "Lo tengo el libro",
+    "corrected_span": "Tengo el libro",
+    "error_type": "extra_word",
+    "is_control": false
+  },
+  {
+    "id": "c01",
+    "text": "El tren llega a la estación a las ocho de la mañana.",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null,
+    "is_control": true
+  },
+  {
+    "id": "c02",
+    "text": "Mi hermana estudia medicina en la universidad desde hace tres años.",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null,
+    "is_control": true
+  },
+  {
+    "id": "c03",
+    "text": "Ayer comimos en un restaurante muy bueno cerca del parque.",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null,
+    "is_control": true
+  },
+  {
+    "id": "c04",
+    "text": "Los estudiantes entregaron sus trabajos antes de la fecha límite.",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null,
+    "is_control": true
+  },
+  {
+    "id": "c05",
+    "text": "Hace mucho calor en esta ciudad durante los meses de verano.",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null,
+    "is_control": true
+  },
+  {
+    "id": "c06",
+    "text": "Ella trabaja en una oficina pequeña en el centro histórico.",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null,
+    "is_control": true
+  },
+  {
+    "id": "c07",
+    "text": "Necesitamos comprar pan, leche y frutas para la cena de hoy.",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null,
+    "is_control": true
+  },
+  {
+    "id": "c08",
+    "text": "El médico le recomendó descansar y beber mucha agua.",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null,
+    "is_control": true
+  },
+  {
+    "id": "c09",
+    "text": "Mis padres viajaron a Colombia el mes pasado para ver a mi tía.",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null,
+    "is_control": true
+  },
+  {
+    "id": "c10",
+    "text": "La película que vimos anoche fue bastante larga pero interesante.",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null,
+    "is_control": true
+  },
+  {
+    "id": "c11",
+    "text": "Ustedes deben llegar temprano para encontrar un buen lugar.",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null,
+    "is_control": true
+  },
+  {
+    "id": "c12",
+    "text": "El perro de mi vecino ladra todas las noches sin parar.",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null,
+    "is_control": true
+  },
+  {
+    "id": "c13",
+    "text": "Aprender un idioma nuevo requiere práctica constante y paciencia.",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null,
+    "is_control": true
+  },
+  {
+    "id": "c14",
+    "text": "La reunión se canceló porque el gerente estaba enfermo.",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null,
+    "is_control": true
+  },
+  {
+    "id": "c15",
+    "text": "Siempre tomo café por la mañana antes de salir de casa.",
+    "error_span": null,
+    "corrected_span": null,
+    "error_type": null,
+    "is_control": true
+  }
+]
