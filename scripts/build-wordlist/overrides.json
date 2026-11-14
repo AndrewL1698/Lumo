@@ -1,15 +1,56 @@
 {
-  "_note": "Hand fixes from the Claude audit + ChatGPT/RAE check (Nov 15). Applied in merge.ts. Audit flags we kept as-is: frente, alumno, rabia, grasa, etiqueta, embarazada (real false friends).",
-  "drop": ["modal"],
+  "_note": "Hand fixes from the Claude audit + ChatGPT/RAE check (Nov 15). Applied in merge.ts. Audit flags we kept as-is: frente, alumno, rabia, grasa, etiqueta, embarazada (real false friends). Nov 14: dropped profanity, insults and anatomy words so nothing vulgar is swapped onto pages or shown on stage.",
+  "drop": [
+    "modal",
+    "mierda",
+    "puta",
+    "culo",
+    "maldito",
+    "joder",
+    "jodido",
+    "jodidamente",
+    "cabrón",
+    "gilipollas",
+    "pendejo",
+    "bastardo",
+    "perra",
+    "idiota",
+    "imbécil",
+    "estúpido",
+    "cretino",
+    "pene",
+    "vagina",
+    "sexy"
+  ],
   "set": {
-    "estupendo":   { "false_friend": false },
-    "interés":     { "false_friend": false },
-    "emocionante": { "false_friend": false },
-    "terreno":     { "false_friend": false },
-    "novedad":     { "false_friend": false },
-    "pastel":      { "false_friend": true },
-    "enfermero":   { "gender": "m", "article": "el" },
-    "hada":        { "article": "el" },
-    "chance":      { "gender": "m", "article": "el" }
+    "estupendo": {
+      "false_friend": false
+    },
+    "interés": {
+      "false_friend": false
+    },
+    "emocionante": {
+      "false_friend": false
+    },
+    "terreno": {
+      "false_friend": false
+    },
+    "novedad": {
+      "false_friend": false
+    },
+    "pastel": {
+      "false_friend": true
+    },
+    "enfermero": {
+      "gender": "m",
+      "article": "el"
+    },
+    "hada": {
+      "article": "el"
+    },
+    "chance": {
+      "gender": "m",
+      "article": "el"
+    }
   }
 }
