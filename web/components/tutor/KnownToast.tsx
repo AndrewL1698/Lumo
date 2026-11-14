@@ -5,7 +5,7 @@ import { useEffect } from "react";
 export function KnownToast({
   lemma,
   onDone,
-  durationMs = 4000,
+  durationMs = 5000, // long enough to point at on camera
 }: {
   lemma: string | null;
   onDone: () => void;
@@ -18,13 +18,15 @@ export function KnownToast({
   }, [lemma, onDone, durationMs]);
 
   if (!lemma) return null;
+  // Big and centered near the top: this is a never-cut demo moment, and the talk controls own the bottom.
   return (
     <div
       role="status"
       aria-live="polite"
-      className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full bg-green-600 px-6 py-3 text-lg font-semibold text-white shadow-lg"
+      className="fixed left-1/2 top-24 z-50 -translate-x-1/2 rounded-2xl bg-green-600 px-8 py-4 text-center text-white shadow-2xl ring-4 ring-green-200"
     >
-      🎉 “{lemma}” is now in your vocabulary
+      <p className="text-2xl font-bold">🎉 “{lemma}” is now in your vocabulary</p>
+      <p className="mt-1 text-base text-green-50">You used it correctly out loud.</p>
     </div>
   );
 }
