@@ -63,7 +63,15 @@ To load: `chrome://extensions` → Developer mode → Load unpacked → `extensi
 - Log in and note the plan and remaining credits. Check that the key works, e.g. `curl -s https://api.elevenlabs.io/v1/user/subscription -H "xi-api-key: $ELEVENLABS_API_KEY"`.
 - **Done when:** the balance is posted in team chat. Andrew budgets against it (voice-plan §1.9).
 
-### 0.3 Demo sites
+### 0.3 Pick the tutor's Latin American voice (Andrew needs this before the first STT test)
+ElevenLabs takes the accent from the voice, not from a setting, so a person has to choose it. If Naren is busy, anyone free can do this; say so in team chat so it isn't done twice.
+- In the ElevenLabs Voice Library, filter to Spanish and listen to 4–5 voices. Pick one that is clearly **Latin American** (neutral Mexican is ideal), sounds natural at conversation speed, and is not a Spain accent.
+- Check it with the model we use, `eleven_flash_v2_5` (the voice page's preview, or one test line through the API). Some voices sound worse on Flash; drop those.
+- Add it to the team's voice list ("My Voices") so the API can use it, and copy its voice ID.
+- Post the voice ID in team chat. Andrew puts it in `ELEVENLABS_VOICE_ID` in `web/.env.local`; never commit it in code.
+- **Done when:** the voice ID is in team chat and a Spanish line generated with Flash v2.5 sounds Latin American. Needed before Andrew's Pass A run (voice-plan §6), which uses this voice to read the test sentences; the demo, rehearsals and latency numbers all use it too, so don't change it later.
+
+### 0.4 Demo sites
 - Pick 2–3 sites. Default: one news site + Wikipedia (plan §4). Check that article pages aren't login-walled.
 - **Done when:** posted in chat.
 
@@ -159,6 +167,7 @@ To load: `chrome://extensions` → Developer mode → Load unpacked → `extensi
 |---|---|---|
 | → Andrew | `eval/sentences.json` (15 + 5 controls) | Phase 0, before Andrew's Pass A run |
 | → Andrew | ElevenLabs balance | Phase 0 |
+| → Andrew | Latin American voice ID (task 0.3; anyone free can do it) | Phase 0, before Andrew's Pass A run |
 | → Andrew, Karthik | `meta.sentence` on hover events | Phase 2 (Phase 3 at the latest) |
 | → Karthik | Demo article (for the seed); ~50-sentence accuracy set | Phase 3 |
 | ← Karthik | `wordindex.json` and its shape | Phase 1 |

@@ -38,8 +38,8 @@ Model settings (voice-plan §0): Haiku `claude-haiku-5-5` with `thinking: {type:
 
 Phase 0 leftovers outside the task list:
 - Create the Supabase project and share keys.
-- Pick the Latin American voice and set `ELEVENLABS_VOICE_ID` (voice-plan §9 open question 1). This is needed for task 2.
-- Name the second Pass B reader (open question 2).
+- Get the Latin American voice ID from Naren (Naren's brief task 0.3; anyone free can do it) and set `ELEVENLABS_VOICE_ID` in `web/.env.local`. Needed for task 2.
+- Record your own Pass B reading: you are the second reader alongside Karthik (task 4).
 
 Cut list if behind: voice-plan §8, in order. Never cut on-screen corrections with span validation, the PTT loop with a spoken reply, or the "known" flip.
 
@@ -52,7 +52,8 @@ Cut list if behind: voice-plan §8, in order. Never cut on-screen corrections wi
 | → Shravan | `CorrectResponse` examples (use `correctResponseFixture`, `correctResponseCleanFixture`), a mock emitting partial → final → corrections → caption stream, and the exact `useTutorSession` type: `{ status, partial, turns, targetWords, start(), pressTalk(), releaseTalk(), sendText(), end(), recap }` | Task 3 (Phase 1) |
 | ← Naren | `eval/sentences.json` (15 + 5 controls); ElevenLabs balance; `meta.sentence` on hover events | Before task 2; hover meta by Phase 3 |
 | ← Karthik | `applyEvent` accepting `spoken_correct` / `spoken_incorrect`; `recordTutorEvent(userId, lemma, type) → { from, to }`; `events.meta jsonb`; query helpers (recent hovers + sentence, due words, today's articles, settings, word details); seed data | Signature by end of Phase 2; data by Phase 3 start |
-| ← Karthik + one more | Pass B readings (Karthik's reading decides) | Task 4 |
+| ← Karthik (+ Andrew reads too) | Pass B readings (Karthik's reading decides) | Task 4 |
+| ← Naren (or anyone free) | Latin American voice ID | Before task 2 |
 | ← Karthik | Demo-speaker rehearsals | Phase 4 |
 
 ---
