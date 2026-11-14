@@ -1,5 +1,6 @@
 {
   "name": "scripts",
+  "version": "0.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -7,16 +8,18 @@
     "build-wordlist:sample": "tsx build-wordlist/index.ts --batches 2 --no-seed",
     "seed-words": "tsx build-wordlist/seed.ts",
     "audit-words": "tsx build-wordlist/audit.ts",
-    "learner-sanity": "NODE_PATH=node_modules tsx ../web/lib/learner/sanity.ts",
-    "seed-demo": "NODE_PATH=node_modules tsx seed-demo/index.ts"
+    "learner-sanity": "tsx ../web/lib/learner/sanity.ts",
+    "seed-demo": "tsx seed-demo/index.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",
+    "@parrot/shared": "*",
     "ts-fsrs": "^5.4.2",
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@types/node": "^22.20.5",
-    "tsx": "^4.23.15"
+    "@types/node": "^26.6.6",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3"
   }
 }

@@ -24,13 +24,15 @@ This file covers how we work. Update the docs instead of silently deviating.
 
 ## Repo layout & ownership
 ```
-/docs        specs, architecture, roadmap, plan
-/extension   Chrome MV3 extension (TypeScript)              owner: Naren
+/docs        specs, architecture, roadmap, plan, voice-plan
+/docs/briefs one task brief per person: paste yours into Claude to start a task
+/extension   Chrome MV3 extension (TypeScript, esbuild)     owner: Naren
 /web         Next.js app: UI + API routes + Supabase        owner: Karthik (API/DB), Andrew (tutor), Shravan (UI)
 /shared      zod schemas + TS types (the contract)          owner: Andrew; see below
 /scripts     word-list build + demo seed scripts            owner: Karthik
 /eval        §10 test sentences + accuracy/latency scripts  owner: Naren (sentences), Karthik (accuracy), Andrew (latency)
 ```
+- Each folder has its own `CLAUDE.md` with its files, commands and rules. Read it before working there.
 - Stay in your own area. If a change in someone else's area is needed, tell them; don't just edit.
 - **`/shared` is the contract.** Changing a type there breaks other people. Keep changes additive
   (new optional fields), and post in the team chat when you change it.
@@ -64,24 +66,22 @@ This file covers how we work. Update the docs instead of silently deviating.
   Keep the model IDs in one config constant, not scattered string literals. No assistant prefill
   (it returns a 400 on these models); get JSON via structured outputs.
 - Correction output must be validated JSON. Show only errors with `confidence >= 0.7`.
-- ElevenLabs: Scribe v2 Realtime (STT) + TTS. **STT and TTS share one credit pool.** Cache all
-  repeated audio (hover-card pronunciations), use the cheapest/fastest voice model during dev, and
-  switch to the best voice only for the demo.
-- Env vars (in `/web/.env.local`, never committed):
-  ```
-  ANTHROPIC_API_KEY=
-  ELEVENLABS_API_KEY=
-  ELEVENLABS_VOICE_ID=
-  SUPABASE_URL=
-  SUPABASE_SERVICE_KEY=
-  ```
+- ElevenLabs: Scribe Realtime (STT) + TTS with **`eleven_flash_v2_5` in dev and in the demo**
+  (fastest; `eleven_turbo_v2_5` is deprecated). **STT and TTS share one credit pool.** Cache all
+  repeated audio (hover-card pronunciations). Model IDs live in `web/lib/config.ts`.
+- Node 24, npm workspaces, TypeScript 6.0 (pinned: typescript-eslint doesn't support 7 yet), zod 4.
+- Env vars: copy the root `.env.example` to `web/.env.local` (never committed). The build and the
+  stub routes work with no env set.
 
 ## Commands
-_Fill these in as each piece is scaffolded so nobody has to guess._
-- Web app: `TODO`
-- Extension build / load unpacked: `TODO`
-- Word-list build: `TODO`
-- Eval scripts: `TODO`
+Run from the repo root.
+- Install: `npm install` (once, at the root; never inside a workspace).
+- Build everything: `npm run build`. Lint: `npm run lint`. Format: `npm run format`.
+- Web app: `npm run dev:web` → http://localhost:3000. Stub API routes return `@parrot/shared` fixtures.
+- Extension: `npm run build:ext` (or `npm run watch -w extension`), then `chrome://extensions` →
+  Developer mode → **Load unpacked** → `extension/dist`. Click the reload icon after each rebuild.
+- Shared contracts: `npm run build -w shared` (typecheck), `npm run check-fixtures -w shared`.
+- Scripts and eval: `npx tsx scripts/<name>.ts`, `npx tsx eval/<path>.ts`.
 
 ## Demo-safety habits
 - Only promise behavior on the 2–3 tested demo sites; don't chase layout bugs on others.

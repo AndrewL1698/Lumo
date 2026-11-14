@@ -33,7 +33,7 @@ Technical design, revised from `specs.md` §2. Where this file and `specs.md` di
 ## 2. Repo layout
 
 ```
-/extension   MV3 extension (TS, Vite). src/content, src/sw, src/popup, src/wordindex.json
+/extension   MV3 extension (TS, esbuild via build.mjs). src/content, src/sw, src/popup, src/wordindex.json
 /web         Next.js App Router (UI + route handlers). lib/claude.ts, lib/elevenlabs.ts, lib/db.ts, lib/learner/
 /shared      zod schemas + inferred TS types (single source of truth for every API shape)
 /scripts     build-wordlist, seed-demo
