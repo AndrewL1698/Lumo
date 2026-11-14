@@ -5,7 +5,7 @@
 // service worker, so the pairing token never enters the page and we are not subject to the
 // host page's CORS.
 
-import type { CandidatesResponse, ExtensionEvent, TranslateItem } from "@parrot/shared";
+import type { CandidatesResponse, ExtensionEvent, Settings, TranslateItem } from "@parrot/shared";
 
 export type Message =
   | { type: "PING" }
@@ -19,7 +19,9 @@ export type Message =
       items: { sentence: string; lemma: string; englishMatch: string }[];
     }
   | { type: "QUEUE_EVENTS"; events: ExtensionEvent[] }
-  | { type: "TTS"; text: string; lemma: string };
+  | { type: "TTS"; text: string; lemma: string }
+  | { type: "GET_SETTINGS" }
+  | { type: "SET_SWAP_AMOUNT"; perPageCap?: number; autoGrow?: boolean };
 
 export interface ResponseMap {
   PING: { ok: true; from: "sw" };
@@ -36,6 +38,10 @@ export interface ResponseMap {
    * `null` when TTS is unavailable: the card just shows no audio rather than an error.
    */
   TTS: { dataUrl: string } | null;
+  /** Server settings (cached copy if offline) plus the popup's local "Grow automatically" switch. */
+  GET_SETTINGS: { settings: Settings; autoGrow: boolean };
+  /** Saves perPageCap to the server (only that field) and/or autoGrow locally. */
+  SET_SWAP_AMOUNT: { ok: boolean; error?: string };
 }
 
 export type MessageType = Message["type"];
@@ -45,5 +51,11 @@ export type ResponseFor<T extends MessageType> = ResponseMap[T];
 export function send<T extends MessageType>(
   message: Extract<Message, { type: T }>,
 ): Promise<ResponseFor<T>> {
-  return chrome.runtime.sendMessage<Extract<Message, { type: T }>, ResponseFor<T>>(message);
+  // After the extension is reloaded, the old content script in an open tab throws "Extension context invalidated"
+  // synchronously, which bypasses callers' .catch(). Turn it into a rejection so the page just goes quiet.
+  try {
+    return chrome.runtime.sendMessage<Extract<Message, { type: T }>, ResponseFor<T>>(message);
+  } catch (err) {
+    return Promise.reject(err);
+  }
 }

@@ -8,7 +8,8 @@ export function emitIndex(words: WordRow[]) {
     for (const form of w.english_forms) {
       // Only single-token forms: the content script matches one English token at a time.
       if (!/^[a-z]+(?:'[a-z]+)?$/.test(form)) continue;
-      (index[form] ??= []).includes(w.lemma) || index[form].push(w.lemma);
+      const lemmas = (index[form] ??= []);
+      if (!lemmas.includes(w.lemma)) lemmas.push(w.lemma);
     }
   }
   const sorted = Object.fromEntries(Object.entries(index).sort(([a], [b]) => a.localeCompare(b)));

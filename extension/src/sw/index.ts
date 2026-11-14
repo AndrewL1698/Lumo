@@ -7,9 +7,9 @@ import {
   CandidatesResponse,
   EventsResponse,
   PairResponse,
+  Settings,
   TranslateResponse,
   type ExtensionEvent,
-  type Settings,
 } from "@parrot/shared";
 import type { Message, ResponseMap } from "../messages";
 import { neverListReason } from "../neverlist";
@@ -49,9 +49,11 @@ interface StoredState {
   settings?: Settings;
   /** Events waiting to be flushed. Kept on disk: MV3 kills idle service workers. */
   eventQueue?: ExtensionEvent[];
+  /** Popup "Grow automatically" switch (D-006). Local only; default on. */
+  autoGrow?: boolean;
 }
 
-// Placeholder until settings come from GET /api/settings. TODO(naren): 3.3 fetch + cache settings.
+// Used only when the server can't be reached and nothing is cached yet (getSettings below).
 const DEFAULT_SETTINGS: Settings = {
   level: "beginner",
   intensity: "normal",
@@ -67,6 +69,7 @@ async function readState(): Promise<StoredState> {
     "enabledOrigins",
     "settings",
     "eventQueue",
+    "autoGrow",
   ])) as StoredState;
 }
 
@@ -178,6 +181,45 @@ async function translate(
   }
 }
 
+// ---------------------------------------------------------------- settings (Karthik, D-005/D-006)
+
+async function fetchSettings(): Promise<Settings | null> {
+  try {
+    const res = await api("/api/settings");
+    if (!res.ok) return null;
+    const parsed = Settings.safeParse(await res.json());
+    if (!parsed.success) return null;
+    await chrome.storage.local.set({ settings: parsed.data });
+    return parsed.data;
+  } catch {
+    return null;
+  }
+}
+
+async function getSettings(): Promise<ResponseMap["GET_SETTINGS"]> {
+  const { settings: cached, autoGrow = true } = await readState();
+  const settings = (await fetchSettings()) ?? cached ?? DEFAULT_SETTINGS;
+  return { settings, autoGrow };
+}
+
+/** Change only perPageCap on the server (fresh read first, so nothing else is overwritten). */
+async function setSwapAmount(perPageCap?: number, autoGrow?: boolean): Promise<ResponseMap["SET_SWAP_AMOUNT"]> {
+  if (autoGrow !== undefined) await chrome.storage.local.set({ autoGrow });
+  candidatesCache = null; // the next page load re-reads progress
+  if (perPageCap === undefined) return { ok: true };
+  const fresh = await fetchSettings();
+  if (!fresh) return { ok: false, error: "could not reach Parrot" };
+  const next: Settings = { ...fresh, perPageCap: Math.max(0, Math.min(25, Math.round(perPageCap))) };
+  try {
+    const res = await api("/api/settings", { method: "PUT", body: JSON.stringify(next) });
+    if (!res.ok) return { ok: false, error: `server returned ${res.status}` };
+    await chrome.storage.local.set({ settings: next });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "could not reach Parrot" };
+  }
+}
+
 // ---------------------------------------------------------------- text to speech
 
 /**
@@ -281,6 +323,10 @@ async function handle(message: Message): Promise<ResponseMap[Message["type"]]> {
       return queueEvents(message.events);
     case "TTS":
       return tts(message.text, message.lemma);
+    case "GET_SETTINGS":
+      return getSettings();
+    case "SET_SWAP_AMOUNT":
+      return setSwapAmount(message.perPageCap, message.autoGrow);
   }
 }
 

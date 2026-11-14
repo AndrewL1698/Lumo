@@ -150,14 +150,31 @@ export function determinerBefore(sentence: string, englishMatch: string): string
   return prev && DETERMINERS.has(prev.toLowerCase()) ? prev : undefined;
 }
 
-/** One Haiku call per batch. Results are in input order; null = sense mismatch or unusable output. */
-export async function translateBatch(items: TranslateInput[]): Promise<TranslateOutput[]> {
+/** Words per Haiku call. Small groups run in parallel, so a page waits for the slowest group, not one big call. */
+const TRANSLATE_CHUNK = 4;
+
+/**
+ * Translate a page's batch. Results are in input order: null = sense mismatch or unusable output (don't swap),
+ * undefined = that group's call failed (don't swap, and don't cache: a reload retries it). Throws only if every
+ * group failed.
+ */
+export async function translateBatch(items: TranslateInput[]): Promise<(TranslateOutput | undefined)[]> {
+  const chunks: TranslateInput[][] = [];
+  for (let i = 0; i < items.length; i += TRANSLATE_CHUNK) chunks.push(items.slice(i, i + TRANSLATE_CHUNK));
+  const settled = await Promise.allSettled(chunks.map(translateChunk));
+  if (settled.every((r) => r.status === "rejected")) throw (settled[0] as PromiseRejectedResult).reason;
+  return settled.flatMap((r, k) => (r.status === "fulfilled" ? r.value : chunks[k].map(() => undefined)));
+}
+
+async function translateChunk(items: TranslateInput[]): Promise<TranslateOutput[]> {
   const dets = items.map((it) => determinerBefore(it.sentence, it.englishMatch));
   const res = await getClaude().messages.parse(
     {
       model: MODELS.correction, // Haiku; translate shares the correction-lane model (web/CLAUDE.md)
       max_tokens: 4000,
       system: TRANSLATE_SYSTEM,
+      // Translation needs no reasoning; thinking off is allowed on Haiku 5.5 at effort low and cuts latency.
+      thinking: { type: "disabled" },
       output_config: { effort: "low", format: zodOutputFormat(TranslateOut) },
       messages: [
         { role: "user", content: JSON.stringify(items.map((it, i) => ({ i, ...it, ...(dets[i] && { determiner: dets[i] }) }))) },

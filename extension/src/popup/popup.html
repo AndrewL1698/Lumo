@@ -7,6 +7,9 @@
       body { width: 280px; margin: 8px; font-family: system-ui, sans-serif; font-size: 13px; }
       p { margin: 4px 0; overflow-wrap: anywhere; }
       section { margin-top: 10px; }
+      #swaps { border-top: 1px solid #ddd; padding-top: 8px; }
+      #amount { width: 100%; }
+      .muted { color: #777; }
     </style>
   </head>
   <body>
@@ -18,6 +21,13 @@
       <p>site: <span id="origin">…</span></p>
       <button id="enable" disabled>Enable on this site</button>
       <p id="enable-result"></p>
+    </section>
+
+    <section id="swaps">
+      <label for="amount">Spanish words per page: <b id="amount-value">…</b></label>
+      <input id="amount" type="range" min="0" max="25" step="1" />
+      <label><input id="auto" type="checkbox" /> Grow automatically as you improve</label>
+      <p id="amount-note" class="muted"></p>
     </section>
 
     <section>
