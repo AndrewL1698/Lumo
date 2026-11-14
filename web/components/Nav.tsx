@@ -13,7 +13,7 @@ const LINKS = [
 export function Nav() {
   const path = usePathname();
   return (
-    <header className="border-b border-line bg-panel">
+    <header className="sticky top-0 z-40 border-b border-line bg-panel">
       <nav className="mx-auto flex max-w-5xl items-center gap-x-5 px-4 py-4 sm:gap-x-8">
         <Link href="/" className="flex shrink-0 items-center gap-2 font-display text-xl font-extrabold tracking-tight text-ink">
           <LuciMark size={30} />

@@ -9,6 +9,8 @@ import { RecapPanel } from "./RecapPanel";
 import { TargetChips } from "./TargetChips";
 import { TranscriptView } from "./TranscriptView";
 import { newlyKnown } from "./wordUpdates";
+import { visibleErrors } from "./highlight";
+import { LuciFirefly, sparkToJar, type LuciReaction } from "./LuciFirefly";
 import { rememberLearned } from "@/components/vocab/justLearned";
 
 const speaker = "font-mono text-xs uppercase tracking-wider pt-2";
@@ -59,6 +61,27 @@ export function TutorPage({ session }: { session: TutorSession }) {
     typeInput.current?.focus({ preventScroll: true });
   }, [awaitingReply, turns.length]);
 
+  // Luci reacts once to each checked answer: a hop for a clean sentence, a gentle tilt for mistakes,
+  // and a loop (plus a spark to "Your jar") when a word becomes known. View-only; no session data changes.
+  const [reaction, setReaction] = useState<{ kind: LuciReaction; n: number }>({ kind: null, n: 0 });
+  const reacted = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    for (const t of turns) {
+      if (!t.rawText || !t.correction || reacted.current.has(t.id)) continue;
+      reacted.current.add(t.id);
+      const learned = newlyKnown(t.wordUpdates).length > 0;
+      const clean = visibleErrors(t.rawText, t.correction).length === 0;
+      setReaction((r) => ({ kind: learned ? "loop" : clean ? "good" : "oops", n: r.n + 1 }));
+      if (learned) setTimeout(sparkToJar, 350);
+    }
+  }, [turns]);
+  useEffect(() => {
+    if (!reaction.kind) return;
+    const t = setTimeout(() => setReaction((r) => ({ ...r, kind: null })), 1700);
+    return () => clearTimeout(t);
+  }, [reaction]);
+  const liveTutorTurn = useMemo(() => [...turns].reverse().find((t) => t.tutorText)?.id, [turns]);
+
   const known = useMemo(() => turns.flatMap((t) => newlyKnown(t.wordUpdates)), [turns]);
   const dismissToast = useCallback(() => setToasts((q) => q.slice(1)), []);
 
@@ -107,7 +130,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
         {turns.map((t, i) => (
           <li key={t.id} className="space-y-6 py-6 first:pt-2">
             {t.rawText && (
-              <div className="grid gap-2 sm:grid-cols-[5rem_1fr] sm:gap-4">
+              <div className="grid gap-2 sm:grid-cols-[6rem_1fr] sm:gap-4">
                 <p className={`${speaker} text-muted`}>You</p>
                 <div className="space-y-3">
                   <TranscriptView raw={t.rawText} result={t.correction} />
@@ -118,10 +141,17 @@ export function TutorPage({ session }: { session: TutorSession }) {
               </div>
             )}
             {t.tutorText && (
-              <div className="grid gap-2 sm:grid-cols-[5rem_1fr] sm:gap-4">
-                <p className={`${speaker} text-ink`}>Tutor</p>
-                <div>
-                  <p className="text-2xl leading-snug text-ink">{t.tutorText}</p>
+              <div className="flex items-start gap-3 sm:gap-4" data-luci-live={t.id === liveTutorTurn ? "" : undefined}>
+                <div className="flex w-16 shrink-0 justify-center pt-1 sm:w-24">
+                  {t.id === liveTutorTurn ? (
+                    <LuciFirefly mood={status} reaction={reaction.kind} reactionKey={reaction.n} size={84} />
+                  ) : (
+                    <LuciFirefly still size={52} />
+                  )}
+                </div>
+                <div className="relative min-w-0 flex-1 rounded-md border border-sun-line bg-sun px-4 py-3 sm:px-5 sm:py-4 before:absolute before:-left-[7px] before:top-6 before:h-3 before:w-3 before:rotate-45 before:border-b before:border-l before:border-sun-line before:bg-sun">
+                  <p className="sr-only">Tutor</p>
+                  <p className="relative text-xl leading-snug text-ink sm:text-2xl">{t.tutorText}</p>
                   {t.tutorEnglish &&
                     (turns.slice(i + 1).some((x) => x.rawText) ? (
                       <p className="mt-3 text-lg text-muted">
@@ -139,7 +169,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
       </ol>
 
       {status === "listening" && (
-        <div className="grid gap-2 border-t border-line pt-6 sm:grid-cols-[5rem_1fr] sm:gap-4">
+        <div className="grid gap-2 border-t border-line pt-6 sm:grid-cols-[6rem_1fr] sm:gap-4">
           <p className={`${speaker} text-accent`}>You</p>
           <p className="text-2xl text-muted">{partial || "Listening"}</p>
         </div>

@@ -120,6 +120,187 @@ ruby.fix rt {
   padding-bottom: 0.15em;
 }
 
+/* ---------- Luci firefly (components/tutor/LuciFirefly.tsx) ----------
+   Every motion maps to a tutor state or a reaction to the learner's answer. */
+.luci svg * {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.luci .luci-float {
+  animation: luci-bob 3.2s ease-in-out infinite;
+}
+.luci .luci-lean {
+  transition: transform 300ms var(--ease-out);
+}
+.luci .luci-wing-l {
+  transform-origin: 100% 100%;
+  animation: luci-flap-l 0.9s ease-in-out infinite alternate;
+}
+.luci .luci-wing-r {
+  transform-origin: 0% 100%;
+  animation: luci-flap-r 0.9s ease-in-out infinite alternate;
+}
+.luci .luci-tail {
+  animation: luci-pulse 2.6s ease-in-out infinite;
+}
+.luci .luci-halo {
+  opacity: 0.55;
+  animation: luci-halo 2.6s ease-in-out infinite;
+  transition: opacity 300ms;
+}
+.luci .luci-eyes {
+  animation: luci-blink 5.5s infinite;
+}
+.luci .luci-think,
+.luci .luci-sparks {
+  opacity: 0;
+}
+
+/* listening: leans in, brighter, wings faster */
+.luci[data-mood="listening"] .luci-lean {
+  transform: rotate(10deg) translateX(4px) scale(1.06);
+}
+.luci[data-mood="listening"] .luci-wing {
+  animation-duration: 0.14s;
+}
+.luci[data-mood="listening"] .luci-halo {
+  opacity: 1;
+  animation-duration: 1.2s;
+}
+.luci[data-mood="listening"] .luci-pupil {
+  transform: translate(2px, 1px);
+}
+/* checking: thinking dots */
+.luci[data-mood="checking"] .luci-think {
+  opacity: 1;
+}
+.luci[data-mood="checking"] .luci-think circle {
+  animation: luci-dot 1s ease-in-out infinite;
+}
+.luci[data-mood="checking"] .luci-think circle:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.luci[data-mood="checking"] .luci-think circle:nth-child(3) {
+  animation-delay: 0.3s;
+}
+/* speaking: the lamp pulses with the voice */
+.luci[data-mood="speaking"] .luci-tail,
+.luci[data-mood="speaking"] .luci-halo {
+  animation-duration: 0.5s;
+}
+.luci[data-mood="speaking"] .luci-mouth {
+  animation: luci-talk 0.35s ease-in-out infinite alternate;
+}
+
+/* reactions, played once */
+.luci-react[data-react="good"] {
+  animation: luci-hop 700ms var(--ease-out);
+}
+.luci-react[data-react="good"] .luci-halo {
+  opacity: 1;
+}
+.luci-react[data-react="good"] .luci-sparks circle {
+  animation: luci-spark 1.1s ease-out forwards;
+}
+.luci-react[data-react="good"] .luci-sparks circle:nth-child(2) {
+  animation-delay: 0.1s;
+}
+.luci-react[data-react="good"] .luci-sparks circle:nth-child(3) {
+  animation-delay: 0.2s;
+}
+.luci-bien {
+  animation: luci-pop 1.6s var(--ease-out) forwards;
+}
+.luci-react[data-react="oops"] {
+  animation: luci-tilt 1.6s var(--ease-out);
+}
+.luci-react[data-react="oops"] .luci-halo {
+  opacity: 0.3;
+}
+.luci-react[data-react="loop"] {
+  animation: luci-loop 900ms var(--ease-out);
+}
+
+/* older tutor turns: Luci sits still */
+.luci[data-still] *,
+.luci[data-still] {
+  animation: none !important;
+}
+
+@keyframes luci-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+@keyframes luci-flap-l {
+  from { transform: rotate(-32deg) scaleY(1); }
+  to { transform: rotate(-24deg) scaleY(0.82); }
+}
+@keyframes luci-flap-r {
+  from { transform: rotate(32deg) scaleY(1); }
+  to { transform: rotate(24deg) scaleY(0.82); }
+}
+@keyframes luci-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.72; }
+}
+@keyframes luci-halo {
+  0%, 100% { transform: scale(0.9); }
+  50% { transform: scale(1.08); }
+}
+@keyframes luci-blink {
+  0%, 93%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+@keyframes luci-dot {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50% { transform: translateY(-4px); opacity: 1; }
+}
+@keyframes luci-talk {
+  from { transform: scaleY(1); }
+  to { transform: scaleY(1.9); }
+}
+@keyframes luci-hop {
+  0% { transform: translateY(0) scale(1); }
+  30% { transform: translateY(-14px) scale(1.05, 0.95); }
+  60% { transform: translateY(0) scale(1.06, 0.92); }
+  100% { transform: translateY(0) scale(1); }
+}
+@keyframes luci-spark {
+  0% { opacity: 0; transform: scale(0.4); }
+  30% { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0; transform: translateY(-10px) scale(0.6); }
+}
+@keyframes luci-pop {
+  0% { opacity: 0; transform: translate(-50%, 6px); }
+  15%, 75% { opacity: 1; transform: translate(-50%, -6px); }
+  100% { opacity: 0; transform: translate(-50%, -8px); }
+}
+@keyframes luci-tilt {
+  0%, 100% { transform: rotate(0); }
+  25%, 70% { transform: rotate(-12deg); }
+}
+@keyframes luci-loop {
+  0% { transform: rotate(0) translateY(0); }
+  50% { transform: rotate(180deg) translateY(-18px); }
+  100% { transform: rotate(360deg) translateY(0); }
+}
+
+/* "Your jar" lights up when a spark lands in it */
+.jar-lit {
+  background: var(--color-glow);
+  color: var(--color-ink) !important;
+  border-radius: var(--radius-xs);
+  transition: background-color 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Luci keeps its glow but stops moving. */
+  .luci *,
+  .luci-react {
+    animation: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
