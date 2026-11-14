@@ -1,0 +1,17 @@
+// Luci the firefly (from docs/brand/luci-icon.svg), flattened: no radial glow, the highlight bar is the light.
+export function LuciMark({ size = 32, className = "" }: { size?: number; className?: string }) {
+  return (
+    <svg viewBox="0 0 128 128" width={size} height={size} className={className} aria-hidden="true">
+      <rect width="128" height="128" rx="20" fill="#fff3c4" />
+      <rect x="22" y="94" width="84" height="14" rx="4" fill="#ffd23a" />
+      <g transform="rotate(40 64 60)">
+        <ellipse cx="64" cy="78" rx="13" ry="17" fill="#ffd23a" />
+        <ellipse cx="64" cy="56" rx="12" ry="15" fill="#2a3a4a" />
+        <ellipse cx="48" cy="54" rx="9" ry="19" fill="#6fa8d6" fillOpacity=".8" transform="rotate(-22 48 54)" />
+        <ellipse cx="80" cy="54" rx="9" ry="19" fill="#6fa8d6" fillOpacity=".8" transform="rotate(22 80 54)" />
+        <circle cx="64" cy="37" r="10" fill="#2a3a4a" />
+        <path d="M60 29 C56 19 50 15 44 14 M68 29 C72 19 78 15 84 14" fill="none" stroke="#6fa8d6" strokeWidth="3.5" strokeLinecap="round" />
+      </g>
+    </svg>
+  );
+}

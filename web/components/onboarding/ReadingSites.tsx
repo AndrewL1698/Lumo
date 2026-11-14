@@ -8,14 +8,14 @@ const SUGGESTED = [
 
 export function ReadingSites({ allowlist = [] }: { allowlist?: string[] }) {
   return (
-    <section className="rounded-sm border border-line p-5">
-      <h2 className="text-xl font-bold text-ink">Choose where Parrot works</h2>
+    <section className="rounded-sm border border-line bg-panel p-5">
+      <h2 className="text-xl font-bold text-ink">Choose where Luci works</h2>
       <p className="mt-1 text-sm text-muted">
-        Parrot does nothing until you turn it on for a site, one site at a time. Chrome will ask you to confirm each one.
+        Luci does nothing until you turn it on for a site, one site at a time. Chrome will ask you to confirm each one.
       </p>
       <ol className="mt-3 list-decimal space-y-1 pl-5 text-ink">
         <li>Open a site you like to read in Chrome.</li>
-        <li>Click the Parrot icon in the toolbar to open the popup.</li>
+        <li>Click the Luci icon in the toolbar to open the popup.</li>
         <li>Click <strong>Enable</strong>, then allow it in Chrome&apos;s permission prompt.</li>
       </ol>
       <p className="mt-4 text-sm font-medium text-muted">Good places to start</p>
@@ -32,7 +32,7 @@ export function ReadingSites({ allowlist = [] }: { allowlist?: string[] }) {
         </p>
       )}
       <p className="mt-4 text-xs text-muted">
-        Parrot never runs on email, chat, banking, health, school or work tools, or login pages, even if you enable them.
+        Luci never runs on email, chat, banking, health, school or work tools, or login pages, even if you enable them.
       </p>
     </section>
   );

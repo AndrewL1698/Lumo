@@ -23,7 +23,7 @@ export default function Page() {
   const total = data ? data.counts.learning + data.counts.known + data.counts.mastered : 0;
   return (
     <>
-      <PageHeader title="Vocabulary" subtitle="A word moves from Learning now to Your vocabulary only after you use it correctly out loud.">
+      <PageHeader kicker="Vocabulary" title="Your jar" subtitle="Every word you know glows here. A word only lights up after you use it correctly out loud.">
         <button type="button" onClick={() => void reload()} className={btn.secondary}>
           Refresh
         </button>
@@ -31,11 +31,11 @@ export default function Page() {
       {loading && <LoadingState shape="columns" />}
       {error && !data && <ErrorState message={error} onRetry={() => void reload()} />}
       {data && total === 0 && data.streakDays === 0 && (
-        <EmptyState>No words yet. Read a page with Parrot switched on and hover a Spanish word to start.</EmptyState>
+        <EmptyState>No words yet. Read a page with Luci switched on and hover a Spanish word to start.</EmptyState>
       )}
       {freshWords.length > 0 && (
-        <p role="status" className="mb-6 rounded-sm border border-go px-5 py-4 text-lg">
-          <span className="mr-3 font-mono text-xs uppercase tracking-wider text-go">Just learned</span>
+        <p role="status" className="mb-6 rounded-sm border border-sun-line bg-sun px-5 py-4 text-lg">
+          <span className="mr-3 text-xs font-bold uppercase tracking-[0.08em] text-accent">Just lit up</span>
           {freshWords.map((w, i) => (
             <span key={w.lemma}>
               {i > 0 && ", "}

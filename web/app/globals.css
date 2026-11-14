@@ -1,30 +1,37 @@
 @import "tailwindcss";
 
-/* Parrot design tokens. Dark flat ground; colour only as verdicts:
-   go = correct / known, wait = learning / listening, stop = mistake / delete. */
+/* Luci design tokens (docs/brand/README.md), cleaned to our rules: warm light ground, off-white panels,
+   flat glow (no shadows). Glow brightness = how well you know a word.
+   go = correct / known text, wait = learning / listening text, stop = mistake / delete. */
 @theme {
-  --color-bg: #0e1013;
-  --color-panel: #14171b;
-  --color-ink: #e8ebef;
-  --color-muted: #8a929d;
-  --color-line: #23272d;
-  --color-go: #2f9e5b;
-  --color-wait: #d99a1e;
-  --color-stop: #d64545;
+  --color-bg: #f6f7f2;
+  --color-panel: #fcfcf8;
+  --color-ink: #1a2028;
+  --color-muted: #5f6772;
+  --color-line: #e2e3da;
+  --color-sun: #fff7d9;
+  --color-sun-line: #f1e2a6;
+  --color-glow: #ffd23a;
+  --color-glow-soft: #ffe9a0;
+  --color-accent: #9a6a00;
+  --color-go: #1f7a45;
+  --color-wait: #9a6a00;
+  --color-stop: #b83a3a;
 
-  --radius-xs: 2px;
-  --radius-sm: 3px;
-  --radius-md: 4px;
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
 
-  --font-sans: var(--font-b612), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-b612-mono), ui-monospace, monospace;
+  --font-sans: var(--font-atkinson), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 html {
   font-size: 18px; /* projector */
-  color-scheme: dark;
+  color-scheme: light;
   scrollbar-color: var(--color-line) var(--color-bg);
 }
 
@@ -36,8 +43,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+@layer base {
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    text-wrap: balance;
+  }
+}
+
 ::selection {
-  background: color-mix(in srgb, var(--color-go) 40%, transparent);
+  background: var(--color-glow-soft);
   color: var(--color-ink);
 }
 
@@ -55,6 +71,41 @@ a {
   font-variant-numeric: tabular-nums;
 }
 
+/* Glow = word state. Flat colour behind the word, never a shadow. */
+.glow-seen {
+  background: color-mix(in srgb, var(--color-glow) 18%, transparent);
+}
+.glow-learning {
+  background: color-mix(in srgb, var(--color-glow) 40%, transparent);
+}
+.glow-known {
+  background: var(--color-glow);
+}
+.glow-seen,
+.glow-learning,
+.glow-known {
+  border-radius: var(--radius-xs);
+  padding: 0 0.2em;
+  box-decoration-break: clone;
+}
+
+/* Learning words flicker on the home demo only: that motion is the state. */
+.flicker {
+  animation: flicker 2.4s ease-in-out infinite;
+}
+@keyframes flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  45% {
+    opacity: 0.55;
+  }
+  55% {
+    opacity: 0.9;
+  }
+}
+
 /* Interlinear correction: the fix sits above the verbatim slip. */
 ruby.fix {
   ruby-position: over;
@@ -63,6 +114,7 @@ ruby.fix {
 ruby.fix rt {
   font-family: var(--font-mono);
   font-size: 0.7em;
+  font-weight: 600;
   color: var(--color-go);
   letter-spacing: 0;
   padding-bottom: 0.15em;
@@ -74,5 +126,6 @@ ruby.fix rt {
   *::after {
     transition-duration: 0ms !important;
     animation-duration: 0ms !important;
+    animation-iteration-count: 1 !important;
   }
 }

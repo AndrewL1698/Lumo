@@ -1,21 +1,22 @@
 import type { Metadata } from "next";
-import { B612, B612_Mono } from "next/font/google";
+import { Atkinson_Hyperlegible, Bricolage_Grotesque, IBM_Plex_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
 import "./globals.css";
 
-const b612 = B612({ weight: ["400", "700"], subsets: ["latin"], variable: "--font-b612", display: "swap" });
-const b612Mono = B612_Mono({ weight: ["400", "700"], subsets: ["latin"], variable: "--font-b612-mono", display: "swap" });
+const atkinson = Atkinson_Hyperlegible({ weight: ["400", "700"], subsets: ["latin"], variable: "--font-atkinson", display: "swap" });
+const bricolage = Bricolage_Grotesque({ weight: ["600", "800"], subsets: ["latin"], variable: "--font-bricolage", display: "swap" });
+const plexMono = IBM_Plex_Mono({ weight: ["400", "600"], subsets: ["latin"], variable: "--font-plex-mono", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Parrot",
-  description: "Your morning reading becomes tonight's conversation lesson.",
+  title: "Luci",
+  description: "Read it. Say it. Light it up. Your morning reading becomes tonight's Spanish conversation.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${b612.variable} ${b612Mono.variable}`}>
+    <html lang="en" className={`${atkinson.variable} ${bricolage.variable} ${plexMono.variable}`}>
       <body className="flex min-h-screen flex-col">
         <Nav />
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">{children}</main>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { LegalPage } from "@/components/legal/LegalPage";
 
-export const metadata = { title: "Terms · Parrot" };
+export const metadata = { title: "Terms · Luci" };
 
 export default function Page() {
   return (
@@ -9,7 +9,7 @@ export default function Page() {
       <section>
         <h2>A prototype</h2>
         <p>
-          Parrot is a student prototype built at HackPrinceton Fall 2026. It is provided as is, without warranty, and may
+          Luci is a student prototype built at HackPrinceton Fall 2026. It is provided as is, without warranty, and may
           change or stop working at any time.
         </p>
       </section>
@@ -23,9 +23,9 @@ export default function Page() {
       </section>
 
       <section>
-        <h2>Using Parrot</h2>
+        <h2>Using Luci</h2>
         <ul>
-          <li>Switch Parrot on only for sites you are allowed to read.</li>
+          <li>Switch Luci on only for sites you are allowed to read.</li>
           <li>Do not use the tutor to submit anything unlawful or anyone else&apos;s personal information.</li>
           <li>Speech and text you send are processed by the services named in the privacy policy.</li>
         </ul>
@@ -41,7 +41,7 @@ export default function Page() {
       <section>
         <h2>Your data</h2>
         <p>
-          What Parrot stores and how to delete it is set out in the{" "}
+          What Luci stores and how to delete it is set out in the{" "}
           <Link href="/privacy-policy" className="text-ink underline decoration-line transition-colors duration-150 hover:decoration-ink">
             privacy policy
           </Link>
