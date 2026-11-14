@@ -39,12 +39,12 @@ npm run seed-demo             # wipe + reseed user_words for DEMO_USER_ID (needs
 
 `seed-demo` resets the demo user (`DEMO_USER_ID`) to the demo state:
 
-- **25 `user_words`** with backdated FSRS history: 4 mastered, 6 due, 5 known (always including *problema*), 5 learning (not due), and 5 hovered in the last ~2h: *empresa*, *mercado*, *mundo* and *negocio* from the demo article, plus the flip word *huelga* (`FLIP_LEMMA`, left in `learning` so it flips to known on stage).
-- **Articles and events:** the NPR demo article ("Nvidia CEO Jensen Huang resigns amid spy scandal : NPR") and, while the flip word isn't on that page, a "Workers strike…" article. That's one `reading` event per article plus one `hover` per hovered word, with the real post-swap sentence in `meta.sentence`.
+- **24 `user_words`** with backdated FSRS history: 4 mastered, 6 due, 5 known (always including *problema*), 5 learning (not due), and 4 hovered on the demo article in the last ~2h: *negocio*, *mundo*, *mercado* and the stage word *empresa* (`FLIP_LEMMA`). *empresa* is left in `learning` and is the newest hover, since the tutor targets the 3 newest hovers. It flips to known live on stage.
+- **Article and events:** only the NPR demo article ("Nvidia CEO Jensen Huang resigns amid spy scandal : NPR"), with one `reading` event and one `hover` per hovered word. Each hover carries the real post-swap sentence in `meta.sentence`. Old seed articles (the "Workers strike…" one) are deleted on every run.
 - **One past tutor session** (yesterday) whose recap has a gender-agreement error (*la problema → el problema*, 3×). This feeds the tutor's `topErrors` and the `onWeakList` flag.
 - **Settings** reset to `settingsFixture`.
 
-`articleKey` is SHA-256 hex of `` `${hostname}\n${document.title}` ``, which has to match the extension (pending Naren's confirmation). The script is idempotent: it wipes the user's `user_words` and every seed-owned row by its fixed id before writing, so it's safe after "Delete everything". Hover times are relative to now, and the tutor only looks back 24h, so **rerun it right before judging**.
+`articleKey` is lowercase SHA-256 hex (UTF-8) of `` `${location.hostname}\n${document.title}` ``, the same recipe as the extension (confirmed with Naren: NPR = `59809d94…8271`). The script is idempotent: it wipes the user's `user_words` and every seed-owned row by its fixed id before writing, so it's safe after "Delete everything". Hover times are relative to now, and the tutor only looks back 24h, so **rerun it right before judging**.
 HACK: `ts-fsrs` is installed here, not in `/web`, until the scaffold lands. Both commands set `NODE_PATH` so `web/lib/learner` can resolve it.
 
 ### Attribution

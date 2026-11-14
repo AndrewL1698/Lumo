@@ -36,32 +36,37 @@ const articleKey = (domain: string, title: string) => createHash("sha256").updat
 // Naren: NPR demo article. Title is document.title verbatim (with the " : NPR" suffix).
 const NPR = { domain: "www.npr.org", title: "Nvidia CEO Jensen Huang resigns amid spy scandal : NPR" };
 // Naren: real swaps on that page, with the post-swap sentences the learner actually reads.
-const NPR_HOVERS: { lemma: string; sentence: string }[] = [
-  {
-    lemma: "empresa",
-    sentence:
-      "The decision comes days after la empresa took the extraordinary step of launching an investigation following news reports alleging that Huang had had an extramarital affair with one of the company's clients…",
-  },
-  {
-    lemma: "mercado",
-    sentence: "Today, it's valued at more than $4 trillion, among the most valuable in el mundo, and it dominates el mercado for GPUs.",
-  },
-  {
-    lemma: "mundo",
-    sentence: "Today, it's valued at more than $4 trillion, among the most valuable in el mundo, and it dominates el mercado for GPUs.",
-  },
+// Oldest → newest. Andrew's context route targets the 3 newest hovers, so the flip word must be last.
+const NPR_HOVERS: { lemma: string; sentence: string; minutesAgo: number }[] = [
   {
     lemma: "negocio",
     sentence:
       "But analysts say despite Huang's visionary management of el negocio, he had a blind spot for succession and hadn't articulated a clear plan, at least publicly.",
+    minutesAgo: 120,
+  },
+  {
+    lemma: "mundo",
+    sentence: "Today, it's valued at more than $4 trillion, among the most valuable in el mundo, and it dominates el mercado for GPUs.",
+    minutesAgo: 90,
+  },
+  {
+    lemma: "mercado",
+    sentence: "Today, it's valued at more than $4 trillion, among the most valuable in el mundo, and it dominates el mercado for GPUs.",
+    minutesAgo: 60,
+  },
+  {
+    lemma: "empresa",
+    sentence:
+      "The decision comes days after la empresa took the extraordinary step of launching an investigation following news reports alleging that Huang had had an extramarital affair with one of the company's clients…",
+    minutesAgo: 15,
   },
 ];
 
-// Andrew: the word that flips to known on stage. Stays `learning`, with a hover. TODO(demo): confirm with Andrew
-// (huelga isn't on the NPR page; if he picks an NPR word, set it here and the strike article is skipped).
-const FLIP_LEMMA = "huelga";
-const STRIKE = { domain: "www.bbc.com", title: "Workers strike as talks stall - BBC News" };
-const FLIP_SENTENCE = "Thousands of workers joined la huelga on Monday after talks with the government stalled.";
+// Andrew (team chat): the stage word that flips to known live. Stays `learning`, newest seeded hover.
+const FLIP_LEMMA = "empresa";
+
+// Articles earlier seed versions wrote. Deleted on every run so the tutor opener can only pick the NPR article.
+const LEGACY_ARTICLES = [{ domain: "www.bbc.com", title: "Workers strike as talks stall - BBC News" }];
 
 // Pinned recipes: problema is in the past session's agreement error, so it must exist as a real word.
 const PINNED: Record<string, keyof typeof recipes> = { problema: "known" };
@@ -101,12 +106,12 @@ const recipes = {
 } satisfies Record<string, (lemma: string) => UserWord>;
 const PLAN: [keyof typeof recipes, number][] = [["mastered", 4], ["due", 6], ["known", 4], ["learning", 5]];
 
-// Demo hovers: NPR words spread over the last ~2h, the flip word ~20 min ago (all inside the 24h window).
+// Demo hovers: NPR words over the last ~2h, flip word newest (all inside the 24h window).
 type Hover = { lemma: string; sentence: string; article: { domain: string; title: string }; at: Date };
-const hovers: Hover[] = NPR_HOVERS.map((h, k) => ({ ...h, article: NPR, at: new Date(now.getTime() - (120 - k * 20) * MIN) }));
-const flipOnNpr = NPR_HOVERS.find((h) => h.lemma === FLIP_LEMMA);
-if (!flipOnNpr) hovers.push({ lemma: FLIP_LEMMA, sentence: FLIP_SENTENCE, article: STRIKE, at: new Date(now.getTime() - 20 * MIN) });
-const articles = flipOnNpr ? [NPR] : [STRIKE, NPR];
+const hovers: Hover[] = NPR_HOVERS.map((h) => ({ lemma: h.lemma, sentence: h.sentence, article: NPR, at: new Date(now.getTime() - h.minutesAgo * MIN) }));
+const articles = [NPR];
+const newest = [...hovers].sort((a, b) => b.at.getTime() - a.at.getTime())[0];
+if (newest?.lemma !== FLIP_LEMMA) throw new Error(`${FLIP_LEMMA} must be the newest seeded hover (it's ${newest?.lemma})`);
 
 const fixed = new Set([...hovers.map((h) => h.lemma), ...Object.keys(PINNED)]);
 const total = PLAN.reduce((s, [, k]) => s + k, 0);
@@ -177,6 +182,9 @@ await rest("user_words", {
 console.log(`seed-demo: wrote ${rows.length} user_words`);
 
 // Articles (one row per article_key) + a reading event each, then the hover events.
+// Delete seed-owned and legacy article rows first: upsert alone would leave old articles behind.
+const ownedKeys = [...articles, ...LEGACY_ARTICLES].map((a) => articleKey(a.domain, a.title));
+await rest(`articles?user_id=eq.${userId}&article_key=in.(${ownedKeys.join(",")})`, { method: "DELETE" });
 await rest("articles?on_conflict=user_id,article_key", {
   method: "POST",
   headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
