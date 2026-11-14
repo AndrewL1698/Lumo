@@ -133,6 +133,12 @@ Andrew sends the exact TypeScript type plus a mock in Phase 1. Until then, write
 - Recap styling: it is on screen during the demo.
 - **Done when:** every page looks finished both with empty data and with fixtures, and no Spanish appears without English nearby.
 
+### 4.2 Judge-facing extras (after 4.1; cuttable)
+Spec in `docs/roadmap.md` → "Judge-facing extras". Two small tutor-page additions that make the tutor's planning visible to judges:
+- **J1:** one small grey line under each tutor caption, showing the `X-Parrot-Why` text from `/api/tutor/reply`.
+- **J2:** a "Today's lesson" card above the transcript (topic + why, target words with reasons, one error to watch). Target words tick off from `wordUpdates`.
+- Build against fixtures until Andrew's fields land.
+
 ---
 
 ## Ship: Sun 3:00–7:30am

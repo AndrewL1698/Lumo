@@ -50,7 +50,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
       <TargetChips words={targetWords} known={known} />
 
       <ol className="space-y-6">
-        {turns.map((t) => (
+        {turns.map((t, i) => (
           <li key={t.id} className="space-y-3">
             {t.rawText && (
               <div className="rounded-xl bg-slate-50 p-4">
@@ -64,6 +64,15 @@ export function TutorPage({ session }: { session: TutorSession }) {
               <div className="rounded-xl bg-indigo-50 p-4">
                 <p className="mb-1 text-xs font-medium uppercase tracking-wide text-indigo-600">Tutor</p>
                 <p className="text-xl text-slate-900">{t.tutorText}</p>
+                {t.tutorEnglish &&
+                  (turns.slice(i + 1).some((x) => x.rawText) ? (
+                    <p className="mt-2 text-base text-slate-600">
+                      <span className="font-medium text-indigo-600">In English: </span>
+                      {t.tutorEnglish}
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-sm text-slate-400">English appears after you answer.</p>
+                  ))}
               </div>
             )}
           </li>
