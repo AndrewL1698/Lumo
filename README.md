@@ -89,10 +89,14 @@ The tutor decides how to teach on every turn instead of following a script:
 Method: [`eval/README.md`](eval/README.md).
 
 ## Screenshots
-<!-- TODO(demo): capture after the demo data is final and put them in docs/img/. -->
-| Tutor | Vocabulary | What Parrot knows |
-|---|---|---|
-| _docs/img/tutor.png_ | _docs/img/vocabulary.png_ | _docs/img/privacy.png_ |
+<!-- TODO(demo): add docs/img/tutor.png once the tutor uses the real reading context. -->
+**Vocabulary:** words move from *Learning now* to *Your vocabulary* only after correct use in speech.
+
+![Vocabulary page](docs/img/vocabulary.png)
+
+**What Parrot knows:** everything stored, with a delete button on each item.
+
+![What Parrot knows page](docs/img/privacy.png)
 
 ## Privacy
 - **Off by default.** The extension has no site access until you turn it on for a site; Chrome asks you to confirm each one.

@@ -12,11 +12,12 @@ function dueLabel(dueAt: string | null, now = Date.now()): string {
   const days = Math.ceil((new Date(dueAt).getTime() - now) / 86_400_000);
   if (days <= 0) return "due now";
   if (days === 1) return "due tomorrow";
+  if (days > 60) return `due in about ${Math.round(days / 30)} months`;
   return `due in ${days} days`;
 }
 
-function WordRow({ w, fresh }: { w: VocabItem; fresh?: boolean }) {
-  const due = dueLabel(w.dueAt);
+function WordRow({ w, fresh, showDue = true }: { w: VocabItem; fresh?: boolean; showDue?: boolean }) {
+  const due = showDue ? dueLabel(w.dueAt) : "";
   return (
     <li
       className={`flex items-baseline justify-between gap-3 border-b border-slate-100 py-2 last:border-0 ${
@@ -66,7 +67,7 @@ export function VocabLists({ data, fresh = new Set<string>() }: { data: VocabRes
               ) : (
                 <ul className="mt-2">
                   {words.map((w) => (
-                    <WordRow key={w.lemma} w={w} fresh={key === "known" && fresh.has(w.lemma)} />
+                    <WordRow key={w.lemma} w={w} fresh={key === "known" && fresh.has(w.lemma)} showDue={key !== "mastered"} />
                   ))}
                 </ul>
               )}
