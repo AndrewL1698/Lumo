@@ -75,6 +75,20 @@ function assertAlternates(messages: ClaudeMessage[]) {
   assert.ok(!system.includes("{level}"));
 }
 
+// ---------- per-level English: beginner sandwich + frames, upper_intermediate Spanish only ----------
+{
+  const sys = (level: typeof ctx.level) =>
+    buildTutorPrompt({ context: { ...ctx, level }, history: [], rawText: null, directive: none }).system;
+  const beginner = sys("beginner");
+  assert.ok(beginner.includes("then repeat the Spanish"));
+  assert.ok(beginner.includes("The frame must never contain a word from the learner's word list"));
+  assert.ok(!beginner.includes("Only Spanish"));
+  const upper = sys("upper_intermediate");
+  assert.ok(upper.includes("Only Spanish") && !upper.includes("then repeat the Spanish"));
+  assert.ok(sys("intermediate").includes("one short English hint"));
+  assert.ok(CORRECTOR_SYSTEM("beginner").includes("English-only transcript gets an empty"));
+}
+
 // ---------- tutor: normal turn, history starts with the tutor's opener ----------
 {
   const history = [
