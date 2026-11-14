@@ -57,7 +57,9 @@ ElevenLabs facts were fetched from the live docs. Anthropic facts come from the 
 - Haiku returned the exact spoken `form` and it is a substring of the raw transcript;
 - `correct` is true and no validated error with confidence ≥0.5 overlaps that form or names that lemma;
 - the utterance has at least 4 words (a bare echo of the tutor does not count);
+- it is not an echo: if the tutor's previous line contains the spoken form, the learner must add at least 3 words of their own (`ECHO_MIN_NEW_WORDS` in `validate.ts`);
 - it has not already been credited this session.
+Lemmas are matched ignoring case, accents and a leading article, so a model answer of "la casa" still counts for target `casa`.
 A wrong use sends `spoken_incorrect` only when the overlapping error has confidence ≥0.7. Updates are applied inside `/api/tutor/correct` and returned as `wordUpdates`, which drives the toast.
 
 **7. Failure modes.**
@@ -259,7 +261,7 @@ Fields
   form: the lemma, `form` exactly as spoken, and `correct` (right meaning and right form
   in this sentence). Leave out target words they did not say.
 ```
-User turn: `<level>…</level> <target_words>la casa (house); aprovechar (to make the most of)…</target_words> <tutor_said>…</tutor_said> <transcript>…</transcript>`
+User turn: `<level>…</level> <target_words>casa (house); aprovechar (to make the most of)…</target_words> <tutor_said>…</tutor_said> <transcript>…</transcript>`. Targets are listed without their article, and the model is told to copy the lemma exactly as written: with the article, Haiku returned "la casa" as the lemma.
 
 Server checks after the model, in `validate.ts`: drop errors whose span is not in `rawText`; drop errors where span and correction match once case, accents and punctuation are stripped; show only confidence ≥0.7; recompute `overall_ok`.
 
