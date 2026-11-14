@@ -3,6 +3,7 @@ import { checkExtensionToken } from "@/lib/auth";
 import { DEMO_USER_ID } from "@/lib/config";
 import { json, parseBody, preflight, withCors } from "@/lib/http";
 import { getSettings, putSettings } from "@/lib/learner/queries";
+import { isNeverListed } from "@/lib/neverlist";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -21,12 +22,16 @@ export async function GET(req: Request) {
   }
 }
 
-// PUT takes the full object. TODO(karthik): 4.2 reject never-list domains in allowlist.
+// PUT takes the full object. Never-list domains can't be allowlisted (4.2).
 export async function PUT(req: Request) {
   const denied = checkExtensionToken(req, { optional: true });
   if (denied) return denied;
   const body = await parseBody(req, Settings);
   if (body instanceof NextResponse) return withCors(body);
+  const forbidden = body.allowlist.filter(isNeverListed);
+  if (forbidden.length) {
+    return withCors(json({ error: `Parrot never runs on: ${forbidden.join(", ")}` }, ApiError, { status: 400 }));
+  }
   try {
     await putSettings(DEMO_USER_ID, body);
   } catch (err) {
