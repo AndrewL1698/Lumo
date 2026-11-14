@@ -3,7 +3,7 @@ import { Settings } from "@parrot/shared";
 import { useState } from "react";
 import Link from "next/link";
 import { OnboardingForm } from "@/components/onboarding/OnboardingForm";
-import { ErrorState, PageHeader } from "@/components/ui/PageHeader";
+import { ErrorState, LoadingState, PageHeader } from "@/components/ui/PageHeader";
 import { useFetch } from "@/components/useFetch";
 
 export default function Page() {
@@ -29,7 +29,7 @@ export default function Page() {
   return (
     <>
       <PageHeader title="Welcome to Parrot" subtitle="Two quick steps: tell us your level, then pair the Chrome extension." />
-      {loading && <p className="text-slate-500">Loading…</p>}
+      {loading && <LoadingState />}
       {error && !data && <ErrorState message={error} onRetry={() => void reload()} />}
       {data && <OnboardingForm initial={data} onSubmit={save} />}
       {saveError && <ErrorState message={saveError} />}
