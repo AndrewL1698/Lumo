@@ -1,5 +1,5 @@
 // Read helpers for routes and Andrew's /api/tutor/context (brief 3.5). Relative imports only (tsx from /scripts, /eval).
-import { Settings, settingsFixture } from "@parrot/shared";
+import { Recap, Settings, settingsFixture } from "@parrot/shared";
 import { getDb } from "../db";
 
 /** The user's settings row, or the fixture values if there is none (or it doesn't parse). */
@@ -61,18 +61,40 @@ export async function todaysArticleTitles(userId: string, now: Date = new Date()
     .gte("ts", midnight.toISOString())
     .order("ts", { ascending: false });
   if (error) throw error;
-  return data.map((r) => r.title as string | null).filter((t): t is string => !!t);
+  // Dedupe: a mismatched articleKey for the same page would otherwise list its title twice.
+  return [...new Set(data.map((r) => r.title as string | null).filter((t): t is string => !!t))];
 }
+
+/** Word-list details so the route can build TargetWords without another query. `english` is "; "-joined. */
+export type WordInfo = { article: string | null; english: string; cognate: boolean };
 
 export type TutorContextData = {
   level: Settings["level"];
   /** Last 24h, newest first, one per lemma. hoveredAt/articleTitle are for J2's "hovered at 9:12 in …". */
-  hoveredWords: { lemma: string; sentence?: string; hoveredAt: string; articleTitle?: string }[];
+  hoveredWords: ({ lemma: string; sentence?: string; hoveredAt: string; articleTitle?: string } & WordInfo)[];
   /** Most overdue first. */
-  dueWords: { lemma: string; dueAt: string }[];
+  dueWords: ({ lemma: string; dueAt: string } & WordInfo)[];
   /** Today's article titles; [] when Settings.useReadingInLessons is off. */
   articleTitles: string[];
+  /** From the latest tutor session recap, e.g. `agreement: "la problema" → "el problema" (3×)`. */
+  topErrors: string[];
 };
+
+/** topErrors of the most recent tutor session that has a valid recap, formatted for the tutor prompt. */
+export async function latestTopErrors(userId: string): Promise<string[]> {
+  const { data, error } = await getDb()
+    .from("tutor_sessions")
+    .select("recap")
+    .eq("user_id", userId)
+    .not("recap", "is", null)
+    .order("ended_at", { ascending: false, nullsFirst: false })
+    .order("started_at", { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  const parsed = Recap.safeParse(data[0]?.recap);
+  if (!parsed.success) return [];
+  return parsed.data.topErrors.map((e) => `${e.type}: "${e.span}" → "${e.correction}" (${e.count}×)`);
+}
 
 /** Everything Andrew's /api/tutor/context needs from the DB, in one call. Throws on DB error. */
 export async function getTutorContextData(
@@ -83,8 +105,9 @@ export async function getTutorContextData(
   const db = getDb();
   const since = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
 
-  const [settings, hovers, due] = await Promise.all([
+  const [settings, topErrors, hovers, due] = await Promise.all([
     getSettings(userId),
+    latestTopErrors(userId),
     db
       .from("events")
       .select("lemma, article_key, ts, meta")
@@ -118,22 +141,45 @@ export async function getTutorContextData(
     for (const a of arts.data) if (a.title) titles.set(a.article_key as string, a.title as string);
   }
 
+  // Word details for hovered + due lemmas in one query.
+  const lemmas = [...new Set([...latest.keys(), ...due.data.map((r) => r.lemma as string)])];
+  const info = new Map<string, WordInfo>();
+  if (lemmas.length) {
+    const words = await db.from("words").select("lemma, article, english, cognate").in("lemma", lemmas);
+    if (words.error) throw words.error;
+    for (const w of words.data) {
+      info.set(w.lemma as string, {
+        article: w.article as string | null,
+        english: (w.english as string[]).join("; "),
+        cognate: w.cognate as boolean,
+      });
+    }
+  }
+  const infoOf = (lemma: string): WordInfo => info.get(lemma) ?? { article: null, english: "", cognate: false };
+
   const hoveredWords = [...latest.values()].map((h) => {
+    const lemma = h.lemma as string;
     const sentence = (h.meta as { sentence?: unknown } | null)?.sentence;
     const articleTitle = titles.get(h.article_key as string);
     return {
-      lemma: h.lemma as string,
+      lemma,
       hoveredAt: new Date(h.ts as string).toISOString(),
       ...(typeof sentence === "string" && { sentence }),
       ...(articleTitle && { articleTitle }),
+      ...infoOf(lemma),
     };
   });
 
   return {
     level: settings.level,
     hoveredWords,
-    dueWords: due.data.map((r) => ({ lemma: r.lemma as string, dueAt: new Date(r.due_at as string).toISOString() })),
+    dueWords: due.data.map((r) => ({
+      lemma: r.lemma as string,
+      dueAt: new Date(r.due_at as string).toISOString(),
+      ...infoOf(r.lemma as string),
+    })),
     articleTitles: settings.useReadingInLessons ? await todaysArticleTitles(userId, now) : [],
+    topErrors,
   };
 }
 
