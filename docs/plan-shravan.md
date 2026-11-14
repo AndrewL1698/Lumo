@@ -7,6 +7,31 @@ Repo state at 1am Sat: only docs. There is no `/web`, no `/shared` and no `.giti
 
 ---
 
+## Status (Sat Nov 14, ~4pm)
+All on `main`. Build passes. Plain-language running log: kept outside the repo.
+
+| Step | Status |
+|---|---|
+| 0 Preflight | ✅ |
+| 1 Shell, nav, tokens | ✅ |
+| 2 Mocks + fetch layer | ✅ (shared fixtures, `useFetch` with zod parsing) |
+| 3 Transcript + inline highlights | ✅ |
+| 4 Tutor page | ✅ on Andrew's real `useTutorSession` (PR #15); Start lesson button, notice bar, type-instead box, pinned controls + auto-scroll |
+| 5 "Now known" toast + recap | ✅ UI. Toast never fires live yet: `/api/tutor/correct` returns `wordUpdates: []` (Andrew task 12). Recap content is still the fixture (`/api/tutor/end`). |
+| 6 Vocabulary | ✅ real data; "just learned" highlight + banner |
+| 7 What Parrot knows | ✅ real data; compact chips, summary line, English event names |
+| 8 Onboarding | ✅ (pairing code 482913 accepted by `/api/pair`) |
+| 9 Hand-off to Andrew | ✅ (his task 11 done by us) |
+| 10–12 Wire vocab, data, settings | ✅ real routes; settings save merges onto fresh GET (allowlist never overwritten); delete refetches |
+| 13 Polish | ✅ mostly: loading placeholders, error states, projector fixes, English hints after the learner answers |
+| 14 README + screenshots | 🟡 full draft + Vocabulary/What Parrot knows screenshots. Pending: eval numbers, Tutor screenshot |
+
+Added beyond the plan: rehearsal mode `/tutor?mock=1` (stage backup, no API calls), bigger "now known" pop-up.
+
+**Waiting on teammates:** Andrew tasks 10 (real tutor context: opener and target words from the NPR article) and 12 (now known); Karthik reseed before the demo.
+**On hold by roadmap rule:** J1 "why" line and J2 lesson card, until the full demo runs end to end once (Phase 3 exit).
+**Next:** visual design pass on the on-camera pages (Tutor, Vocabulary, What Parrot knows), then retest the full flow when Andrew lands 10/12.
+
 ## 1. My tasks (from docs/roadmap.md)
 
 | Phase / deadline | Task |
