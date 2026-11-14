@@ -15,15 +15,38 @@ type MouthEls = {
   tongue: React.RefObject<SVGEllipseElement | null>;
   outline: React.RefObject<SVGPathElement | null>;
   bob: React.RefObject<HTMLDivElement | null>;
+  last: { current: Shape }; // the shape currently on screen
+  tween: { current: number }; // rAF id of a running blend (0 = none)
 };
+
+// Reaction faces (the body stays still; reactions use the mouth, eyes and glow).
+const GRIN: Shape = { w: 8, h: 4.2, curve: 3.5, teeth: 0.6, round: 0 };
+const HMM: Shape = { w: 4.2, h: 0, curve: 1.6, teeth: 0, round: 0 };
+
+/** Blend the mouth from what's on screen to `to` over `ms` (no snapping). Cancels any running blend. */
+function tweenMouth(els: MouthEls, to: Shape, ms = 160) {
+  cancelAnimationFrame(els.tween.current);
+  const from = { ...els.last.current };
+  const t0 = performance.now();
+  const step = () => {
+    const x = Math.min(1, (performance.now() - t0) / ms);
+    const e = 1 - (1 - x) * (1 - x) * (1 - x); // ease-out
+    const p = { ...from };
+    for (const k of KEYS) p[k] = from[k] + (to[k] - from[k]) * e;
+    drawMouth(els, p, 0);
+    els.tween.current = x < 1 ? requestAnimationFrame(step) : 0;
+  };
+  els.tween.current = requestAnimationFrame(step);
+}
 
 const MOUTH_Y = 71;
 
 function drawMouth(els: MouthEls, p: Shape, bob: number) {
+  els.last.current = { ...p };
   const { line, open, fill, clip, teeth, tongue } = els;
   if (!line.current || !open.current || !fill.current || !clip.current || !teeth.current || !tongue.current) return;
   // head nod: its own HTML wrapper (fixed box, fixed origin), so it never fights the float or the lean
-  if (els.bob.current) els.bob.current.style.transform = bob > 0.002 ? `translateY(${(-1.6 * bob).toFixed(2)}%) rotate(${(-1.4 * bob).toFixed(2)}deg)` : "";
+  void bob; // the body never moves (no nod); kept in the signature for the loop's bookkeeping
   const { w, h, curve, round } = p;
   const L = (60 - w).toFixed(2);
   const R = (60 + w).toFixed(2);
@@ -76,11 +99,9 @@ function useLipSync(
   onTextDone: React.RefObject<() => void>,
 ) {
   useEffect(() => {
-    const p: Shape = { ...SHAPES.rest };
-    if (!active) {
-      drawMouth(els, p, 0);
-      return;
-    }
+    if (!active) return;
+    cancelAnimationFrame(els.tween.current); // lip-sync takes over from any reaction blend
+    const p: Shape = { ...els.last.current };
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const began = performance.now();
     let last = began;
@@ -173,7 +194,7 @@ function useLipSync(
     raf = requestAnimationFrame(frame);
     return () => {
       cancelAnimationFrame(raf);
-      drawMouth(els, { ...SHAPES.rest }, 0); // back to rest when the talking ends
+      tweenMouth(els, SHAPES.rest); // ease back to rest when the talking ends
       els.bob.current?.setAttribute("data-viseme", "rest");
     };
   }, [active, els, speechText, onTextDone]);
@@ -209,6 +230,8 @@ export function LuciFirefly({
     tongue: { current: null },
     outline: { current: null },
     bob: { current: null },
+    last: { current: { ...SHAPES.rest } },
+    tween: { current: 0 },
   }).current;
   const clipId = `luci-mouth-${useId().replace(/:/g, "")}`;
   const reactRef = useRef<HTMLDivElement>(null);
@@ -239,7 +262,14 @@ export function LuciFirefly({
     if (!still && mood === "speaking" && !heardVoice()) setTextTalk(true);
   }, [mood, still]);
   const textDone = useRef(() => setTextTalk(false));
-  useLipSync(!still && (mood === "speaking" || voiceOn || textTalk), els, textRef, textDone);
+  const talking = !still && (mood === "speaking" || voiceOn || textTalk);
+  useLipSync(talking, els, textRef, textDone);
+  // Reaction faces when Luci isn't talking: a grin (correct / word learned) or a gentle "hmm" (mistake).
+  useEffect(() => {
+    if (still || talking) return;
+    tweenMouth(els, reaction === "good" || reaction === "loop" ? GRIN : reaction === "oops" ? HMM : SHAPES.rest, 200);
+  }, [reaction, reactionKey, talking, still, els]);
+  useEffect(() => () => cancelAnimationFrame(els.tween.current), [els]);
 
   return (
     <div
@@ -249,9 +279,9 @@ export function LuciFirefly({
       data-still={still ? "" : undefined}
       style={size ? { width: size, height: size } : undefined}
     >
-      <div className="luci-float h-full w-full">
-       <div className="luci-lean h-full w-full">
-        <div ref={els.bob} className="h-full w-full origin-[50%_80%]">
+      <div className="h-full w-full">
+       <div className="h-full w-full">
+        <div ref={els.bob} className="h-full w-full">
          <div ref={reactRef} className="luci-react relative h-full w-full" data-react={reaction ?? undefined}>
         <svg viewBox="0 0 120 120" width="100%" height="100%" overflow="visible">
               {/* tail light: a flat halo and the lamp itself */}
@@ -278,6 +308,11 @@ export function LuciFirefly({
                 <circle className="luci-pupil" cx="72" cy="60" r="4.6" fill="#1a2028" />
                 <circle cx="51.8" cy="57.8" r="1.6" fill="#fcfcf8" />
                 <circle cx="73.8" cy="57.8" r="1.6" fill="#fcfcf8" />
+              </g>
+              {/* happy eyes for reactions (crescents), shown instead of the round eyes */}
+              <g className="luci-eyes-happy" fill="none" stroke="#fcfcf8" strokeWidth="3" strokeLinecap="round">
+                <path d="M43 61 Q49 53 55 61" />
+                <path d="M65 61 Q71 53 77 61" />
               </g>
               <circle cx="42" cy="70" r="3.6" fill="#f0a39a" fillOpacity=".7" />
               <circle cx="78" cy="70" r="3.6" fill="#f0a39a" fillOpacity=".7" />
