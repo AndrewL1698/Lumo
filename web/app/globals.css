@@ -121,51 +121,72 @@ ruby.fix rt {
 }
 
 /* ---------- Luci firefly (components/tutor/LuciFirefly.tsx) ----------
-   Every motion maps to a tutor state or a reaction to the learner's answer. */
-.luci svg * {
+   Calm by construction: each motion owns its own wrapper, so nothing fights over one transform.
+   HTML wrappers (fixed-size boxes, stable origins): .luci-float (slow bob) > .luci-lean (listening lean,
+   eased) > bob div (head nod, JS) > .luci-react (one-off reactions). Inside the SVG only leaf shapes
+   animate, each around its own (static) geometry. Durations never change with state; only amplitudes
+   do, through transitioned custom properties, so state changes ease instead of snapping. */
+@property --wing-amp {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0.45;
+}
+.luci {
+  --wing-amp: 0.45;
+  transition: --wing-amp 500ms ease;
+}
+/* shapes animate around their own geometry; groups keep plain SVG transforms (their attribute rotations) */
+.luci svg :not(g) {
   transform-box: fill-box;
   transform-origin: center;
 }
-.luci .luci-float {
-  animation: luci-bob 3.2s ease-in-out infinite;
+.luci-float {
+  animation: luci-bob 3.6s ease-in-out infinite;
 }
-.luci .luci-lean {
-  transition: transform 300ms var(--ease-out);
+.luci-lean {
+  transform-origin: 50% 85%;
+  transition: transform 450ms var(--ease-out);
 }
 .luci .luci-wing-l {
   transform-origin: 100% 100%;
-  animation: luci-flap-l 0.9s ease-in-out infinite alternate;
+  animation: luci-flap-l 1.2s ease-in-out infinite alternate;
 }
 .luci .luci-wing-r {
   transform-origin: 0% 100%;
-  animation: luci-flap-r 0.9s ease-in-out infinite alternate;
+  animation: luci-flap-r 1.2s ease-in-out infinite alternate;
 }
 .luci .luci-tail {
-  animation: luci-pulse 2.6s ease-in-out infinite;
+  animation: luci-pulse 2.8s ease-in-out infinite;
 }
 .luci .luci-halo {
   opacity: 0.55;
-  animation: luci-halo 2.6s ease-in-out infinite;
-  transition: opacity 300ms;
+  animation: luci-halo 2.8s ease-in-out infinite;
+  transition: opacity 400ms ease;
 }
 .luci .luci-eyes {
+  /* the pupils move inside this group, so pin the blink origin instead of measuring the group */
+  transform-box: view-box;
+  transform-origin: 60px 59px;
   animation: luci-blink 5.5s infinite;
+}
+.luci .luci-pupil {
+  transition: transform 350ms var(--ease-out);
 }
 .luci .luci-think,
 .luci .luci-sparks {
   opacity: 0;
+  transition: opacity 250ms ease;
 }
 
-/* listening: leans in, brighter, wings faster */
-.luci[data-mood="listening"] .luci-lean {
-  transform: rotate(10deg) translateX(4px) scale(1.06);
+/* listening: leans in, brighter, wings beat wider */
+.luci[data-mood="listening"] {
+  --wing-amp: 1;
 }
-.luci[data-mood="listening"] .luci-wing {
-  animation-duration: 0.14s;
+.luci[data-mood="listening"] .luci-lean {
+  transform: rotate(6deg) translateX(2%) scale(1.04);
 }
 .luci[data-mood="listening"] .luci-halo {
   opacity: 1;
-  animation-duration: 1.2s;
 }
 .luci[data-mood="listening"] .luci-pupil {
   transform: translate(2px, 1px);
@@ -174,26 +195,31 @@ ruby.fix rt {
 .luci[data-mood="checking"] .luci-think {
   opacity: 1;
 }
-.luci[data-mood="checking"] .luci-think circle {
-  animation: luci-dot 1s ease-in-out infinite;
+.luci .luci-think circle {
+  animation: luci-dot 1.2s ease-in-out infinite;
 }
-.luci[data-mood="checking"] .luci-think circle:nth-child(2) {
-  animation-delay: 0.15s;
+.luci .luci-think circle:nth-child(2) {
+  animation-delay: 0.2s;
 }
-.luci[data-mood="checking"] .luci-think circle:nth-child(3) {
-  animation-delay: 0.3s;
+.luci .luci-think circle:nth-child(3) {
+  animation-delay: 0.4s;
 }
-/* speaking: the lamp pulses with the voice */
-.luci[data-mood="speaking"] .luci-tail,
+/* speaking: a little brighter; the mouth does the talking */
 .luci[data-mood="speaking"] .luci-halo {
-  animation-duration: 0.5s;
+  opacity: 0.8;
 }
 
-/* reactions, played once */
+/* reactions, played once on the .luci-react wrapper */
+.luci-react {
+  transform-origin: 50% 80%;
+}
 .luci-react[data-react="good"] {
-  animation: luci-hop 700ms var(--ease-out);
+  animation: luci-hop 750ms var(--ease-out);
 }
 .luci-react[data-react="good"] .luci-halo {
+  opacity: 1;
+}
+.luci-react[data-react="good"] .luci-sparks {
   opacity: 1;
 }
 .luci-react[data-react="good"] .luci-sparks circle {
@@ -209,13 +235,13 @@ ruby.fix rt {
   animation: luci-pop 1.6s var(--ease-out) forwards;
 }
 .luci-react[data-react="oops"] {
-  animation: luci-tilt 1.6s var(--ease-out);
+  animation: luci-tilt 1.6s ease-in-out;
 }
 .luci-react[data-react="oops"] .luci-halo {
   opacity: 0.3;
 }
 .luci-react[data-react="loop"] {
-  animation: luci-loop 900ms var(--ease-out);
+  animation: luci-loop 1s var(--ease-out);
 }
 
 /* older tutor turns: Luci sits still */
@@ -226,36 +252,36 @@ ruby.fix rt {
 
 @keyframes luci-bob {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-4px); }
+  50% { transform: translateY(-3%); }
 }
 @keyframes luci-flap-l {
-  from { transform: rotate(-32deg) scaleY(1); }
-  to { transform: rotate(-24deg) scaleY(0.82); }
+  from { transform: rotate(0deg) scaleY(1); }
+  to { transform: rotate(calc(var(--wing-amp) * 9deg)) scaleY(calc(1 - var(--wing-amp) * 0.16)); }
 }
 @keyframes luci-flap-r {
-  from { transform: rotate(32deg) scaleY(1); }
-  to { transform: rotate(24deg) scaleY(0.82); }
+  from { transform: rotate(0deg) scaleY(1); }
+  to { transform: rotate(calc(var(--wing-amp) * -9deg)) scaleY(calc(1 - var(--wing-amp) * 0.16)); }
 }
 @keyframes luci-pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.72; }
+  50% { opacity: 0.78; }
 }
 @keyframes luci-halo {
-  0%, 100% { transform: scale(0.9); }
-  50% { transform: scale(1.08); }
+  0%, 100% { transform: scale(0.94); }
+  50% { transform: scale(1.06); }
 }
 @keyframes luci-blink {
-  0%, 93%, 100% { transform: scaleY(1); }
-  95% { transform: scaleY(0.1); }
+  0%, 94%, 100% { transform: scaleY(1); }
+  96% { transform: scaleY(0.1); }
 }
 @keyframes luci-dot {
   0%, 100% { transform: translateY(0); opacity: 0.4; }
-  50% { transform: translateY(-4px); opacity: 1; }
+  50% { transform: translateY(-3px); opacity: 1; }
 }
 @keyframes luci-hop {
   0% { transform: translateY(0) scale(1); }
-  30% { transform: translateY(-14px) scale(1.05, 0.95); }
-  60% { transform: translateY(0) scale(1.06, 0.92); }
+  35% { transform: translateY(-6%) scale(1.03, 0.97); }
+  70% { transform: translateY(0) scale(1.03, 0.96); }
   100% { transform: translateY(0) scale(1); }
 }
 @keyframes luci-spark {
@@ -270,11 +296,11 @@ ruby.fix rt {
 }
 @keyframes luci-tilt {
   0%, 100% { transform: rotate(0); }
-  25%, 70% { transform: rotate(-12deg); }
+  25%, 70% { transform: rotate(-10deg); }
 }
 @keyframes luci-loop {
   0% { transform: rotate(0) translateY(0); }
-  50% { transform: rotate(180deg) translateY(-18px); }
+  50% { transform: rotate(180deg) translateY(-8%); }
   100% { transform: rotate(360deg) translateY(0); }
 }
 
@@ -288,9 +314,10 @@ ruby.fix rt {
 
 @media (prefers-reduced-motion: reduce) {
   /* Luci keeps its glow but stops moving. */
-  .luci *,
-  .luci-react {
+  .luci,
+  .luci * {
     animation: none !important;
+    transition: none !important;
   }
 }
 

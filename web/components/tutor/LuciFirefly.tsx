@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
 import type { TutorStatus } from "@/app/tutor/session";
-import { MS_PER_UNIT, SHAPES, segAt, trackFor, unitsBeforeChar, type Shape } from "./visemes";
+import { MS_PER_UNIT, SHAPES, segAt, trackFor, unitsBeforeChar, type Shape, type Viseme } from "./visemes";
 import { VOICE_EVENT, currentSpeech, heardVoice, voiceLevel, voicePlaying } from "./voiceTap";
 
 export type LuciReaction = "good" | "oops" | "loop" | null;
@@ -14,7 +14,7 @@ type MouthEls = {
   teeth: React.RefObject<SVGRectElement | null>;
   tongue: React.RefObject<SVGEllipseElement | null>;
   outline: React.RefObject<SVGPathElement | null>;
-  bob: React.RefObject<SVGGElement | null>;
+  bob: React.RefObject<HTMLDivElement | null>;
 };
 
 const MOUTH_Y = 71;
@@ -22,7 +22,8 @@ const MOUTH_Y = 71;
 function drawMouth(els: MouthEls, p: Shape, bob: number) {
   const { line, open, fill, clip, teeth, tongue } = els;
   if (!line.current || !open.current || !fill.current || !clip.current || !teeth.current || !tongue.current) return;
-  els.bob.current?.setAttribute("transform", bob ? `rotate(${(-2 * bob).toFixed(2)} 60 62) translate(0 ${(-2.4 * bob).toFixed(2)})` : "");
+  // head nod: its own HTML wrapper (fixed box, fixed origin), so it never fights the float or the lean
+  if (els.bob.current) els.bob.current.style.transform = bob > 0.002 ? `translateY(${(-1.6 * bob).toFixed(2)}%) rotate(${(-1.4 * bob).toFixed(2)}deg)` : "";
   const { w, h, curve, round } = p;
   const L = (60 - w).toFixed(2);
   const R = (60 + w).toFixed(2);
@@ -62,6 +63,7 @@ function drawMouth(els: MouthEls, p: Shape, bob: number) {
 }
 
 const KEYS = ["w", "h", "curve", "teeth", "round"] as const;
+const MIN_HOLD_MS = 60;
 
 // Lip-sync. Timing, best source first: the clip's text spread over its real duration (ElevenLabs), the
 // browser voice's word boundaries, or (no audio at all, e.g. rehearsal) the reply text at a speaking pace.
@@ -83,9 +85,15 @@ function useLipSync(
     const began = performance.now();
     let last = began;
     let peak = 0.05;
-    let bob = 0;
+    let loudS = 0; // smoothed loudness (EMA)
+    let loudShown = 0; // what the mouth uses; only follows loudS past a small dead zone
+    let gateOpen = false; // audio "is talking" with hysteresis, so lips don't flicker at the threshold
+    let nodEnv = 0; // stressed-syllable impulse, decays
+    let bob = 0; // eased nod that follows nodEnv
     let lastSeg = -1;
     let lastText = "";
+    let held: Viseme = "rest"; // current shape, held for at least MIN_HOLD_MS
+    let heldSince = began;
     let raf = 0;
     const frame = () => {
       const now = performance.now();
@@ -106,16 +114,20 @@ function useLipSync(
         if (units >= track.total) onTextDone.current();
       }
 
-      let target: Shape = SHAPES.rest;
-      let name: string = "rest";
-      let scale = 1;
+      // loudness: normalise, smooth (fast attack, slower release), dead zone, hysteresis gate
       const lvl = voiceLevel();
-      let loud = -1;
+      const hasLevel = !!lvl;
       if (lvl) {
         peak = Math.max(peak * 0.995, lvl.rms, 0.01);
         const floor = Math.max(0.004, peak * 0.12);
-        loud = Math.min(1, Math.max(0, (lvl.rms - floor) / (peak * 0.7)));
+        const raw = Math.min(1, Math.max(0, (lvl.rms - floor) / (peak * 0.7)));
+        loudS += (raw - loudS) * (1 - Math.exp(-dt / (raw > loudS ? 45 : 140)));
+        if (Math.abs(loudS - loudShown) > 0.04) loudShown = loudS;
+        if (gateOpen && loudS < 0.05) gateOpen = false;
+        else if (!gateOpen && loudS > 0.12) gateOpen = true;
       }
+
+      let want: Viseme = "rest";
       if (track) {
         const key = sp?.text ?? speechText.current;
         if (key !== lastText) {
@@ -125,32 +137,36 @@ function useLipSync(
         const i = segAt(track, units);
         if (i >= 0) {
           const seg = track.segs[i];
-          target = SHAPES[seg.v];
-          name = seg.v;
-          if (i !== lastSeg && seg.stress) bob = 1; // nod on stressed syllables
+          want = seg.v;
+          if (i !== lastSeg && seg.stress) nodEnv = 1; // nod on stressed syllables
         }
         lastSeg = i;
-      } else if (sp && loud >= 0) {
+      } else if (sp && hasLevel) {
         // audio we could not match to text: pick a shape from loudness and tone
-        target = loud > 0.55 ? (lvl!.low > 0.6 ? SHAPES.ou : SHAPES.a) : loud > 0.25 ? SHAPES.ei : loud > 0.08 ? SHAPES.ltn : SHAPES.rest;
+        want = loudShown > 0.55 ? (lvl!.low > 0.6 ? "ou" : "a") : loudShown > 0.25 ? "ei" : "ltn";
       }
-      if (loud >= 0) {
-        if (loud < 0.06) {
-          target = SHAPES.rest; // a pause in the audio: lips close
-          name = "rest";
-        }
-        else scale = 0.45 + 0.75 * loud;
+      if (hasLevel && !gateOpen) want = "rest"; // a pause in the audio: lips close
+
+      // each shape shows for at least MIN_HOLD_MS, so very short sounds don't flicker
+      if (want !== held && now - heldSince >= MIN_HOLD_MS) {
+        held = want;
+        heldSince = now;
       }
+      const target = SHAPES[held];
+      const scale = hasLevel ? 0.5 + 0.7 * loudShown : 1;
 
       // ~70ms blend between shapes
-      const k = 1 - Math.exp(-dt / 28);
+      const k = 1 - Math.exp(-dt / 30);
       for (const key of KEYS) {
         const goal = key === "h" ? target.h * scale : target[key];
         p[key] += (goal - p[key]) * k;
       }
-      bob *= Math.exp(-dt / 140);
+      // nod: impulse decays, the head eases toward it (no single-frame jump)
+      nodEnv *= Math.exp(-dt / 180);
+      bob += (nodEnv - bob) * (1 - Math.exp(-dt / 70));
       const shown = reduce ? { ...p, h: Math.min(p.h, 1.2) } : p;
       drawMouth(els, shown, reduce ? 0 : bob);
+      const name = held;
       els.bob.current?.setAttribute("data-viseme", name); // debug: current mouth shape
       raf = requestAnimationFrame(frame);
     };
@@ -195,6 +211,14 @@ export function LuciFirefly({
     bob: { current: null },
   }).current;
   const clipId = `luci-mouth-${useId().replace(/:/g, "")}`;
+  const reactRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = reactRef.current;
+    if (!el || !reaction) return;
+    el.removeAttribute("data-react");
+    void el.offsetWidth; // restart the one-off reaction animation only
+    el.setAttribute("data-react", reaction);
+  }, [reactionKey, reaction]);
   const textRef = useRef(speechText);
   useEffect(() => {
     textRef.current = speechText;
@@ -225,17 +249,21 @@ export function LuciFirefly({
       data-still={still ? "" : undefined}
       style={size ? { width: size, height: size } : undefined}
     >
-      <div key={reactionKey} className="luci-react h-full w-full" data-react={reaction ?? undefined}>
+      <div className="luci-float h-full w-full">
+       <div className="luci-lean h-full w-full">
+        <div ref={els.bob} className="h-full w-full origin-[50%_80%]">
+         <div ref={reactRef} className="luci-react relative h-full w-full" data-react={reaction ?? undefined}>
         <svg viewBox="0 0 120 120" width="100%" height="100%" overflow="visible">
-          <g className="luci-float">
-            <g className="luci-lean">
-             <g ref={els.bob}>
               {/* tail light: a flat halo and the lamp itself */}
               <circle className="luci-halo" cx="60" cy="92" r="24" fill="#ffe9a0" />
               <ellipse className="luci-tail" cx="60" cy="90" rx="16" ry="13" fill="#ffd23a" />
-              {/* wings */}
-              <ellipse className="luci-wing luci-wing-l" cx="34" cy="46" rx="13" ry="21" fill="#6fa8d6" fillOpacity=".55" transform="rotate(-32 34 46)" />
-              <ellipse className="luci-wing luci-wing-r" cx="86" cy="46" rx="13" ry="21" fill="#6fa8d6" fillOpacity=".55" transform="rotate(32 86 46)" />
+              {/* wings: fixed angle on the group, the beat on the shape */}
+              <g transform="rotate(-32 34 46)">
+                <ellipse className="luci-wing luci-wing-l" cx="34" cy="46" rx="13" ry="21" fill="#6fa8d6" fillOpacity=".55" />
+              </g>
+              <g transform="rotate(32 86 46)">
+                <ellipse className="luci-wing luci-wing-r" cx="86" cy="46" rx="13" ry="21" fill="#6fa8d6" fillOpacity=".55" />
+              </g>
               {/* antennae */}
               <path d="M52 40 C48 28 42 22 36 20 M68 40 C72 28 78 22 84 20" fill="none" stroke="#2a3a4a" strokeWidth="3" strokeLinecap="round" />
               <circle cx="36" cy="20" r="4" fill="#ffd23a" />
@@ -266,9 +294,6 @@ export function LuciFirefly({
                 </g>
                 <path ref={els.outline} d="M54 71 Q60 71 66 71 Z" fill="none" stroke="#fcfcf8" strokeWidth="1.6" strokeLinejoin="round" />
               </g>
-             </g>
-            </g>
-          </g>
           {/* thinking dots, shown while checking */}
           <g className="luci-think">
             <circle cx="88" cy="14" r="3.5" fill="#9a6a00" />
@@ -287,6 +312,9 @@ export function LuciFirefly({
             ¡Bien!
           </span>
         )}
+         </div>
+        </div>
+       </div>
       </div>
     </div>
   );

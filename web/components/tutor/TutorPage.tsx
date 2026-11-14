@@ -47,10 +47,34 @@ export function TutorPage({ session }: { session: TutorSession }) {
   // Keep the newest message in view as turns, corrections and captions arrive.
   const last = turns[turns.length - 1];
   const scrollKey = `${turns.length}|${status}|${last?.correction ? 1 : 0}|${last?.tutorText?.length ?? 0}|${partial.length}`;
+  // Calm scrolling: at most one smooth scroll in flight (restarting a smooth scroll on every streamed
+  // character or partial word made the whole page, Luci included, jerk), and only when content is hidden.
+  const lastScroll = useRef(0);
+  const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (turns.length < 2 && status !== "listening") return; // nothing to scroll to yet
-    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
+    if (scrollTimer.current) return; // one pending scroll covers this change too
+    const go = () => {
+      scrollTimer.current = null;
+      const hidden = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
+      if (hidden < 8) return;
+      lastScroll.current = performance.now();
+      window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
+    };
+    scrollTimer.current = setTimeout(go, Math.max(0, 600 - (performance.now() - lastScroll.current)));
   }, [scrollKey]);
+  useEffect(() => () => void (scrollTimer.current && clearTimeout(scrollTimer.current)), []);
+
+  // Wide screens: one Luci, pinned beside the conversation, never remounted. Narrow screens: Luci sits
+  // beside the newest tutor message.
+  const [wide, setWide] = useState(false);
+  useEffect(() => {
+    const m = window.matchMedia("(min-width: 1024px)");
+    const update = () => setWide(m.matches);
+    update();
+    m.addEventListener("change", update);
+    return () => m.removeEventListener("change", update);
+  }, []);
 
   // Whenever the tutor is waiting on the learner, open the type box and put the cursor in it (saves two clicks).
   // Space on the empty box still means push-to-talk (see PushToTalk).
@@ -116,8 +140,22 @@ export function TutorPage({ session }: { session: TutorSession }) {
     );
   }
 
+  const liveText = turns.find((t) => t.id === liveTutorTurn)?.tutorText ?? "";
+  const luci = (className: string) => (
+    <LuciFirefly mood={status} speechText={liveText} reaction={reaction.kind} reactionKey={reaction.n} className={className} />
+  );
+
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
+     <div className={wide ? "grid grid-cols-[15rem_1fr] gap-10" : ""}>
+      {wide && (
+        <aside>
+          <div className="sticky top-28 flex justify-center" data-luci-live="">
+            {luci("h-60 w-60")}
+          </div>
+        </aside>
+      )}
+     <div className="min-w-0 space-y-6">
       {notice && (
         <p role="status" className="rounded-sm border border-sun-line bg-sun px-4 py-3 text-ink">
           {notice}
@@ -142,20 +180,12 @@ export function TutorPage({ session }: { session: TutorSession }) {
             )}
             {t.tutorText && (
               <div
-                className={`flex gap-3 sm:gap-5 ${t.id === liveTutorTurn ? "items-center" : "items-start"}`}
-                data-luci-live={t.id === liveTutorTurn ? "" : undefined}
+                className={`flex gap-3 sm:gap-5 ${t.id === liveTutorTurn && !wide ? "items-center" : "items-start"}`}
+                data-luci-live={t.id === liveTutorTurn && !wide ? "" : undefined}
               >
-                {t.id === liveTutorTurn ? (
-                  // The live Luci is the focal point: ~240px on desktop, smaller on phones.
-                  <div className="flex w-24 shrink-0 justify-center py-4 sm:w-44 lg:w-60">
-                    <LuciFirefly
-                      mood={status}
-                      speechText={t.tutorText}
-                      reaction={reaction.kind}
-                      reactionKey={reaction.n}
-                      className="h-24 w-24 sm:h-44 sm:w-44 lg:h-60 lg:w-60"
-                    />
-                  </div>
+                {wide ? null : t.id === liveTutorTurn ? (
+                  // Narrow screens: the live Luci sits beside the newest message.
+                  <div className="flex w-24 shrink-0 justify-center py-4 sm:w-44">{luci("h-24 w-24 sm:h-44 sm:w-44")}</div>
                 ) : (
                   <div className="flex w-16 shrink-0 justify-center pt-1 sm:w-24">
                     <LuciFirefly still size={52} />
@@ -163,7 +193,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
                 )}
                 <div
                   className={`relative min-w-0 flex-1 rounded-md border border-sun-line bg-sun px-4 py-3 sm:px-5 sm:py-4 before:absolute before:-left-[7px] before:h-3 before:w-3 before:rotate-45 before:border-b before:border-l before:border-sun-line before:bg-sun ${
-                    t.id === liveTutorTurn ? "before:top-[calc(50%-6px)]" : "before:top-6"
+                    t.id === liveTutorTurn && !wide ? "before:top-[calc(50%-6px)]" : "before:top-6"
                   }`}
                 >
                   <p className="sr-only">Tutor</p>
@@ -190,6 +220,8 @@ export function TutorPage({ session }: { session: TutorSession }) {
           <p className="text-2xl text-muted">{partial || "Listening"}</p>
         </div>
       )}
+     </div>
+     </div>
 
       {/* Controls stay pinned to the bottom of the screen so the demo never needs scrolling. */}
       <div className="sticky bottom-0 -mx-4 space-y-3 border-t border-line bg-panel px-4 pb-4 pt-4">
