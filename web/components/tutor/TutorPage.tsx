@@ -117,7 +117,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6">
       {notice && (
         <p role="status" className="rounded-sm border border-sun-line bg-sun px-4 py-3 text-ink">
           {notice}
@@ -141,15 +141,30 @@ export function TutorPage({ session }: { session: TutorSession }) {
               </div>
             )}
             {t.tutorText && (
-              <div className="flex items-start gap-3 sm:gap-4" data-luci-live={t.id === liveTutorTurn ? "" : undefined}>
-                <div className="flex w-16 shrink-0 justify-center pt-1 sm:w-24">
-                  {t.id === liveTutorTurn ? (
-                    <LuciFirefly mood={status} reaction={reaction.kind} reactionKey={reaction.n} size={84} />
-                  ) : (
+              <div
+                className={`flex gap-3 sm:gap-5 ${t.id === liveTutorTurn ? "items-center" : "items-start"}`}
+                data-luci-live={t.id === liveTutorTurn ? "" : undefined}
+              >
+                {t.id === liveTutorTurn ? (
+                  // The live Luci is the focal point: ~240px on desktop, smaller on phones.
+                  <div className="flex w-24 shrink-0 justify-center py-4 sm:w-44 lg:w-60">
+                    <LuciFirefly
+                      mood={status}
+                      reaction={reaction.kind}
+                      reactionKey={reaction.n}
+                      className="h-24 w-24 sm:h-44 sm:w-44 lg:h-60 lg:w-60"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex w-16 shrink-0 justify-center pt-1 sm:w-24">
                     <LuciFirefly still size={52} />
-                  )}
-                </div>
-                <div className="relative min-w-0 flex-1 rounded-md border border-sun-line bg-sun px-4 py-3 sm:px-5 sm:py-4 before:absolute before:-left-[7px] before:top-6 before:h-3 before:w-3 before:rotate-45 before:border-b before:border-l before:border-sun-line before:bg-sun">
+                  </div>
+                )}
+                <div
+                  className={`relative min-w-0 flex-1 rounded-md border border-sun-line bg-sun px-4 py-3 sm:px-5 sm:py-4 before:absolute before:-left-[7px] before:h-3 before:w-3 before:rotate-45 before:border-b before:border-l before:border-sun-line before:bg-sun ${
+                    t.id === liveTutorTurn ? "before:top-[calc(50%-6px)]" : "before:top-6"
+                  }`}
+                >
                   <p className="sr-only">Tutor</p>
                   <p className="relative text-xl leading-snug text-ink sm:text-2xl">{t.tutorText}</p>
                   {t.tutorEnglish &&
