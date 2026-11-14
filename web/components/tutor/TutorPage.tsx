@@ -50,7 +50,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
   useEffect(() => {
     if (turns.length < 2 && status !== "listening") return; // nothing to scroll to yet
     window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
-  }, [scrollKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [scrollKey]);
 
   // Whenever the tutor is waiting on the learner, open the type box and put the cursor in it (saves two clicks).
   // Space on the empty box still means push-to-talk (see PushToTalk).
@@ -150,6 +150,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
                   <div className="flex w-24 shrink-0 justify-center py-4 sm:w-44 lg:w-60">
                     <LuciFirefly
                       mood={status}
+                      speechText={t.tutorText}
                       reaction={reaction.kind}
                       reactionKey={reaction.n}
                       className="h-24 w-24 sm:h-44 sm:w-44 lg:h-60 lg:w-60"
