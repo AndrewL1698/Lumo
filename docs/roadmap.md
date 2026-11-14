@@ -69,7 +69,7 @@ Who owns what and how we work: see [`plan.md`](plan.md). Technical design: see [
 | Karthik | Scoring formula + 70/30 review/new mix in candidates. `/api/vocab` (Learning / Your vocabulary / Mastered + streak). **Demo seed script** that backdates FSRS history so due and mastered words exist. |
 | Shravan | Wire vocabulary + settings to real APIs. "What Parrot knows" page (list, per-item delete, delete everything). |
 | Naren | 🔊 in the hover card via `/api/tts` (cached). `seen` via IntersectionObserver (≥2s). Toolbar toggle + Alt+Shift+P. Pause on this site. Then switch to the eval set. |
-| Karthik (added Sat evening) | **Smarter swaps** (decisions D-005–D-008): the extension reads Settings, a popup "words per page" slider, "Grow automatically", level-matched never-met words (`wordbands.json`), and the tutor sees knew-it/didn't-know outcomes. Takes over the settings part of Naren's task 3.3, agreed with Naren. Hover card untouched. |
+| Karthik (added Sat evening) | **Smarter swaps** (decisions D-005–D-008): the extension reads Settings, a popup "words per page" slider, "Grow automatically", level-matched never-met words (`wordbands.json`), and the tutor sees knew-it/didn't-know outcomes. Takes over the settings part of Naren's task 3.3 (pending Naren's OK). Hover card untouched. |
 
 **Docs:** lock `demo-script.md` (Naren); start capturing screenshots into `docs/img/` (Shravan).
 
