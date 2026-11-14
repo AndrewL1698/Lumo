@@ -15,13 +15,18 @@ function dueLabel(dueAt: string | null, now = Date.now()): string {
   return `due in ${days} days`;
 }
 
-function WordRow({ w }: { w: VocabItem }) {
+function WordRow({ w, fresh }: { w: VocabItem; fresh?: boolean }) {
   const due = dueLabel(w.dueAt);
   return (
-    <li className="flex items-baseline justify-between gap-3 border-b border-slate-100 py-2 last:border-0">
+    <li
+      className={`flex items-baseline justify-between gap-3 border-b border-slate-100 py-2 last:border-0 ${
+        fresh ? "-mx-2 rounded-lg border-0 bg-green-50 px-2 ring-2 ring-green-400" : ""
+      }`}
+    >
       <span className="text-lg font-semibold text-slate-900">
         {w.article ? <span className="font-normal text-slate-500">{w.article} </span> : null}
         {w.lemma}
+        {fresh && <span className="ml-2 rounded-full bg-green-600 px-2 py-0.5 align-middle text-xs font-semibold text-white">just learned</span>}
       </span>
       <span className="text-right text-sm text-slate-600">
         {w.english}
@@ -40,13 +45,14 @@ export function StreakBadge({ days }: { days: number }) {
   );
 }
 
-export function VocabLists({ data }: { data: VocabResponse }) {
+export function VocabLists({ data, fresh = new Set<string>() }: { data: VocabResponse; fresh?: Set<string> }) {
   return (
     <div className="space-y-6">
       <StreakBadge days={data.streakDays} />
       <div className="grid gap-4 md:grid-cols-3">
         {LISTS.map(({ key, title, empty, tone }) => {
-          const words = data[key];
+          // Just-learned words go first so they are visible without scrolling.
+          const words = [...data[key]].sort((a, b) => Number(fresh.has(b.lemma)) - Number(fresh.has(a.lemma)));
           return (
             <section key={key} className={`rounded-xl border-t-4 ${tone} bg-white p-4 shadow-sm`}>
               <h2 className="flex items-baseline justify-between text-xl font-bold text-slate-900">
@@ -60,7 +66,7 @@ export function VocabLists({ data }: { data: VocabResponse }) {
               ) : (
                 <ul className="mt-2">
                   {words.map((w) => (
-                    <WordRow key={w.lemma} w={w} />
+                    <WordRow key={w.lemma} w={w} fresh={key === "known" && fresh.has(w.lemma)} />
                   ))}
                 </ul>
               )}
