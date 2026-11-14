@@ -34,6 +34,14 @@ export function TutorPage({ session }: { session: TutorSession }) {
     }
   }, [turns, seen]);
 
+  // Keep the newest message in view as turns, corrections and captions arrive.
+  const last = turns[turns.length - 1];
+  const scrollKey = `${turns.length}|${status}|${last?.correction ? 1 : 0}|${last?.tutorText?.length ?? 0}|${partial.length}`;
+  useEffect(() => {
+    if (turns.length < 2 && status !== "listening") return; // nothing to scroll to yet
+    window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
+  }, [scrollKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const known = useMemo(() => turns.flatMap((t) => newlyKnown(t.wordUpdates)), [turns]);
   const dismissToast = useCallback(() => setToasts((q) => q.slice(1)), []);
 
@@ -113,6 +121,8 @@ export function TutorPage({ session }: { session: TutorSession }) {
         </p>
       )}
 
+      {/* Controls stay pinned to the bottom of the screen so the demo never needs scrolling. */}
+      <div className="sticky bottom-0 -mx-4 space-y-2 border-t border-slate-200 bg-slate-50/95 px-4 pb-3 pt-3 backdrop-blur">
       <div className="flex items-center justify-between">
         <PushToTalk status={status} onPress={pressTalk} onRelease={releaseTalk} />
         <button
@@ -148,6 +158,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
           </button>
         </form>
       </details>
+      </div>
 
       <KnownToast lemma={toasts[0] ?? null} onDone={dismissToast} />
     </div>
