@@ -1,0 +1,34 @@
+[
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "dev1",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "Yo tiene la problema porque la huelga no termina.",
+    "ms": 170
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "dev1",
+    "config": "rt:scribe_v3_live",
+    "transcript": "Yo tiene la problema porque la huelga no termina.",
+    "ms": 61
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "dev1",
+    "config": "batch:scribe_v2",
+    "transcript": "Yo tiene la problema porque la huelga no termina",
+    "ms": 377
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "dev1",
+    "config": "batch:scribe_v3",
+    "transcript": "Yo tiene la problema porque la huelga no termina.",
+    "ms": 387
+  }
+]
