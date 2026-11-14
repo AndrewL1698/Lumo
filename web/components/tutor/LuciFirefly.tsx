@@ -1,76 +1,166 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { TutorStatus } from "@/app/tutor/session";
-import { VOICE_EVENT, voiceLevel, voicePlaying } from "./voiceTap";
+import { MS_PER_UNIT, SHAPES, segAt, trackFor, unitsBeforeChar, type Shape } from "./visemes";
+import { VOICE_EVENT, currentSpeech, heardVoice, voiceLevel, voicePlaying } from "./voiceTap";
 
 export type LuciReaction = "good" | "oops" | "loop" | null;
 
-// Drives the mouth while the tutor speaks: real loudness from the voice tap when ElevenLabs audio plays,
-// otherwise a gentle talking rhythm. One requestAnimationFrame loop, only while speaking.
+type MouthEls = {
+  line: React.RefObject<SVGPathElement | null>;
+  open: React.RefObject<SVGGElement | null>;
+  fill: React.RefObject<SVGPathElement | null>;
+  clip: React.RefObject<SVGPathElement | null>;
+  teeth: React.RefObject<SVGRectElement | null>;
+  tongue: React.RefObject<SVGEllipseElement | null>;
+  outline: React.RefObject<SVGPathElement | null>;
+  bob: React.RefObject<SVGGElement | null>;
+};
+
+const MOUTH_Y = 71;
+
+function drawMouth(els: MouthEls, p: Shape, bob: number) {
+  const { line, open, fill, clip, teeth, tongue } = els;
+  if (!line.current || !open.current || !fill.current || !clip.current || !teeth.current || !tongue.current) return;
+  els.bob.current?.setAttribute("transform", bob ? `rotate(${(-2 * bob).toFixed(2)} 60 62) translate(0 ${(-2.4 * bob).toFixed(2)})` : "");
+  const { w, h, curve, round } = p;
+  const L = (60 - w).toFixed(2);
+  const R = (60 + w).toFixed(2);
+  if (h < 0.7) {
+    // lips together: a smile at rest, a flatter, pressed line for m/b/p
+    line.current.style.display = "";
+    open.current.style.display = "none";
+    line.current.setAttribute("d", `M${L} ${MOUTH_Y} Q60 ${(MOUTH_Y + curve).toFixed(2)} ${R} ${MOUTH_Y}`);
+    line.current.setAttribute("stroke-width", curve < 2 ? "3" : "2.4");
+    return;
+  }
+  line.current.style.display = "none";
+  open.current.style.display = "";
+  // Cubic curves: control points pulled toward the corners make "o" round; inset makes wide shapes lens-like.
+  const tA = h * (0.15 + 0.45 * round); // how far the top lip lifts
+  const bA = h * 0.85 + curve * 0.3; // how far the bottom lip drops
+  const cTop = (MOUTH_Y - tA / 0.75).toFixed(2);
+  const cBot = (MOUTH_Y + bA / 0.75).toFixed(2);
+  const ix = w * (0.05 + 0.5 * (1 - round));
+  const a = (60 - w + ix).toFixed(2);
+  const b = (60 + w - ix).toFixed(2);
+  const d = `M${L} ${MOUTH_Y} C${a} ${cTop} ${b} ${cTop} ${R} ${MOUTH_Y} C${b} ${cBot} ${a} ${cBot} ${L} ${MOUTH_Y} Z`;
+  fill.current.setAttribute("d", d);
+  clip.current.setAttribute("d", d);
+  els.outline.current?.setAttribute("d", d);
+  const top = MOUTH_Y - tA;
+  const bottom = MOUTH_Y + bA;
+  teeth.current.setAttribute("x", (60 - w * 0.6).toFixed(2));
+  teeth.current.setAttribute("width", (w * 1.2).toFixed(2));
+  teeth.current.setAttribute("y", (top - 0.5).toFixed(2));
+  teeth.current.setAttribute("height", Math.min(2.4, 0.6 + h * 0.4).toFixed(2));
+  teeth.current.setAttribute("opacity", p.teeth.toFixed(2));
+  tongue.current.setAttribute("cy", (bottom - h * 0.12).toFixed(2));
+  tongue.current.setAttribute("rx", (w * 0.55).toFixed(2));
+  tongue.current.setAttribute("ry", Math.max(0.5, h * 0.22).toFixed(2));
+  tongue.current.setAttribute("opacity", Math.min(1, Math.max(0, (h - 2.5) / 2)).toFixed(2));
+}
+
+const KEYS = ["w", "h", "curve", "teeth", "round"] as const;
+
+// Lip-sync. Timing, best source first: the clip's text spread over its real duration (ElevenLabs), the
+// browser voice's word boundaries, or (no audio at all, e.g. rehearsal) the reply text at a speaking pace.
+// Loudness then scales how open the mouth is, and quiet audio eases it back to rest.
+// One requestAnimationFrame loop, only while Luci is talking.
 function useLipSync(
   active: boolean,
-  els: {
-    smile: React.RefObject<SVGPathElement | null>;
-    open: React.RefObject<SVGGElement | null>;
-    lips: React.RefObject<SVGEllipseElement | null>;
-    tongue: React.RefObject<SVGEllipseElement | null>;
-  },
+  els: MouthEls,
+  speechText: React.RefObject<string>,
+  onTextDone: React.RefObject<() => void>,
 ) {
   useEffect(() => {
-    const apply = (open: number, round: number) => {
-      const { smile, open: g, lips, tongue } = els;
-      if (!smile.current || !g.current || !lips.current || !tongue.current) return;
-      const closed = open < 0.1;
-      smile.current.style.display = closed ? "" : "none";
-      g.current.style.display = closed ? "none" : "";
-      if (closed) return;
-      let rx = 4.5 + 4.5 * open;
-      let ry = 1.6 + 6.4 * open;
-      if (round > 0.5) {
-        rx = 3.6 + 2.2 * open; // "o": narrow and round
-        ry = Math.max(ry, rx + 1);
-      }
-      lips.current.setAttribute("rx", rx.toFixed(2));
-      lips.current.setAttribute("ry", ry.toFixed(2));
-      tongue.current.setAttribute("rx", (rx * 0.6).toFixed(2));
-      tongue.current.setAttribute("ry", (ry * 0.35).toFixed(2));
-      tongue.current.setAttribute("cy", (73 + ry * 0.55).toFixed(2));
-    };
+    const p: Shape = { ...SHAPES.rest };
     if (!active) {
-      apply(0, 0);
+      drawMouth(els, p, 0);
       return;
     }
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let open = 0;
-    let round = 0;
+    const began = performance.now();
+    let last = began;
     let peak = 0.05;
+    let bob = 0;
+    let lastSeg = -1;
+    let lastText = "";
     let raf = 0;
-    const frame = (t: number) => {
-      const lvl = voiceLevel();
-      let target: number;
-      let rnd: number;
-      if (lvl) {
-        peak = Math.max(peak * 0.995, lvl.rms, 0.01); // adapts to the voice's loudness
-        const floor = Math.max(0.004, peak * 0.12); // below this counts as a pause
-        target = Math.min(1, Math.max(0, (lvl.rms - floor) / (peak * 0.7)));
-        rnd = lvl.low > 0.6 && target > 0.3 ? 1 : 0;
-      } else {
-        // Fallback: syllable-like rhythm (~4.5 per second) with a slower phrase swell.
-        const s = t / 1000;
-        target = Math.max(0, Math.sin(s * 9)) * (0.55 + 0.35 * Math.sin(s * 2.1 + 1));
-        rnd = Math.sin(s * 1.3) > 0.8 ? 1 : 0;
+    const frame = () => {
+      const now = performance.now();
+      const dt = Math.min(64, now - last);
+      last = now;
+
+      const sp = currentSpeech();
+      let track = null;
+      let units = -1;
+      if (sp?.text) {
+        track = trackFor(sp.text);
+        if (sp.duration) units = ((now - sp.start) / sp.duration) * track.total;
+        else if (sp.anchor) units = unitsBeforeChar(track, sp.anchor.char) + (now - sp.anchor.t) / MS_PER_UNIT;
+        else units = (now - sp.start) / MS_PER_UNIT;
+      } else if (!sp && !heardVoice() && speechText.current) {
+        track = trackFor(speechText.current); // no audio in this session: follow the text
+        units = (now - began) / MS_PER_UNIT;
+        if (units >= track.total) onTextDone.current();
       }
-      open += (target - open) * (target > open ? 0.5 : 0.22); // quick to open, softer to close
-      round += (rnd - round) * 0.2;
-      apply(reduce ? Math.min(open, 0.15) : open, round);
+
+      let target: Shape = SHAPES.rest;
+      let name: string = "rest";
+      let scale = 1;
+      const lvl = voiceLevel();
+      let loud = -1;
+      if (lvl) {
+        peak = Math.max(peak * 0.995, lvl.rms, 0.01);
+        const floor = Math.max(0.004, peak * 0.12);
+        loud = Math.min(1, Math.max(0, (lvl.rms - floor) / (peak * 0.7)));
+      }
+      if (track) {
+        const key = sp?.text ?? speechText.current;
+        if (key !== lastText) {
+          lastText = key;
+          lastSeg = -1;
+        }
+        const i = segAt(track, units);
+        if (i >= 0) {
+          const seg = track.segs[i];
+          target = SHAPES[seg.v];
+          name = seg.v;
+          if (i !== lastSeg && seg.stress) bob = 1; // nod on stressed syllables
+        }
+        lastSeg = i;
+      } else if (sp && loud >= 0) {
+        // audio we could not match to text: pick a shape from loudness and tone
+        target = loud > 0.55 ? (lvl!.low > 0.6 ? SHAPES.ou : SHAPES.a) : loud > 0.25 ? SHAPES.ei : loud > 0.08 ? SHAPES.ltn : SHAPES.rest;
+      }
+      if (loud >= 0) {
+        if (loud < 0.06) {
+          target = SHAPES.rest; // a pause in the audio: lips close
+          name = "rest";
+        }
+        else scale = 0.45 + 0.75 * loud;
+      }
+
+      // ~70ms blend between shapes
+      const k = 1 - Math.exp(-dt / 28);
+      for (const key of KEYS) {
+        const goal = key === "h" ? target.h * scale : target[key];
+        p[key] += (goal - p[key]) * k;
+      }
+      bob *= Math.exp(-dt / 140);
+      const shown = reduce ? { ...p, h: Math.min(p.h, 1.2) } : p;
+      drawMouth(els, shown, reduce ? 0 : bob);
+      els.bob.current?.setAttribute("data-viseme", name); // debug: current mouth shape
       raf = requestAnimationFrame(frame);
     };
     raf = requestAnimationFrame(frame);
     return () => {
       cancelAnimationFrame(raf);
-      apply(0, 0);
+      drawMouth(els, { ...SHAPES.rest }, 0); // back to rest when the talking ends
+      els.bob.current?.setAttribute("data-viseme", "rest");
     };
-  }, [active, els]);
+  }, [active, els, speechText, onTextDone]);
 }
 
 // Luci the firefly, the tutor's face. Pure SVG + CSS animations (globals.css, "Luci firefly" block).
@@ -84,7 +174,9 @@ export function LuciFirefly({
   still = false,
   size,
   className = "",
+  speechText = "",
 }: {
+  speechText?: string; // the reply Luci is saying (used when there is no audio to follow)
   mood?: TutorStatus;
   reaction?: LuciReaction;
   reactionKey?: number;
@@ -92,11 +184,21 @@ export function LuciFirefly({
   size?: number;
   className?: string;
 }) {
-  const smileRef = useRef<SVGPathElement>(null);
-  const openRef = useRef<SVGGElement>(null);
-  const lipsRef = useRef<SVGEllipseElement>(null);
-  const tongueRef = useRef<SVGEllipseElement>(null);
-  const els = useRef({ smile: smileRef, open: openRef, lips: lipsRef, tongue: tongueRef }).current;
+  const els = useRef<MouthEls>({
+    line: { current: null },
+    open: { current: null },
+    fill: { current: null },
+    clip: { current: null },
+    teeth: { current: null },
+    tongue: { current: null },
+    outline: { current: null },
+    bob: { current: null },
+  }).current;
+  const clipId = `luci-mouth-${useId().replace(/:/g, "")}`;
+  const textRef = useRef(speechText);
+  useEffect(() => {
+    textRef.current = speechText;
+  }, [speechText]);
   // Talk while the session says "speaking", and whenever tutor audio is actually playing.
   const [voiceOn, setVoiceOn] = useState(false);
   useEffect(() => {
@@ -106,7 +208,14 @@ export function LuciFirefly({
     window.addEventListener(VOICE_EVENT, update);
     return () => window.removeEventListener(VOICE_EVENT, update);
   }, [still]);
-  useLipSync(!still && (mood === "speaking" || voiceOn), els);
+  // Without audio (rehearsal, or a reply whose audio failed), Luci finishes saying the reply text even if
+  // the status has moved on; the loop ends this once the text is done.
+  const [textTalk, setTextTalk] = useState(false);
+  useEffect(() => {
+    if (!still && mood === "speaking" && !heardVoice()) setTextTalk(true);
+  }, [mood, still]);
+  const textDone = useRef(() => setTextTalk(false));
+  useLipSync(!still && (mood === "speaking" || voiceOn || textTalk), els, textRef, textDone);
 
   return (
     <div
@@ -120,6 +229,7 @@ export function LuciFirefly({
         <svg viewBox="0 0 120 120" width="100%" height="100%" overflow="visible">
           <g className="luci-float">
             <g className="luci-lean">
+             <g ref={els.bob}>
               {/* tail light: a flat halo and the lamp itself */}
               <circle className="luci-halo" cx="60" cy="92" r="24" fill="#ffe9a0" />
               <ellipse className="luci-tail" cx="60" cy="90" rx="16" ry="13" fill="#ffd23a" />
@@ -143,12 +253,20 @@ export function LuciFirefly({
               </g>
               <circle cx="42" cy="70" r="3.6" fill="#f0a39a" fillOpacity=".7" />
               <circle cx="78" cy="70" r="3.6" fill="#f0a39a" fillOpacity=".7" />
-              {/* mouth: a smile when closed; an open oval (wide, or round for "o") while talking */}
-              <path ref={smileRef} d="M54 71 Q60 76 66 71" fill="none" stroke="#fcfcf8" strokeWidth="2.4" strokeLinecap="round" />
-              <g ref={openRef} style={{ display: "none" }}>
-                <ellipse ref={lipsRef} cx="60" cy="73" rx="6" ry="4" fill="#4a1f25" stroke="#fcfcf8" strokeWidth="1.6" />
-                <ellipse ref={tongueRef} cx="60" cy="75" rx="3.5" ry="1.6" fill="#f0a39a" />
+              {/* mouth: lips together (smile / pressed) or open with teeth and tongue; shaped per sound */}
+              <path ref={els.line} d="M54 71 Q60 76 66 71" fill="none" stroke="#fcfcf8" strokeWidth="2.4" strokeLinecap="round" />
+              <g ref={els.open} style={{ display: "none" }}>
+                <clipPath id={clipId}>
+                  <path ref={els.clip} d="M54 71 Q60 71 66 71 Z" />
+                </clipPath>
+                <path ref={els.fill} d="M54 71 Q60 71 66 71 Z" fill="#4a1f25" />
+                <g clipPath={`url(#${clipId})`}>
+                  <rect ref={els.teeth} x="56" y="70" width="8" height="2" rx="0.6" fill="#fcfcf8" opacity="0" />
+                  <ellipse ref={els.tongue} cx="60" cy="75" rx="3.5" ry="1.6" fill="#f0a39a" opacity="0" />
+                </g>
+                <path ref={els.outline} d="M54 71 Q60 71 66 71 Z" fill="none" stroke="#fcfcf8" strokeWidth="1.6" strokeLinejoin="round" />
               </g>
+             </g>
             </g>
           </g>
           {/* thinking dots, shown while checking */}
