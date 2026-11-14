@@ -23,7 +23,7 @@ export default function Page() {
   const total = data ? data.counts.learning + data.counts.known + data.counts.mastered : 0;
   return (
     <>
-      <PageHeader title="Your vocabulary" subtitle="A word moves to Your vocabulary only after you use it correctly out loud.">
+      <PageHeader title="Vocabulary" subtitle="A word moves from Learning now to Your vocabulary only after you use it correctly out loud.">
         <button type="button" onClick={() => void reload()} className={btn.secondary}>
           Refresh
         </button>

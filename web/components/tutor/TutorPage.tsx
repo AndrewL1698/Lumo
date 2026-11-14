@@ -19,6 +19,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
   const [toasts, setToasts] = useState<string[]>([]);
   const [seen, setSeen] = useState<Set<string>>(new Set());
   const [typed, setTyped] = useState("");
+  const [typingOpen, setTypingOpen] = useState(false);
 
   // Browsers only allow mic access and audio playback after a click, so the session starts from a button.
   const [begun, setBegun] = useState(false);
@@ -141,8 +142,10 @@ export function TutorPage({ session }: { session: TutorSession }) {
           </button>
         </div>
 
-        <details className="text-muted">
-          <summary className="cursor-pointer text-sm transition-colors duration-150 hover:text-ink">Type your answer instead</summary>
+        <details className="text-muted" onToggle={(e) => setTypingOpen(e.currentTarget.open)}>
+          <summary className="cursor-pointer list-none text-sm transition-colors duration-150 hover:text-ink [&::-webkit-details-marker]:hidden">
+            {typingOpen ? "Hide typing" : "Type your answer instead"}
+          </summary>
           <form
             className="mt-3 flex gap-2"
             onSubmit={(e) => {

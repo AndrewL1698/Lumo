@@ -13,11 +13,11 @@ export function Nav() {
   const path = usePathname();
   return (
     <header className="border-b border-line">
-      <nav className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-8 gap-y-2 px-4 py-4">
+      <nav className="mx-auto flex max-w-5xl items-center gap-x-5 px-4 py-4 sm:gap-x-8">
         <Link href="/" className="text-xl font-bold tracking-tight text-ink">
           Parrot
         </Link>
-        <ul className="flex flex-wrap gap-x-6 gap-y-1">
+        <ul className="-mb-3 flex min-w-0 gap-x-4 overflow-x-auto whitespace-nowrap pb-3 [scrollbar-width:none] sm:gap-x-6">
           {LINKS.map((l) => {
             const active = path === l.href || path.startsWith(`${l.href}/`);
             return (

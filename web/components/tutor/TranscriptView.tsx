@@ -6,7 +6,8 @@ import { segmentTranscript } from "./highlight";
 export function TranscriptView({ raw, result }: { raw: string; result?: CorrectionResult }) {
   const segments = segmentTranscript(raw, result);
   return (
-    <p className="text-2xl leading-[2.6] text-ink">
+    // Normal leading; the browser grows only the lines that carry a correction above them.
+    <p className="pt-3 text-2xl leading-[1.6] text-ink">
       {segments.map((seg, i) =>
         seg.error ? (
           <ruby key={i} className="fix mx-0.5">

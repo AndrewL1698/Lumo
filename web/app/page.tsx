@@ -32,13 +32,11 @@ export default function Home() {
 
         {/* The real correction view, rendered with sample session data. */}
         <div className="rounded-sm border border-line px-6 py-5">
-          <p className="font-mono text-xs uppercase tracking-wider text-muted">Sample turn</p>
-          <div className="mt-2">
-            <TranscriptView raw={rawTextFixture} result={correctResponseFixture.correction} />
-          </div>
+          <TranscriptView raw={rawTextFixture} result={correctResponseFixture.correction} />
           <div className="mt-4">
             <CorrectionCards raw={rawTextFixture} result={correctResponseFixture.correction} />
           </div>
+          <p className="mt-4 text-sm text-muted">Sample session data, shown in the real correction view.</p>
         </div>
       </section>
 
