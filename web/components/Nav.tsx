@@ -1,21 +1,23 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LuciMark } from "@/components/LuciMark";
 
 const LINKS = [
   { href: "/tutor", label: "Tutor" },
-  { href: "/vocabulary", label: "Vocabulary" },
-  { href: "/privacy", label: "What Parrot knows" },
+  { href: "/vocabulary", label: "Your jar" },
+  { href: "/privacy", label: "What Luci knows" },
   { href: "/settings", label: "Settings" },
 ];
 
 export function Nav() {
   const path = usePathname();
   return (
-    <header className="border-b border-line">
+    <header className="border-b border-line bg-panel">
       <nav className="mx-auto flex max-w-5xl items-center gap-x-5 px-4 py-4 sm:gap-x-8">
-        <Link href="/" className="text-xl font-bold tracking-tight text-ink">
-          Parrot
+        <Link href="/" className="flex shrink-0 items-center gap-2 font-display text-xl font-extrabold tracking-tight text-ink">
+          <LuciMark size={30} />
+          Luci
         </Link>
         <ul className="-mb-3 flex min-w-0 gap-x-4 overflow-x-auto whitespace-nowrap pb-3 [scrollbar-width:none] sm:gap-x-6">
           {LINKS.map((l) => {

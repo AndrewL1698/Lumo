@@ -21,14 +21,14 @@ export default function Page() {
 
   return (
     <>
-      <PageHeader title="Welcome to Parrot" subtitle="Two quick steps: tell us your level, then pair the Chrome extension." />
+      <PageHeader title="Welcome to Luci" subtitle="Two quick steps: tell us your level, then pair the Chrome extension." />
       {loading && <LoadingState shape="form" />}
       {error && !data && <ErrorState message={error} onRetry={() => void reload()} />}
       {data && <OnboardingForm initial={data} onSubmit={save} />}
       {saveError && <ErrorState message={saveError} />}
       {saved && (
         <p role="status" className="mt-6 rounded-sm border border-go px-5 py-4 text-ink">
-          Saved. Next, open the Parrot popup on a news site and click Enable (try BBC or Wikipedia), or{" "}
+          Saved. Next, open the Luci popup on a news site and click Enable (try BBC or Wikipedia), or{" "}
           <Link href="/tutor" className="font-semibold underline">
             talk to the tutor
           </Link>

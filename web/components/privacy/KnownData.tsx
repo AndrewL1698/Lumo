@@ -64,7 +64,7 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
   return (
     <div>
       <p className="mb-8 max-w-3xl text-lg text-ink">
-        Parrot stores the words you look up and practise, a short log of those actions, the title and website of articles
+        Luci stores the words you look up and practise, a short log of those actions, the title and website of articles
         you read, and your tutor conversations (what you said, plus the corrections).{" "}
         <span className="text-muted">It never stores full page text or what you type on other sites.</span>
       </p>
@@ -145,10 +145,10 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
         )}
       </Section>
 
-      <div className="rounded-sm border border-line px-5 py-5">
+      <div className="rounded-sm border border-line bg-panel px-5 py-5">
         {!confirming ? (
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <p className="text-muted">Remove everything Parrot has stored. Your settings are kept.</p>
+            <p className="text-muted">Remove everything Luci has stored. Your settings are kept.</p>
             <button type="button" disabled={busy || total === 0} onClick={() => setConfirming(true)} className={btn.danger}>
               Delete everything
             </button>
@@ -156,7 +156,7 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
         ) : (
           <div className="space-y-4">
             <p className="text-ink">
-              This deletes every word Parrot has tracked, your activity, the articles you&apos;ve read, and your tutor sessions and
+              This deletes every word Luci has tracked, your activity, the articles you&apos;ve read, and your tutor sessions and
               transcripts. Your settings are kept. This can&apos;t be undone.
             </p>
             <div className="flex flex-wrap gap-3">

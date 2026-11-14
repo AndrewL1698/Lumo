@@ -73,7 +73,8 @@ export function TutorPage({ session }: { session: TutorSession }) {
   if (!begun) {
     return (
       <div className="mx-auto max-w-3xl border-b border-line pb-10">
-        <h1 className="text-3xl font-bold tracking-tight">Talk about what you read</h1>
+        <p className="mb-2 text-xs font-bold uppercase tracking-[0.08em] text-accent">Night session</p>
+        <h1 className="text-4xl font-extrabold tracking-tight">Talk about what you read</h1>
         <p className="mt-3 max-w-xl text-lg text-muted">
           The tutor opens a short Spanish conversation about your reading today. Hold Space or the button to answer. Each
           mistake is marked in your own words, with the fix above it and an English reason below.
@@ -95,7 +96,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       {notice && (
-        <p role="status" className="rounded-sm border border-wait/70 px-4 py-3 text-ink">
+        <p role="status" className="rounded-sm border border-sun-line bg-sun px-4 py-3 text-ink">
           {notice}
         </p>
       )}
@@ -139,13 +140,13 @@ export function TutorPage({ session }: { session: TutorSession }) {
 
       {status === "listening" && (
         <div className="grid gap-2 border-t border-line pt-6 sm:grid-cols-[5rem_1fr] sm:gap-4">
-          <p className={`${speaker} text-wait`}>You</p>
+          <p className={`${speaker} text-accent`}>You</p>
           <p className="text-2xl text-muted">{partial || "Listening"}</p>
         </div>
       )}
 
       {/* Controls stay pinned to the bottom of the screen so the demo never needs scrolling. */}
-      <div className="sticky bottom-0 -mx-4 space-y-3 border-t border-line bg-bg px-4 pb-4 pt-4">
+      <div className="sticky bottom-0 -mx-4 space-y-3 border-t border-line bg-panel px-4 pb-4 pt-4">
         <div className="flex items-center justify-between gap-3 sm:gap-4">
           <PushToTalk status={status} onPress={pressTalk} onRelease={releaseTalk} />
           <button type="button" onClick={() => void end()} disabled={turns.length < 2} className={btn.secondary}>
@@ -174,7 +175,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
               onChange={(e) => setTyped(e.target.value)}
               placeholder="Escribe en español"
               aria-label="Your answer in Spanish"
-              className="min-w-0 flex-1 rounded-sm border border-line bg-bg px-3 py-2 text-ink placeholder:text-muted focus:border-muted focus:outline-none"
+              className="min-w-0 flex-1 rounded-sm border border-line bg-panel px-3 py-2 text-ink placeholder:text-muted focus:border-muted focus:outline-none"
             />
             <button type="submit" className={btn.primary}>
               Send

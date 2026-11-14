@@ -75,16 +75,16 @@ export function PushToTalk({
         aria-pressed={listening}
         className={`h-16 flex-1 select-none touch-none rounded-sm px-6 text-xl font-bold sm:min-w-56 sm:flex-none sm:px-8 transition-colors duration-150 ${
           listening
-            ? "bg-wait text-bg"
+            ? "bg-glow text-ink"
             : disabled
               ? "cursor-not-allowed border border-line text-muted"
-              : "bg-ink text-bg hover:bg-[#c9ced5]"
+              : "bg-ink text-panel hover:bg-[#2f3946]"
         }`}
       >
         {BUTTON[status]}
       </button>
       {/* On phones the button label carries the state; the sentence would stack the bar into a tall block. */}
-      <p className={`sr-only font-mono text-sm sm:not-sr-only ${listening ? "text-wait" : "text-muted"}`} aria-live="polite">
+      <p className={`sr-only font-mono text-sm sm:not-sr-only ${listening ? "text-accent" : "text-muted"}`} aria-live="polite">
         {STATUS[status]}
       </p>
     </div>
