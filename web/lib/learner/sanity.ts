@@ -36,7 +36,7 @@ check("hover: sets lastHoverAt", h.lastHoverAt !== null);
 
 // knew_it never makes known
 let k = ev(emptyUserWord("libro"), "knew_it");
-check("knew_it: new → learning (not known)", k.state === "learning");
+check("knew_it: state unchanged (new stays new, never known)", k.state === "new" && k.fsrsCard !== null);
 
 // known only via active evidence
 let q = ev(h, "quiz_pass");

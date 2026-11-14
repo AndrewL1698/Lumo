@@ -65,10 +65,8 @@ export function applyEvent(word: UserWord, event: LearnerEvent, now: Date = new 
   } else if (ACTIVE_KNOWN.has(event.type)) {
     // Active evidence is the only way into `known` (§6.1 rule).
     if (!KNOWNISH.has(next.state) || next.state === "known_assumed") next.state = "known";
-  } else if (next.state === "new" || next.state === "seen") {
-    // knew_it is self-report: good for FSRS, but only lifts a word to `learning`.
-    next.state = "learning";
   }
+  // knew_it is self-report: a Good review for FSRS, but the state is unchanged (brief 2.1).
 
   if ((next.state === "known" || next.state === "mastered") && card.stability >= MASTERED_STABILITY_DAYS) {
     next.state = "mastered";
