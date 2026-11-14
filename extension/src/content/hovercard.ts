@@ -21,6 +21,8 @@ type Verdict = "knew_it" | "didnt_know";
 interface Handlers {
   onHover(t: HoverTarget): void;
   onVerdict(t: HoverTarget, verdict: Verdict): void;
+  /** Resolves once the word has been spoken, or false if audio was unavailable. */
+  onSpeak(t: HoverTarget): Promise<boolean>;
 }
 
 let card: HTMLElement | null = null;
@@ -56,8 +58,44 @@ function render(el: HTMLElement, t: HoverTarget, handlers: Handlers): void {
   el.textContent = "";
 
   const es = document.createElement("div");
-  es.textContent = t.spanish;
-  Object.assign(es.style, { fontSize: "17px", fontWeight: "600" });
+  Object.assign(es.style, { fontSize: "17px", fontWeight: "600", display: "flex", gap: "8px", alignItems: "center" });
+
+  const word = document.createElement("span");
+  word.textContent = t.spanish;
+
+  const speak = document.createElement("button");
+  speak.type = "button";
+  speak.textContent = "🔊";
+  speak.title = `Hear "${t.spanish}"`;
+  speak.setAttribute("aria-label", `Hear ${t.spanish}`);
+  Object.assign(speak.style, {
+    border: "none",
+    background: "transparent",
+    color: "inherit",
+    font: "inherit",
+    fontSize: "15px",
+    lineHeight: "1",
+    padding: "2px 4px",
+    cursor: "pointer",
+    opacity: ".8",
+  } satisfies Partial<CSSStyleDeclaration>);
+  speak.addEventListener("click", () => {
+    if (speak.disabled) return;
+    speak.disabled = true;
+    speak.style.opacity = ".4";
+    void handlers
+      .onSpeak(t)
+      .then((played) => {
+        // No audio available: say so once rather than leaving a dead button.
+        if (!played) speak.textContent = "🔇";
+      })
+      .finally(() => {
+        speak.disabled = false;
+        speak.style.opacity = ".8";
+      });
+  });
+
+  es.append(word, speak);
 
   const en = document.createElement("div");
   en.textContent = t.english;

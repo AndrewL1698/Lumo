@@ -178,6 +178,40 @@ async function translate(
   }
 }
 
+// ---------------------------------------------------------------- text to speech
+
+/**
+ * Cached by lemma, so clicking the speaker twice on the same word is one network call
+ * (brief 3.1). Hover audio is short and the set of swapped words per page is capped at 25,
+ * so an unbounded map is fine for a session.
+ */
+const ttsCache = new Map<string, string>();
+
+/** Service workers have no FileReader, so base64 by hand. Chunked to keep the stack shallow. */
+function toBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(binary);
+}
+
+async function tts(text: string, lemma: string): Promise<ResponseMap["TTS"]> {
+  const cached = ttsCache.get(lemma);
+  if (cached) return { dataUrl: cached };
+  try {
+    const res = await api("/api/tts", { method: "POST", body: JSON.stringify({ text, lemma }) });
+    // 502 means "tts unavailable": the card simply shows no audio.
+    if (!res.ok) return null;
+    const dataUrl = `data:audio/mpeg;base64,${toBase64(await res.arrayBuffer())}`;
+    ttsCache.set(lemma, dataUrl);
+    return { dataUrl };
+  } catch {
+    return null;
+  }
+}
+
 // ---------------------------------------------------------------- event queue
 
 let flushTimer: ReturnType<typeof setTimeout> | undefined;
@@ -245,6 +279,8 @@ async function handle(message: Message): Promise<ResponseMap[Message["type"]]> {
       return translate(message.articleKey, message.items);
     case "QUEUE_EVENTS":
       return queueEvents(message.events);
+    case "TTS":
+      return tts(message.text, message.lemma);
   }
 }
 

@@ -18,7 +18,8 @@ export type Message =
       articleKey: string;
       items: { sentence: string; lemma: string; englishMatch: string }[];
     }
-  | { type: "QUEUE_EVENTS"; events: ExtensionEvent[] };
+  | { type: "QUEUE_EVENTS"; events: ExtensionEvent[] }
+  | { type: "TTS"; text: string; lemma: string };
 
 export interface ResponseMap {
   PING: { ok: true; from: "sw" };
@@ -30,6 +31,11 @@ export interface ResponseMap {
   /** One entry per request item, same order. `null` = sense mismatch, don't swap. */
   TRANSLATE: { items: TranslateItem[] } | null;
   QUEUE_EVENTS: { queued: number };
+  /**
+   * A base64 data URL, because a Blob cannot cross the extension message boundary.
+   * `null` when TTS is unavailable: the card just shows no audio rather than an error.
+   */
+  TTS: { dataUrl: string } | null;
 }
 
 export type MessageType = Message["type"];
