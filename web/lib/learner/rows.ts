@@ -4,6 +4,7 @@ import { UserWord, type Level } from "@parrot/shared";
 /** `words.band` is smallint 1–3 in the DB; /shared uses the Level string. */
 const BAND_TO_LEVEL: Record<number, Level> = { 1: "beginner", 2: "intermediate", 3: "upper_intermediate" };
 export const bandToLevel = (band: number): Level => BAND_TO_LEVEL[band] ?? "beginner";
+export const levelToBand = (level: Level): number => ({ beginner: 1, intermediate: 2, upper_intermediate: 3 })[level];
 
 export type UserWordRow = {
   user_id: string;
