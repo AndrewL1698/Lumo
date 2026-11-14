@@ -81,12 +81,27 @@ Who owns what and how we work: see [`plan.md`](plan.md). Technical design: see [
 
 | Who | Tasks |
 |---|---|
-| Andrew | Latency pass (target: correction ≤1.5s, voice ≤2s). `/api/tutor/end` recap. End-to-end bug bash. |
+| Andrew | Latency pass (target: correction ≤1.5s, voice ≤2s). `/api/tutor/end` recap. End-to-end bug bash. Then the server side of the **judge-facing extras** below (J1 `why`, J2 `plan`), only once the Phase 3 exit has passed. |
 | Karthik | `/eval` correction-accuracy script: precision, recall, false-alarm rate on ~50 sentences. Server-side never-list check. |
-| Shravan | Polish, empty states, English explanations visible everywhere (judges), recap styling. |
+| Shravan | Polish, empty states, English explanations visible everywhere (judges), recap styling. Then the UI for the **judge-facing extras** (J1 caption line, J2 lesson card) once Andrew's fields exist; build against fixtures until then. |
 | Naren | Lock the demo script. **Record the backup video.** Stretch controls only if Phase 3 finished (snooze → peek). |
 
 **Docs:** `eval/README.md` with method + numbers (Karthik/Andrew); screenshots done; backup video linked (Naren).
+
+### Judge-facing extras (demo polish for the Amazon track)
+These are additions for the demo and the judges, not core product. They show decisions the tutor already makes, which covers the rubric's "Agentic behavior" (reason, plan, act) and "Adaptive intelligence" focus areas. Neither adds a Claude call. Start only after the Phase 3 exit (the full demo runs end to end once), and finish before the Sun 3:00am freeze. If they aren't done by then, cut them (see cut order).
+
+**J1. A "why" line under each tutor reply** (~30 min)
+- `web/lib/tutor/types.ts`: add `why: string` to `TurnDirective`. `policy.ts` fills it in each branch with one short English line, e.g. *"Recast only: first time you've made this mistake"*, *"Explained out loud: 2nd gender slip this session"*, *"Steering toward 'huelga': you hovered it this morning"*.
+- `/api/tutor/reply` returns it in an `X-Parrot-Why` response header next to `X-Turn-Id`. The body stays plain streamed text.
+- Tutor UI: one small grey line under the tutor caption.
+
+**J2. A "Today's lesson" card at session start** (~45 min)
+- `/shared`: optional `TutorContext.plan` (additive; post in team chat): the chosen article and why, each target word with a reason (hover time + sentence, or "due for review"), and one recurring error to watch.
+- `/api/tutor/context` builds the reasons in code from data it already loads. Depends on the real context route (Phase 3), not the fixture.
+- Tutor UI: a card above the transcript. Target words tick off live from the `wordUpdates` that `/api/tutor/correct` already returns for the "now known" toast.
+
+**Demo use:** at 0:50 point at the lesson card ("it planned this from what I read"); at 1:05 the why line shows it chose to recast rather than interrupt. Add both beats to `demo-script.md` once they work.
 
 ---
 
@@ -105,7 +120,8 @@ Who owns what and how we work: see [`plan.md`](plan.md). Technical design: see [
 4. Peek / snooze
 5. In-page quiz
 6. Topic packs
-7. Photon phone line
+7. Judge-facing extras: J2 lesson card first, then J1 why line
+8. Photon phone line
 
 **Never cut:** swaps + hover cards, the push-to-talk tutor with on-screen corrections, a word flipping to "known" after correct spoken use, the "What Parrot knows" page.
 

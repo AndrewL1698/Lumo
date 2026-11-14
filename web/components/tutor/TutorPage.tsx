@@ -11,13 +11,13 @@ import { newlyKnown } from "./wordUpdates";
 
 // Pure view over a TutorSession. Pass useMockTutorSession() or Andrew's real useTutorSession().
 export function TutorPage({ session }: { session: TutorSession }) {
-  const { status, partial, turns, targetWords, recap, start, pressTalk, releaseTalk, end } = session;
+  const { status, partial, turns, targetWords, recap, notice, start, pressTalk, releaseTalk, sendText, end } = session;
   const [toasts, setToasts] = useState<string[]>([]);
   const [seen, setSeen] = useState<Set<string>>(new Set());
+  const [typed, setTyped] = useState("");
 
-  useEffect(() => {
-    void start();
-  }, [start]);
+  // Browsers only allow mic access and audio playback after a click, so the session starts from a button.
+  const [begun, setBegun] = useState(false);
 
   // Queue a toast for each word that just flipped to "known" (once per turn).
   useEffect(() => {
@@ -45,12 +45,39 @@ export function TutorPage({ session }: { session: TutorSession }) {
     );
   }
 
+  if (!begun) {
+    return (
+      <div className="mx-auto max-w-xl space-y-4 p-8 text-center">
+        <h2 className="text-2xl font-bold text-slate-900">Ready to practice?</h2>
+        <p className="text-slate-600">
+          Your tutor will start a short Spanish chat about what you read. Hold the button to talk. English translations appear after you answer.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setBegun(true);
+            void start();
+          }}
+          className="rounded-xl bg-indigo-600 px-8 py-4 text-xl font-semibold text-white hover:bg-indigo-700"
+        >
+          Start lesson
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-6 p-4">
+      {notice && (
+        <p role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-amber-900">
+          {notice}
+        </p>
+      )}
+
       <TargetChips words={targetWords} known={known} />
 
       <ol className="space-y-6">
-        {turns.map((t) => (
+        {turns.map((t, i) => (
           <li key={t.id} className="space-y-3">
             {t.rawText && (
               <div className="rounded-xl bg-slate-50 p-4">
@@ -59,11 +86,21 @@ export function TutorPage({ session }: { session: TutorSession }) {
                 {!t.correction && <p className="mt-2 text-sm text-slate-500">Checking…</p>}
               </div>
             )}
+            {t.correctionFailed && <p className="text-sm text-slate-500">We couldn&apos;t check this one, but your answer was received.</p>}
             <CorrectionCards raw={t.rawText} result={t.correction} />
             {t.tutorText && (
               <div className="rounded-xl bg-indigo-50 p-4">
                 <p className="mb-1 text-xs font-medium uppercase tracking-wide text-indigo-600">Tutor</p>
                 <p className="text-xl text-slate-900">{t.tutorText}</p>
+                {t.tutorEnglish &&
+                  (turns.slice(i + 1).some((x) => x.rawText) ? (
+                    <p className="mt-2 text-base text-slate-600">
+                      <span className="font-medium text-indigo-600">In English: </span>
+                      {t.tutorEnglish}
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-sm text-slate-400">English appears after you answer.</p>
+                  ))}
               </div>
             )}
           </li>
@@ -87,6 +124,30 @@ export function TutorPage({ session }: { session: TutorSession }) {
           End session
         </button>
       </div>
+
+      <details className="text-slate-700">
+        <summary className="cursor-pointer text-sm font-medium">Type your answer instead</summary>
+        <form
+          className="mt-2 flex gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const text = typed.trim();
+            if (!text) return;
+            sendText(text);
+            setTyped("");
+          }}
+        >
+          <input
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            placeholder="Escribe en español…"
+            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2"
+          />
+          <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 font-medium text-white hover:bg-indigo-700">
+            Send
+          </button>
+        </form>
+      </details>
 
       <KnownToast lemma={toasts[0] ?? null} onDone={dismissToast} />
     </div>

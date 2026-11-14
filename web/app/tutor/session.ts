@@ -12,6 +12,9 @@ export interface TutorTurn {
   correction?: CorrectionResult; // undefined while "checking"
   wordUpdates?: WordUpdate[];
   tutorText?: string; // streamed Spanish reply for this turn
+  correctionFailed?: boolean; // real hook sets this when the correction call failed
+  tutorEnglish?: string; // English translation; the page hides it until the learner has answered (no peeking)
+  // TODO(demo): agree with Andrew where the real translation comes from.
 }
 
 export interface TutorSession {
@@ -20,6 +23,7 @@ export interface TutorSession {
   turns: TutorTurn[];
   targetWords: TargetWord[];
   recap: Recap | null;
+  notice?: string | null; // real hook: ready-to-show English message when something degrades (mic blocked, etc.)
   start: () => void | Promise<void>;
   pressTalk: () => void;
   releaseTalk: () => void;

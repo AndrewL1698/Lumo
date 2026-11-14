@@ -33,7 +33,7 @@ Model settings (voice-plan §0): Haiku `claude-haiku-5-5` with `thinking: {type:
 | 1 | **1** STT harness · **2** Pass A · **3** Shravan's mock + hook interface · **4** Pass B + pick provider | STT decision written into voice-plan §6 and posted |
 | 2 | **5** `/api/tutor/correct` · **6** STT token, recorder, realtime, batch fallback · **7** `/api/tutor/reply` + policy · **8** TTS, chunker, audio queue, barge-in · **9** `useTutorSession` + timeline + metrics | Speak a sentence on `/tutor-lab` → corrections on screen + spoken reply; a line in `eval/latency/turns.jsonl` |
 | 3 | **10** `/api/tutor/context` + opener · **11** wire Shravan's `/tutor` page · **12** target-word validation → `recordTutorEvent` → `wordUpdates` → toast | Scripted sentence flips a hovered word to `known` (toast + vocab page) |
-| 4 | **13** latency pass · **14** `/api/tutor/end` recap · **15** failure drill · **16** bug bash with Karthik at the mic | Medians ≤1.5 s / ≤2 s (or the gap written down); demo steps 3–4 pass 5× in a row |
+| 4 | **13** latency pass · **14** `/api/tutor/end` recap · **15** failure drill · **16** bug bash with Karthik at the mic · then, if time allows, server side of the judge-facing extras J1 (`TurnDirective.why` → `X-Parrot-Why`) and J2 (`TutorContext.plan`) from `docs/roadmap.md` | Medians ≤1.5 s / ≤2 s (or the gap written down); demo steps 3–4 pass 5× in a row |
 | Ship | Pitch numbers slide: STT survival %, precision / recall / false-alarm rate (Karthik), median latencies | Slide done before 7:30am |
 
 Phase 0 leftovers outside the task list:

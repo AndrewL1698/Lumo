@@ -25,6 +25,8 @@ Needs `ANTHROPIC_API_KEY`, `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` in `web/.en
 5. **Index:** invert `english_forms` into `{ englishForm: [lemma, …] }`, most frequent lemma first, for the extension's word matching (English↔Spanish is many-to-many).
 6. **Audit:** a second, independent Haiku pass checks gender, article and false-friend flags on every noun. Disagreements are reviewed by hand. None of us is a fluent speaker, so flagged rows are also cross-checked against SpanishDict/RAE (see `docs/plan.md` §3).
 
+7. **Overrides:** `build-wordlist/overrides.json` holds hand fixes (drops and per-lemma field changes) applied at merge time, so rebuilds don't undo them. The audit's 16 flags were cross-checked against the RAE/DLE via ChatGPT: 9 fixes applied, 6 flags rejected as real false friends, 1 junk row (`modal`) dropped.
+
 Every Claude batch is cached in `build-wordlist/out/batches/`, so reruns only call Claude for missing or failed batches.
 
 ## Learner model + demo seed

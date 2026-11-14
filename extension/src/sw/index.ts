@@ -6,6 +6,7 @@
 
 import type { Settings } from "@parrot/shared";
 import type { Message, ResponseMap } from "../messages";
+import { neverListReason } from "../neverlist";
 
 /** Shape of chrome.storage.local. */
 interface StoredState {
@@ -47,7 +48,9 @@ async function enableSite(rawOrigin: string): Promise<ResponseMap["ENABLE_SITE"]
   const origin = normalizeOrigin(rawOrigin);
   if (!origin) return { ok: false, error: "not an http(s) origin" };
 
-  // TODO(naren): hard never-list check before enabling a site (architecture §6)
+  // Hard never-list, enforced even though the user just granted the permission (specs §5.1).
+  const blocked = neverListReason(origin);
+  if (blocked) return { ok: false, error: `Parrot never runs here (${blocked})` };
 
   const pattern = origin + "/*";
   const granted = await chrome.permissions.contains({ origins: [pattern] });

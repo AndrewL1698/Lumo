@@ -44,6 +44,8 @@ This file covers how we work. Update the docs instead of silently deviating.
   hour, not the next day.
 - Never commit `.env*`, API keys, audio recordings of teammates, or `node_modules`.
 - Don't force-push `main`.
+- Commits and PRs are attributed to the teammate only: no `Co-Authored-By: Claude` trailer and no
+  "Generated with Claude Code" line. `.claude/settings.json` turns these off; don't add them by hand.
 
 ## Non-negotiables (these break the product or the pitch if violated)
 1. **No API keys in the browser or extension.** All Claude and ElevenLabs calls go through `/web`

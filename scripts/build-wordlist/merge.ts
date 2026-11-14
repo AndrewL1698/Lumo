@@ -2,6 +2,7 @@
 import { join } from "node:path";
 import { OUT, TARGET_LEMMAS, bandFor, writeJson, type WordRow } from "./lib.ts";
 import type { EnrichedItem } from "./enrich.ts";
+import overrides from "./overrides.json" with { type: "json" };
 
 export const WORDS_PATH = join(OUT, "words.json");
 
@@ -37,6 +38,13 @@ export function mergeItems(items: EnrichedItem[]): WordRow[] {
       cognate: best.cognate, false_friend: best.false_friend, band: 1,
     });
   }
+
+  // Hand fixes (overrides.json) survive rebuilds; dropped lemmas free their slot for the next-ranked word.
+  const drop = new Set(overrides.drop);
+  const set = overrides.set as Record<string, Partial<WordRow>>;
+  const fixed = rows.filter((r) => !drop.has(r.lemma)).map((r) => (set[r.lemma] ? { ...r, ...set[r.lemma] } : r));
+  rows.length = 0;
+  rows.push(...fixed);
 
   rows.sort((a, b) => a.rank - b.rank);
   const words = rows.slice(0, TARGET_LEMMAS).map((r, i) => ({ ...r, rank: i + 1, band: bandFor(i + 1) }));

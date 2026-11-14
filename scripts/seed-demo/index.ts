@@ -3,8 +3,9 @@
 //   cd scripts && npm run seed-demo            (needs web/.env.local + seeded `words`)
 //   cd scripts && npm run seed-demo -- --dry   (print the plan, no DB writes)
 import "../build-wordlist/lib.ts"; // loads web/.env.local
+import { settingsFixture } from "@parrot/shared";
 import { applyEvent, isDue } from "../../web/lib/learner/applyEvent.ts";
-import { emptyUserWord, type EventType, type UserWord } from "../../web/lib/learner/types.ts";
+import { emptyUserWord, type LearnerEventType, type UserWord } from "../../web/lib/learner/types.ts";
 
 const DAY = 24 * 60 * 60 * 1000;
 const dry = process.argv.includes("--dry");
@@ -19,17 +20,18 @@ if (key?.startsWith("eyJ")) headers.Authorization = `Bearer ${key}`; // legacy J
 async function rest(path: string, init: RequestInit = {}) {
   const res = await fetch(`${url}/rest/v1/${path}`, { ...init, headers: { ...headers, ...(init.headers as object) } });
   if (!res.ok) throw new Error(`${init.method ?? "GET"} ${path}: ${res.status} ${await res.text()}`);
-  return res.status === 204 ? null : res.json();
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
 }
 
 const now = new Date();
 let n = 0;
-const ev = (w: UserWord, type: EventType, at: Date) =>
-  applyEvent(w, { id: `seed-${n++}`, type, lemma: w.lemma, articleKey: "seed", ts: at.toISOString() }, at);
+const ev = (w: UserWord, type: LearnerEventType, at: Date) =>
+  applyEvent(w, { id: `seed-${n++}`, type, lemma: w.lemma, articleKey: "seed", ts: at.getTime() }, at);
 const daysAgo = (d: number) => new Date(now.getTime() - d * DAY);
 
 // Review at every due date from `start` until the next due date is in the future (i.e. caught up today).
-function reviewUntilCaughtUp(w: UserWord, type: EventType, start: Date): UserWord {
+function reviewUntilCaughtUp(w: UserWord, type: LearnerEventType, start: Date): UserWord {
   let t = start;
   for (let guard = 0; t <= now && guard < 50; guard++) {
     w = ev(w, type, t);
@@ -41,7 +43,7 @@ function reviewUntilCaughtUp(w: UserWord, type: EventType, start: Date): UserWor
 // Each recipe produces one target state from a plausible backdated history.
 const recipes: Record<string, (lemma: string) => UserWord> = {
   // Used correctly in speech at every due date for ~6 months → stability ≥ 60d, not due.
-  mastered: (lemma) => reviewUntilCaughtUp(ev(emptyUserWord(lemma), "hover", daysAgo(200)), "speech_correct", daysAgo(199)),
+  mastered: (lemma) => reviewUntilCaughtUp(ev(emptyUserWord(lemma), "hover", daysAgo(200)), "spoken_correct", daysAgo(199)),
   // Hovered + self-reported 2 weeks ago, never reviewed since → overdue (top swap priority).
   due: (lemma) => ev(ev(emptyUserWord(lemma), "hover", daysAgo(14)), "knew_it", daysAgo(13.99)),
   // Passed quizzes on schedule over the last ~10 days → "Your vocabulary", not due yet.
@@ -92,3 +94,11 @@ await rest("user_words", {
   ),
 });
 console.log(`seed-demo: wrote ${rows.length} user_words for ${userId}`);
+
+// Settings row for the demo user (brief 0.1), reset to the fixture values on every run.
+await rest("settings?on_conflict=user_id", {
+  method: "POST",
+  headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+  body: JSON.stringify({ user_id: userId, data: settingsFixture }),
+});
+console.log(`seed-demo: wrote settings for ${userId}`);

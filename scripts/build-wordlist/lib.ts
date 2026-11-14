@@ -2,6 +2,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { MODELS } from "../../web/lib/config.ts";
 
 export const HERE = dirname(fileURLToPath(import.meta.url));
 export const REPO = join(HERE, "..", "..");
@@ -9,8 +10,8 @@ export const OUT = join(HERE, "out");
 export const BATCH_DIR = join(OUT, "batches");
 export const WORDINDEX_PATH = join(REPO, "extension", "src", "wordindex.json");
 
-// TODO(demo): move to the shared model config constant once Andrew's lib/claude.ts exists.
-export const HAIKU = "claude-haiku-5-5";
+// Model ID comes from the one config constant (web/lib/config.ts).
+export const HAIKU = MODELS.correction;
 
 // Inflected forms pulled from the frequency list. Verb inflections collapse heavily (está/estoy/estaba → estar),
 // so we need ~3x the forms to end up with TARGET_LEMMAS lemmas.
