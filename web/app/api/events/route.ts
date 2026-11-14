@@ -1,4 +1,5 @@
 import { ApiError, EventsRequest, EventsResponse } from "@parrot/shared";
+import { checkExtensionToken } from "@/lib/auth";
 import { DEMO_USER_ID } from "@/lib/config";
 import { getDb } from "@/lib/db";
 import { json, parseBody, preflight, withCors } from "@/lib/http";
@@ -7,9 +8,11 @@ import { NextResponse } from "next/server";
 
 export const OPTIONS = preflight;
 
-// TODO(demo): Bearer token isn't checked yet; every request is DEMO_USER_ID.
+// Every request is DEMO_USER_ID; the extension token is required.
 // TODO(karthik): 4.2 never-list check on reading events' meta.domain.
 export async function POST(req: Request) {
+  const denied = checkExtensionToken(req);
+  if (denied) return denied;
   const body = await parseBody(req, EventsRequest);
   if (body instanceof NextResponse) return withCors(body);
 

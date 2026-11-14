@@ -1,4 +1,5 @@
 import { CandidatesResponse } from "@parrot/shared";
+import { checkExtensionToken } from "@/lib/auth";
 import { getSettings } from "@/lib/learner/queries";
 import { DEMO_USER_ID } from "@/lib/config";
 import { getDb } from "@/lib/db";
@@ -10,9 +11,10 @@ export const dynamic = "force-dynamic";
 export const OPTIONS = preflight;
 
 // Every user_words row with its scoring flags. The extension applies the weights and 70/30 mix.
-// TODO(demo): Bearer token isn't checked yet.
 // TODO(karthik): 3.1 weak list from utterances.correction, known_assumed for bands below the level.
-export async function GET() {
+export async function GET(req: Request) {
+  const denied = checkExtensionToken(req);
+  if (denied) return denied;
   const now = new Date();
   let candidates: Candidate[] = [];
   try {

@@ -1,5 +1,6 @@
 import { TranslateRequest, TranslateResponse, type TranslateItem } from "@parrot/shared";
 import { translateBatch, type TranslateOutput } from "@/lib/claude";
+import { checkExtensionToken } from "@/lib/auth";
 import { getDb } from "@/lib/db";
 import { json, parseBody, preflight, withCors } from "@/lib/http";
 import { NextResponse } from "next/server";
@@ -20,8 +21,10 @@ function check(out: TranslateOutput, it: { sentence: string; englishMatch: strin
   return out;
 }
 
-// TODO(demo): Bearer token isn't checked yet. TranslateRequest has no domain, so no never-list check here.
+// TranslateRequest has no domain, so no never-list check here.
 export async function POST(req: Request) {
+  const denied = checkExtensionToken(req);
+  if (denied) return denied;
   const body = await parseBody(req, TranslateRequest);
   if (body instanceof NextResponse) return withCors(body);
   const { items } = body;
