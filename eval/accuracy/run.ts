@@ -39,9 +39,15 @@ const norm = (s: string) =>
     .replace(/[^\p{L}\p{N}\s]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
-const overlaps = (flag: string, planted: string) => {
-  const a = norm(flag), b = norm(planted);
-  return a.length > 0 && b.length > 0 && (a.includes(b) || b.includes(a));
+// "Overlaps" = the two spans share characters at their positions in the (normalised) sentence, so a flag with
+// different boundaries ("agua es esencial" vs planted "que agua") still counts. Falls back to substring
+// either way if a span can't be located in the sentence.
+const overlaps = (flag: string, planted: string, sentence: string) => {
+  const a = norm(flag), b = norm(planted), s = norm(sentence);
+  if (!a || !b) return false;
+  const i = s.indexOf(a), j = s.indexOf(b);
+  if (i < 0 || j < 0) return a.includes(b) || b.includes(a);
+  return i < j + b.length && j < i + a.length;
 };
 
 type Row = {
@@ -74,7 +80,7 @@ for (const s of sentences) {
     const flags = out.correction.errors
       .filter((e) => e.confidence >= MIN_CONFIDENCE)
       .map((e) => ({ span: e.span, type: e.type, correction: e.correction, confidence: e.confidence }));
-    const hits = flags.filter((f) => !control && s.error_span !== null && overlaps(f.span, s.error_span));
+    const hits = flags.filter((f) => !control && s.error_span !== null && overlaps(f.span, s.error_span, s.text));
     rows.push({
       id: s.id,
       control,
