@@ -7,7 +7,7 @@ import { CandidatesResponse } from "./candidates";
 import { EventsResponse } from "./events";
 import { Settings } from "./settings";
 import { SentenceTranslateResponse, TranslateResponse } from "./translate";
-import { CorrectResponse, Recap, SttTokenResponse, TutorContext, TutorTranslateResponse } from "./tutor";
+import { CorrectResponse, PlacementResponse, Recap, SttTokenResponse, TutorContext, TutorTranslateResponse } from "./tutor";
 
 const now = "2026-11-14T15:00:00.000Z";
 const tomorrow = "2026-11-15T15:00:00.000Z";
@@ -153,6 +153,13 @@ export const replyTextFixture =
 /** /api/tutor/translate for `replyTextFixture`. */
 export const tutorTranslateResponseFixture = TutorTranslateResponse.parse({
   english: "Sure, I understand. The problem is that the strike goes on, right? How are you getting to work this week?",
+});
+
+/** POST /api/tutor/placement in mock mode. */
+export const placementResponseFixture = PlacementResponse.parse({
+  level: "intermediate",
+  reason_en: "You answered in full sentences and used the past tense, with a few agreement slips.",
+  evidence_en: ['You said "me llamo Ana y soy de Boston" without help.', 'You tried the past tense: "yo fui al parque".'],
 });
 
 export const recapFixture = Recap.parse({

@@ -3,7 +3,7 @@ import { ClaudeRefusalError, streamTutorReply } from "@/lib/claude";
 import { isTutorMock, TUTOR } from "@/lib/config";
 import { parseBody } from "@/lib/http";
 import { nextDirective, WHY } from "@/lib/tutor/policy";
-import { buildTutorPrompt } from "@/lib/tutor/prompts";
+import { buildTutorPrompt, placementAnswered, placementLine } from "@/lib/tutor/prompts";
 import { getSession, noteSpokenCorrection } from "@/lib/tutor/session";
 import type { TurnDirective } from "@/lib/tutor/types";
 import type { TutorContext } from "@parrot/shared";
@@ -59,8 +59,13 @@ export async function POST(req: Request) {
     "X-Turn-Id": turnId,
   };
 
+  // Onboarding level check (D-020): the line for this turn is fixed. It is also the mock and fallback text.
+  const fixedLine = getSession(body.sessionId).placement
+    ? placementLine(placementAnswered(body.history, body.rawText))
+    : undefined;
+
   if (isTutorMock()) {
-    const words = replyTextFixture.split(" ");
+    const words = (fixedLine ?? replyTextFixture).split(" ");
     let cancelled = false;
     const mock = new ReadableStream<Uint8Array>({
       async start(controller) {
@@ -86,7 +91,7 @@ export async function POST(req: Request) {
   const fallback = (why: unknown) => {
     upstream.abort();
     console.error(`[tutor/reply] ${turnId} fallback: ${describe(why)}`);
-    const canned = body.rawText === null ? TUTOR.cannedOpener : TUTOR.cannedRepeat;
+    const canned = fixedLine ?? (body.rawText === null ? TUTOR.cannedOpener : TUTOR.cannedRepeat);
     return new Response(canned, { headers: { ...headers, "X-Reply-Fallback": "1" } });
   };
 
@@ -97,9 +102,17 @@ export async function POST(req: Request) {
   try {
     const session = getSession(body.sessionId);
     // /reply runs in parallel with /correct, so the policy's turn counter can lag: don't trust its opener flag.
-    const policy = nextDirective(session.policy);
-    const directive = { ...policy, isOpener: body.rawText === null };
-    directive.why = why = finalWhy(directive, policy.isOpener, session.context);
+    let directive: TurnDirective;
+    if (fixedLine) {
+      // Level check (D-020): no corrections, no steering; the line is fixed.
+      why = "Level check: asking the next question";
+      directive = { correction: "none", steerLemma: null, isOpener: body.rawText === null, why };
+    } else {
+      const policy = nextDirective(session.policy);
+      const d = { ...policy, isOpener: body.rawText === null };
+      d.why = why = finalWhy(d, policy.isOpener, session.context);
+      directive = d;
+    }
     if (directive.correction !== "none") noteSpokenCorrection(body.sessionId);
     console.log(`[tutor/reply] ${turnId} directive ${JSON.stringify(directive)}`);
 
@@ -108,6 +121,7 @@ export async function POST(req: Request) {
       history: body.history,
       rawText: body.rawText,
       directive,
+      placementLine: fixedLine,
     });
     const it = streamTutorReply({ system, messages, signal: upstream.signal })[
       Symbol.asyncIterator

@@ -113,6 +113,8 @@ export type SessionState = {
   fromContext: boolean;
   /** For the recap (task 14). */
   allErrors: CorrectionError[];
+  /** Onboarding level check (D-020): fixed questions, no target words, no recap. */
+  placement?: boolean;
 };
 
 // ---------- prompts (prompts.ts) ----------
@@ -128,6 +130,8 @@ export type TutorPromptArgs = {
   history: HistoryTurn[];
   rawText: string | null; // null = opener
   directive: TurnDirective;
+  /** Level check only: the exact line to say this turn (placementLine()). Switches to PLACEMENT_SYSTEM. */
+  placementLine?: string;
 };
 export type ClaudeMessage = { role: "user" | "assistant"; content: string };
 
@@ -253,6 +257,8 @@ export type UseTutorSession = {
   lastTimeline: TurnTimeline | null;
   /** J2 "Today's lesson" card from /api/tutor/context; null before start() or when the server sent none. */
   plan: TutorContext["plan"] | null;
+  /** The server session id once start() has loaded the context (the level check posts it). */
+  sessionId: string | null;
 };
 
 export type { CorrectResponse };

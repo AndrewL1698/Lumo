@@ -4,11 +4,16 @@
  */
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
-import { SpokenErrorType } from "@parrot/shared";
-import type { Level, TargetWord } from "@parrot/shared";
+import { PlacementResponse, SpokenErrorType } from "@parrot/shared";
+import type { CorrectionError, HistoryTurn, Level, TargetWord } from "@parrot/shared";
 import { z } from "zod";
 import { CLAUDE_FALLBACKS, MODELS } from "./config";
-import { buildCorrectorPrompt, RECAP_SYSTEM } from "./tutor/prompts";
+import {
+  buildCorrectorPrompt,
+  buildPlacementAssessPrompt,
+  PLACEMENT_ASSESS_SYSTEM,
+  RECAP_SYSTEM,
+} from "./tutor/prompts";
 import type { ModelCorrection } from "./tutor/types";
 
 /** Thrown by either lane when the model returns stop_reason "refusal". */
@@ -159,6 +164,30 @@ export async function* streamTutorReply(args: {
   }
   const final = await stream.finalMessage();
   if (final.stop_reason === "refusal") throw new ClaudeRefusalError("tutor refused");
+}
+
+/** Onboarding level check (D-020): one Haiku call that suggests a level from the three answers. */
+export async function assessPlacement(args: {
+  history: HistoryTurn[];
+  errors: CorrectionError[];
+  signal?: AbortSignal;
+}): Promise<PlacementResponse> {
+  const response = await getClaude().messages.parse(
+    {
+      model: MODELS.correction,
+      max_tokens: 600,
+      thinking: { type: "disabled" },
+      output_config: { effort: "low", format: zodOutputFormat(PlacementResponse) },
+      system: PLACEMENT_ASSESS_SYSTEM,
+      messages: [{ role: "user", content: buildPlacementAssessPrompt(args.history, args.errors) }],
+    },
+    { signal: args.signal },
+  );
+  if (response.stop_reason === "refusal") throw new ClaudeRefusalError("placement refused");
+  if (response.parsed_output === null) {
+    throw new Error(`placement returned no parsable output (stop_reason: ${response.stop_reason})`);
+  }
+  return { ...response.parsed_output, evidence_en: response.parsed_output.evidence_en.slice(0, 3) };
 }
 
 const RecapProseSchema = z.object({ summary_en: z.string(), tips: z.array(z.string()) });

@@ -139,3 +139,8 @@ Short entries. Newest at the bottom. Format: **ID · date · owner**, decision, 
 **Gotchas:**
 - Run `seed-demo` first and **Reset progress** last. A reseed mid-test wipes the Knew-it points while the dial holds its peak, which hid a tutor gain in testing.
 - "Try on this page" lasts one visit, and every popup action reloads the tab. Use **Always on for this site** for NPR.
+
+### D-020 · Nov 15 · Andrew
+**Decision:** Onboarding is three steps with no account: pick a level, an optional one-minute voice check with Luci, then pair the extension. The check asks three fixed questions of rising difficulty through the normal tutor loop; one Haiku call then suggests a level with a plain-English reason, and the learner accepts it or keeps their own pick.
+**Why:** Self-report alone is a weak signal, and the level drives both the tutor's speaking style (D-004) and which words get swapped. A voice check reuses the tutor pipeline, measures speaking, and shows its reasoning. No account is needed because every route already uses the one built-in profile, and the pairing code links the extension to it.
+**Alternatives:** The spec's word-tap test with fake words (specs §4 stretch; needs new data and UI). Accounts or per-device anonymous profiles (not built; the product design is an anonymous profile on first run, with an account only for syncing devices).

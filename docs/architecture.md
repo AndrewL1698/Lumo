@@ -152,6 +152,7 @@ settings     (user_id PK, data jsonb)
 | `POST /api/tutor/reply` | Andrew | Conversation lane (streaming text; client chunks to TTS) |
 | `POST /api/tutor/translate` | Andrew | English for one finished tutor line (Haiku), shown under its bubble. Separate from `/reply` so first audio is never delayed |
 | `POST /api/tutor/end` | Andrew | Recap + commit learner updates |
+| `POST /api/tutor/placement` | Andrew | Onboarding level check (D-020): suggests a level with an English reason from three spoken answers. `GET /api/tutor/context?placement=1` starts the check (empty context, fixed questions) |
 | `GET /api/vocab` | Karthik | Learning / Your vocabulary / Mastered + streak |
 | `GET/DELETE /api/data` | Karthik | Privacy page: list + delete one + delete everything |
 
