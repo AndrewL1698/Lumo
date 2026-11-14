@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TutorSession } from "@/app/tutor/session";
 import { btn } from "@/components/ui/PageHeader";
 import { CorrectionCards } from "./CorrectionCards";
@@ -19,7 +19,9 @@ export function TutorPage({ session }: { session: TutorSession }) {
   const [toasts, setToasts] = useState<string[]>([]);
   const [seen, setSeen] = useState<Set<string>>(new Set());
   const [typed, setTyped] = useState("");
-  const [typingOpen, setTypingOpen] = useState(false);
+  const [typingOpen, setTypingOpen] = useState(true);
+  const typeBox = useRef<HTMLDetailsElement>(null);
+  const typeInput = useRef<HTMLInputElement>(null);
 
   // Browsers only allow mic access and audio playback after a click, so the session starts from a button.
   const [begun, setBegun] = useState(false);
@@ -47,6 +49,15 @@ export function TutorPage({ session }: { session: TutorSession }) {
     if (turns.length < 2 && status !== "listening") return; // nothing to scroll to yet
     window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
   }, [scrollKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Whenever the tutor is waiting on the learner, open the type box and put the cursor in it (saves two clicks).
+  // Space on the empty box still means push-to-talk (see PushToTalk).
+  const awaitingReply = begun && status === "idle" && !!last?.tutorText;
+  useEffect(() => {
+    if (!awaitingReply) return;
+    if (typeBox.current) typeBox.current.open = true;
+    typeInput.current?.focus({ preventScroll: true });
+  }, [awaitingReply, turns.length]);
 
   const known = useMemo(() => turns.flatMap((t) => newlyKnown(t.wordUpdates)), [turns]);
   const dismissToast = useCallback(() => setToasts((q) => q.slice(1)), []);
@@ -142,7 +153,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
           </button>
         </div>
 
-        <details className="text-muted" onToggle={(e) => setTypingOpen(e.currentTarget.open)}>
+        <details ref={typeBox} open className="text-muted" onToggle={(e) => setTypingOpen(e.currentTarget.open)}>
           <summary className="cursor-pointer list-none text-sm transition-colors duration-150 hover:text-ink [&::-webkit-details-marker]:hidden">
             {typingOpen ? "Hide typing" : "Type your answer instead"}
           </summary>
@@ -157,6 +168,8 @@ export function TutorPage({ session }: { session: TutorSession }) {
             }}
           >
             <input
+              ref={typeInput}
+              data-ptt-space
               value={typed}
               onChange={(e) => setTyped(e.target.value)}
               placeholder="Escribe en español"

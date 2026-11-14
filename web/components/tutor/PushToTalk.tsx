@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { TutorStatus } from "@/app/tutor/session";
 
 const BUTTON: Record<TutorStatus, string> = {
@@ -16,7 +16,7 @@ const STATUS: Record<TutorStatus, string> = {
   speaking: "Tutor is speaking",
 };
 
-// Hold the button or the Space bar. Space is ignored while typing in an input.
+// Hold the button or the Space bar. Space is ignored while typing in an input (except an empty data-ptt-space one).
 export function PushToTalk({
   status,
   onPress,
@@ -28,19 +28,31 @@ export function PushToTalk({
 }) {
   const listening = status === "listening";
   const disabled = status === "checking";
+  const spaceHeld = useRef(false);
 
   useEffect(() => {
+    // An empty input marked data-ptt-space (the tutor's auto-focused type box) still lets Space mean talk.
     const isTyping = (t: EventTarget | null) =>
-      t instanceof HTMLElement && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable);
+      t instanceof HTMLElement &&
+      (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable) &&
+      !(t instanceof HTMLInputElement && t.hasAttribute("data-ptt-space") && t.value === "");
+    // While Space is held for talking, swallow every key-repeat and the keyup, so nothing gets typed
+    // into the (auto-focused) type box. spaceHeld is a ref because status may not be "listening" yet.
     const down = (e: KeyboardEvent) => {
-      if (e.code !== "Space" || e.repeat || isTyping(e.target) || disabled) return;
+      if (e.code !== "Space") return;
+      if (spaceHeld.current) return e.preventDefault();
+      if (e.repeat || isTyping(e.target) || disabled) return;
       e.preventDefault();
+      spaceHeld.current = true;
       onPress();
     };
     const up = (e: KeyboardEvent) => {
-      if (e.code !== "Space" || isTyping(e.target) || !listening) return;
+      if (e.code !== "Space") return;
+      const held = spaceHeld.current;
+      spaceHeld.current = false;
+      if (!held && (isTyping(e.target) || !listening)) return;
       e.preventDefault();
-      onRelease();
+      if (listening) onRelease();
     };
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
