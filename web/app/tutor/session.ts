@@ -12,6 +12,8 @@ export interface TutorTurn {
   correction?: CorrectionResult; // undefined while "checking"
   wordUpdates?: WordUpdate[];
   tutorText?: string; // streamed Spanish reply for this turn
+  tutorEnglish?: string; // English translation; the page hides it until the learner has answered (no peeking)
+  // TODO(demo): agree with Andrew where the real translation comes from.
 }
 
 export interface TutorSession {

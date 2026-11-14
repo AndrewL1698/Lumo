@@ -17,6 +17,10 @@ import type { TutorSession, TutorStatus, TutorTurn } from "./session";
 
 const OPENER = "Vi que hoy leíste sobre la huelga del transporte. ¿Qué opinas?";
 
+const OPENER_EN = "I saw that you read about the transit strike today. What do you think?";
+// HACK: hand-written English for replyTextFixture (the shared fixture is Spanish only).
+const REPLY_EN = "Sure, I understand. The problem is that the strike goes on, right? How are you getting to work this week?";
+
 const SCRIPT: { raw: string; response: CorrectResponse }[] = [
   { raw: rawTextFixture, response: correctResponseFixture },
   { raw: "me gusta mucho la casa grande", response: correctResponseCleanFixture },
@@ -69,7 +73,7 @@ export function useMockTutorSession(): TutorSession {
     if (started.current) return; // StrictMode double-invoke guard
     started.current = true;
     setStatus("speaking");
-    setTurns([{ id: "opener", rawText: "" }]);
+    setTurns([{ id: "opener", rawText: "", tutorEnglish: OPENER_EN }]);
     streamCaption("opener", OPENER);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -91,7 +95,7 @@ export function useMockTutorSession(): TutorSession {
     setStatus("checking");
     setTurns((ts) => [...ts, { id, rawText: step.raw }]);
     later(() => {
-      patchTurn(id, { correction: step.response.correction, wordUpdates: step.response.wordUpdates });
+      patchTurn(id, { correction: step.response.correction, wordUpdates: step.response.wordUpdates, tutorEnglish: REPLY_EN });
       setStatus("speaking");
       streamCaption(id, replyTextFixture);
     }, CHECK_MS);
