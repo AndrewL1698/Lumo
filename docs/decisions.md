@@ -28,7 +28,7 @@ Short entries. Newest at the bottom. Format: **ID · date · owner**, decision, 
 ### D-005 · Nov 14 · Karthik
 **Decision:** The number of swapped words per page is set by a **slider in the extension popup** ("Spanish words per page", 0–25). It saves to the same `perPageCap` setting as the Settings page, and reloads the current tab so the change shows at once. The extension now reads Settings from the server instead of its built-in 25.
 **Why:** It shows the core idea ("more of the page turns Spanish as you improve") live on stage. The Settings slider existed, but the extension ignored it.
-**Alternatives:** Settings page only (rejected: you'd switch tabs on stage). Takes over the settings part of Naren's task 3.3 (pending Naren's OK).
+**Alternatives:** Settings page only (rejected: you'd switch tabs on stage). Took over the settings part of Naren's task 3.3 (agreed with Naren); merged Sat evening.
 
 ### D-006 · Nov 14 · Karthik
 **Decision:** **"Grow automatically"** (popup switch, on by default): swaps per page = a starting amount + 1 per solid word (known + mastered), up to 25. Off = the slider decides. Calculated in the extension from `/api/candidates`. No contract change.

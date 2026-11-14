@@ -2,8 +2,6 @@
 
 Owner: **Naren**. Team rules: root `CLAUDE.md`. Design: `docs/architecture.md` §6. Contracts: `@parrot/shared`.
 
-> **In progress, Sat evening (Karthik, pending Naren's OK):** settings fetch + cache in `src/sw/index.ts`, the popup slider + "Grow automatically" in `src/popup/`, and level-aware scoring in `src/content/index.ts` (scoring/selection only). Please don't edit those parts until Karthik posts that the extension part is merged; this note is removed then. The hover card (`src/content/hovercard.ts`) stays Naren's.
-
 ## What lives here
 | Path | Does |
 |---|---|
