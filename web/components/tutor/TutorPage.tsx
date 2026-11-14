@@ -16,9 +16,8 @@ export function TutorPage({ session }: { session: TutorSession }) {
   const [seen, setSeen] = useState<Set<string>>(new Set());
   const [typed, setTyped] = useState("");
 
-  useEffect(() => {
-    void start();
-  }, [start]);
+  // Browsers only allow mic access and audio playback after a click, so the session starts from a button.
+  const [begun, setBegun] = useState(false);
 
   // Queue a toast for each word that just flipped to "known" (once per turn).
   useEffect(() => {
@@ -42,6 +41,27 @@ export function TutorPage({ session }: { session: TutorSession }) {
     return (
       <div className="mx-auto max-w-3xl p-4">
         <RecapPanel recap={recap} onClose={() => window.location.reload()} />
+      </div>
+    );
+  }
+
+  if (!begun) {
+    return (
+      <div className="mx-auto max-w-xl space-y-4 p-8 text-center">
+        <h2 className="text-2xl font-bold text-slate-900">Ready to practice?</h2>
+        <p className="text-slate-600">
+          Your tutor will start a short Spanish chat about what you read. Hold the button to talk. English translations appear after you answer.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setBegun(true);
+            void start();
+          }}
+          className="rounded-xl bg-indigo-600 px-8 py-4 text-xl font-semibold text-white hover:bg-indigo-700"
+        >
+          Start lesson
+        </button>
       </div>
     );
   }
