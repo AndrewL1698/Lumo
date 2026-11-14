@@ -51,5 +51,11 @@ export type ResponseFor<T extends MessageType> = ResponseMap[T];
 export function send<T extends MessageType>(
   message: Extract<Message, { type: T }>,
 ): Promise<ResponseFor<T>> {
-  return chrome.runtime.sendMessage<Extract<Message, { type: T }>, ResponseFor<T>>(message);
+  // After the extension is reloaded, the old content script in an open tab throws "Extension context invalidated"
+  // synchronously, which bypasses callers' .catch(). Turn it into a rejection so the page just goes quiet.
+  try {
+    return chrome.runtime.sendMessage<Extract<Message, { type: T }>, ResponseFor<T>>(message);
+  } catch (err) {
+    return Promise.reject(err);
+  }
 }
