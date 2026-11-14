@@ -71,14 +71,25 @@ export type WordInfo = { article: string | null; english: string; cognate: boole
 export type TutorContextData = {
   level: Settings["level"];
   /** Last 24h, newest first, one per lemma. hoveredAt/articleTitle are for J2's "hovered at 9:12 in …". */
-  hoveredWords: ({ lemma: string; sentence?: string; hoveredAt: string; articleTitle?: string } & WordInfo)[];
+  hoveredWords: ({
+    lemma: string;
+    sentence?: string;
+    hoveredAt: string;
+    articleTitle?: string;
+    /** What the learner did on the hover card (D-008): latest "Knew it" / "Didn't know", else just looked. Optional so existing callers/fixtures stay valid; always set by getTutorContextData. */
+    outcome?: HoverOutcome;
+  } & WordInfo)[];
   /** Most overdue first. */
   dueWords: ({ lemma: string; dueAt: string } & WordInfo)[];
   /** Today's article titles; [] when Settings.useReadingInLessons is off. */
   articleTitles: string[];
   /** From the latest tutor session recap, e.g. `agreement: "la problema" → "el problema" (3×)`. */
   topErrors: string[];
+  /** One line for the tutor, e.g. "in the browser (last 24h): looked at 5 words; knew 2, looked up 1". */
+  browserSummary?: string;
 };
+
+export type HoverOutcome = "knew_it" | "didnt_know" | "looked";
 
 /** The most recent tutor session recap that parses, or null. */
 export async function latestRecap(userId: string): Promise<Recap | null> {
@@ -128,13 +139,13 @@ export async function getTutorContextData(
     latestTopErrors(userId),
     db
       .from("events")
-      .select("lemma, article_key, ts, meta")
+      .select("type, lemma, article_key, ts, meta")
       .eq("user_id", userId)
-      .eq("type", "hover")
+      .in("type", ["hover", "knew_it", "didnt_know"])
       .not("lemma", "is", null)
       .gte("ts", since)
       .order("ts", { ascending: false })
-      .limit(maxHovers * 5),
+      .limit(maxHovers * 10),
     db
       .from("user_words")
       .select("lemma, due_at")
@@ -146,9 +157,21 @@ export async function getTutorContextData(
   if (hovers.error) throw hovers.error;
   if (due.error) throw due.error;
 
-  // One row per lemma (newest hover wins).
+  // One row per lemma (newest hover wins). Verdicts: newest "Knew it" / "Didn't know" per lemma.
   const latest = new Map<string, (typeof hovers.data)[number]>();
-  for (const h of hovers.data) if (!latest.has(h.lemma as string) && latest.size < maxHovers) latest.set(h.lemma as string, h);
+  const verdict = new Map<string, HoverOutcome>();
+  for (const h of hovers.data) {
+    const lemma = h.lemma as string;
+    if (h.type === "hover") {
+      if (!latest.has(lemma) && latest.size < maxHovers) latest.set(lemma, h);
+    } else if (!verdict.has(lemma)) verdict.set(lemma, h.type as HoverOutcome);
+  }
+  const looked = new Set(hovers.data.filter((h) => h.type === "hover").map((h) => h.lemma as string)).size;
+  const knew = [...verdict.values()].filter((v) => v === "knew_it").length;
+  const lookedUp = [...verdict.values()].filter((v) => v === "didnt_know").length;
+  const browserSummary = looked
+    ? `in the browser (last 24h): looked at ${looked} word${looked === 1 ? "" : "s"}; knew ${knew}, looked up ${lookedUp}`
+    : "in the browser (last 24h): no words looked at";
 
   // Article titles for those hovers.
   const keys = [...new Set([...latest.values()].map((h) => h.article_key as string | null).filter((k): k is string => !!k))];
@@ -184,6 +207,7 @@ export async function getTutorContextData(
       hoveredAt: new Date(h.ts as string).toISOString(),
       ...(typeof sentence === "string" && { sentence }),
       ...(articleTitle && { articleTitle }),
+      outcome: verdict.get(lemma) ?? "looked",
       ...infoOf(lemma),
     };
   });
@@ -198,6 +222,7 @@ export async function getTutorContextData(
     })),
     articleTitles: settings.useReadingInLessons ? await todaysArticleTitles(userId, now) : [],
     topErrors,
+    browserSummary,
   };
 }
 
