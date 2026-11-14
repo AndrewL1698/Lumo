@@ -42,4 +42,8 @@ export const TUTOR = {
   firstChunkCommaMinChars: 25,
   sampleRate: 16_000,
   cannedRepeat: "Perdón, ¿puedes repetirlo?",
+  /** /api/tutor/context: DB load budget before falling back to the fixture (task 10). */
+  contextTimeoutMs: 3000,
+  /** /api/tutor/correct: per-word learner-model write budget; a slow write gives no WordUpdate (task 12). */
+  recordTimeoutMs: 1500,
 } as const;
