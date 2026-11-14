@@ -5,7 +5,7 @@ export function TargetChips({ words, known = [] }: { words: TargetWord[]; known?
   if (words.length === 0) return null;
   return (
     <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2 border-b border-line pb-4">
-      <p className="text-xs font-bold uppercase tracking-[0.08em] text-accent">Words to light up</p>
+      <p className="font-display text-lg font-semibold text-ink">Words to light up</p>
       <ul className="flex flex-wrap gap-x-6 gap-y-2">
         {words.map((w) => {
           const done = known.includes(w.lemma);
@@ -14,7 +14,7 @@ export function TargetChips({ words, known = [] }: { words: TargetWord[]; known?
               {w.article ? <span className="text-muted">{w.article} </span> : null}
               <strong className={done ? "glow-known" : "glow-learning"}>{w.lemma}</strong>
               <span className="text-muted"> {w.english}</span>
-              {done && <span className="ml-2 text-xs font-bold uppercase tracking-[0.08em] text-accent">lit</span>}
+              {done && <span className="sr-only"> (lit up)</span>}
             </li>
           );
         })}

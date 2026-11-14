@@ -299,7 +299,7 @@ export function LuciFirefly({
               <circle cx="36" cy="20" r="4" fill="#ffd23a" />
               <circle cx="84" cy="20" r="4" fill="#ffd23a" />
               {/* body */}
-              <circle cx="60" cy="62" r="27" fill="#2a3a4a" />
+              <circle className="luci-body" cx="60" cy="62" r="27" fill="#2a3a4a" />
               {/* face */}
               <g className="luci-eyes">
                 <circle cx="49" cy="59" r="8.5" fill="#fcfcf8" />
@@ -355,7 +355,13 @@ export function LuciFirefly({
   );
 }
 
-// Fly one spark from Luci to the "Your jar" nav link, then light the link up for a moment.
+// A word became known: a tiny firefly flies from Luci's tail to "Your jar" in the nav, which then lights up.
+const TINY_FIREFLY = `<svg viewBox="0 0 32 32" width="22" height="22"><g transform="rotate(-45 16 16)">
+<ellipse cx="10.6" cy="13" rx="3" ry="5.6" transform="rotate(-28 10.6 13)" fill="#6fa8d6" fill-opacity=".9" stroke="#2a3a4a" stroke-width=".7"/>
+<ellipse cx="21.4" cy="13" rx="3" ry="5.6" transform="rotate(28 21.4 13)" fill="#6fa8d6" fill-opacity=".9" stroke="#2a3a4a" stroke-width=".7"/>
+<circle cx="16" cy="22.5" r="7.6" fill="#ffe9a0" fill-opacity=".9"/><ellipse cx="16" cy="22" rx="4.4" ry="5.4" fill="#ffe46b" stroke="#b07d00" stroke-width=".8"/>
+<ellipse cx="16" cy="14.5" rx="3.8" ry="4.6" fill="#2a3a4a"/><circle cx="16" cy="8" r="3.4" fill="#2a3a4a"/></g></svg>`;
+
 export function sparkToJar() {
   const from = document.querySelector("[data-luci-live] .luci-tail")?.getBoundingClientRect();
   const jar = document.querySelector<HTMLElement>('header a[href="/vocabulary"]');
@@ -367,26 +373,28 @@ export function sparkToJar() {
   const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (!from || reduce) return lightJar();
   const to = jar.getBoundingClientRect();
-  const spark = document.createElement("div");
-  spark.setAttribute("aria-hidden", "true");
-  spark.className = "pointer-events-none fixed z-[60] h-3.5 w-3.5 rounded-full bg-glow outline-2 outline-[#f2c400]";
-  const x0 = from.left + from.width / 2 - 7;
-  const y0 = from.top + from.height / 2 - 7;
-  const dx = to.left + to.width / 2 - 7 - x0;
-  const dy = to.top + to.height / 2 - 7 - y0;
-  spark.style.left = `${x0}px`;
-  spark.style.top = `${y0}px`;
-  document.body.appendChild(spark);
-  const anim = spark.animate(
+  const fly = document.createElement("div");
+  fly.setAttribute("aria-hidden", "true");
+  fly.className = "pointer-events-none fixed z-[60]";
+  fly.innerHTML = TINY_FIREFLY;
+  const x0 = from.left + from.width / 2 - 11;
+  const y0 = from.top + from.height / 2 - 11;
+  const dx = to.left + to.width / 2 - 11 - x0;
+  const dy = to.top + to.height / 2 - 11 - y0;
+  fly.style.left = `${x0}px`;
+  fly.style.top = `${y0}px`;
+  document.body.appendChild(fly);
+  // a gentle arc up and over, slowing as it reaches the jar
+  const anim = fly.animate(
     [
       { transform: "translate(0,0) scale(1)", opacity: 1 },
-      { transform: `translate(${dx * 0.35 + 40}px, ${dy * 0.5}px) scale(1.3)`, opacity: 1, offset: 0.45 },
-      { transform: `translate(${dx}px, ${dy}px) scale(0.6)`, opacity: 0.9 },
+      { transform: `translate(${dx * 0.3 + 60}px, ${dy * 0.45}px) scale(1.15)`, opacity: 1, offset: 0.45 },
+      { transform: `translate(${dx}px, ${dy}px) scale(0.7)`, opacity: 0.9 },
     ],
-    { duration: 900, easing: "cubic-bezier(0.45, 0, 0.2, 1)" },
+    { duration: 1300, easing: "cubic-bezier(0.45, 0, 0.2, 1)" },
   );
   anim.onfinish = () => {
-    spark.remove();
+    fly.remove();
     lightJar();
   };
 }

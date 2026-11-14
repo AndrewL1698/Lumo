@@ -4,21 +4,25 @@ import { TutorPage } from "@/components/tutor/TutorPage";
 import { useTutorSession } from "@/lib/tutor/client/useTutorSession";
 import { useMockTutorSession } from "./mockTutorSession";
 
+// .night-page switches the whole page (nav and footer too) to the night theme (globals.css).
 function RealTutor() {
-  return <TutorPage session={useTutorSession()} />;
+  return (
+    <div className="night-page">
+      <TutorPage session={useTutorSession()} />
+    </div>
+  );
 }
 
 // Rehearsal mode (/tutor?mock=1): scripted tutor, no mic, no API calls, no credits.
 // Backup if the network or an API fails on stage, and for recording the backup video.
 function MockTutor() {
   return (
-    <>
-      <p className="mx-auto mb-6 max-w-5xl rounded-sm border border-wait/70 bg-panel px-4 py-2 text-sm text-ink">
-        <span className="mr-2 font-mono text-xs uppercase tracking-wider text-wait">Rehearsal</span>
-        A scripted conversation. The mic is off and nothing is saved.
+    <div className="night-page">
+      <p className="mx-auto mb-6 max-w-5xl text-sm text-muted">
+        <strong className="mr-1 text-wait">Rehearsal.</strong>A scripted conversation. The mic is off and nothing is saved.
       </p>
       <TutorPage session={useMockTutorSession()} />
-    </>
+    </div>
   );
 }
 
