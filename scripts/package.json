@@ -7,7 +7,8 @@
     "build-wordlist:sample": "tsx build-wordlist/index.ts --batches 2 --no-seed",
     "seed-words": "tsx build-wordlist/seed.ts",
     "audit-words": "tsx build-wordlist/audit.ts",
-    "learner-sanity": "NODE_PATH=node_modules tsx ../web/lib/learner/sanity.ts"
+    "learner-sanity": "NODE_PATH=node_modules tsx ../web/lib/learner/sanity.ts",
+    "seed-demo": "NODE_PATH=node_modules tsx seed-demo/index.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",

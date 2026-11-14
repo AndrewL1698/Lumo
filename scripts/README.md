@@ -27,6 +27,17 @@ Needs `ANTHROPIC_API_KEY`, `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` in `web/.en
 
 Every Claude batch is cached in `build-wordlist/out/batches/`, so reruns only call Claude for missing or failed batches.
 
+## Learner model + demo seed
+
+```bash
+npm run learner-sanity        # walks specs §6.1/§6.2 through web/lib/learner, prints PASS/FAIL
+npm run seed-demo -- --dry    # print the demo state plan, no DB writes
+npm run seed-demo             # wipe + reseed user_words for DEMO_USER_ID (needs seeded `words`)
+```
+
+`seed-demo` backdates FSRS history for 20 band-1 nouns: 4 mastered, 6 due, 5 known, 5 learning. Rerun it before every demo.
+HACK: `ts-fsrs` is installed here, not in `/web`, until the scaffold lands. Both commands set `NODE_PATH` so `web/lib/learner` can resolve it.
+
 ### Attribution
 
 Word frequencies: **FrequencyWords** by Hermit Dave, derived from [OpenSubtitles 2018](http://www.opensubtitles.org/), licensed [CC-BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). The derived `words` list is shared under the same licence.
