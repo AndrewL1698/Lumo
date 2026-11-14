@@ -69,6 +69,7 @@ Who owns what and how we work: see [`plan.md`](plan.md). Technical design: see [
 | Karthik | Scoring formula + 70/30 review/new mix in candidates. `/api/vocab` (Learning / Your vocabulary / Mastered + streak). **Demo seed script** that backdates FSRS history so due and mastered words exist. |
 | Shravan | Wire vocabulary + settings to real APIs. "What Parrot knows" page (list, per-item delete, delete everything). |
 | Naren | 🔊 in the hover card via `/api/tts` (cached). `seen` via IntersectionObserver (≥2s). Toolbar toggle + Alt+Shift+P. Pause on this site. Then switch to the eval set. |
+| Karthik (added Sat evening) | **Smarter swaps** (decisions D-005–D-008): the extension reads Settings, a popup "words per page" slider, "Grow automatically", level-matched never-met words (`wordbands.json`), and the tutor sees knew-it/didn't-know outcomes. Takes over the settings part of Naren's task 3.3, agreed with Naren. Hover card untouched. |
 
 **Docs:** lock `demo-script.md` (Naren); start capturing screenshots into `docs/img/` (Shravan).
 
@@ -124,6 +125,9 @@ These are additions for the demo and the judges, not core product. They show dec
 8. Photon phone line
 
 **Never cut:** swaps + hover cards, the push-to-talk tutor with on-screen corrections, a word flipping to "known" after correct spoken use, the "What Parrot knows" page.
+
+## Post-MVP (logged, not before the freeze)
+- Hint-first hover card: Knew it / Hint → clue → Got it / Show me, with scoring by how much help was needed (D-009).
 
 ---
 
