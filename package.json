@@ -1,0 +1,29 @@
+{
+  "name": "parrot",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "web",
+    "extension",
+    "scripts",
+    "eval"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "dev:web": "npm run dev -w web",
+    "build:ext": "npm run build -w extension"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.15.0",
+    "prettier": "^3.10.1",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.2"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

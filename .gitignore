@@ -1,0 +1,17 @@
+node_modules/
+.next/
+dist/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# env: only the example is committed
+.env*
+!.env.example
+
+# caches and local artifacts
+web/.cache/
+eval/**/audio/
+eval/latency/turns.jsonl
+
+.DS_Store

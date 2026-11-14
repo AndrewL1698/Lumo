@@ -22,7 +22,7 @@ ElevenLabs facts were fetched from the live docs. Anthropic facts come from the 
 | Verbatim options | `no_verbatim` (default **false**) removes fillers and false starts when on. `transcript_edit` is a separate opt-in LLM edit. No option turns off punctuation or capitals. Nothing in the docs says Scribe corrects grammar. | Leave both off. Only the test can say whether errors survive. |
 | Batch STT | `POST /v1/speech-to-text`, multipart, `model_id=scribe_v2`, `language_code`, `no_verbatim`. [Convert](https://elevenlabs.io/docs/api-reference/speech-to-text/convert) | Fallback path and third test candidate. |
 | TTS model | `eleven_flash_v2_5`: ~100 ms, Spanish, works on HTTP `/stream`. **`eleven_turbo_v2_5` is deprecated.** `eleven_v4_turbo` is only documented on a different WebSocket. [Models](https://elevenlabs.io/docs/models) | Flash v2.5 everywhere. `CLAUDE.md`'s "best voice only for the demo" line needs updating. |
-| TTS language and accent | `language_code: "es"` enforces Spanish on Flash. Accent comes from the **voice**, not a parameter. | Pick a Latin American voice from the Voice Library (open question 1). |
+| TTS language and accent | `language_code: "es"` enforces Spanish on Flash. Accent comes from the **voice**, not a parameter. | Naren (or anyone free) picks a Latin American voice from the Voice Library: `docs/briefs/naren.md` task 0.3. |
 | TTS output | Default `mp3_44100_128`; Creator allows it. No browser recommendation in the docs. | Use the default; Chrome's `decodeAudioData` plays it. |
 | TTS WebSocket | `stream-input` with `auto_mode` is the docs' recommendation for LLM output. | Not in the first build. It is the upgrade if the 2 s target is missed. |
 | Limits | Creator: 10 concurrent Flash requests, 15 realtime STT. | No problem for one user. |
@@ -332,7 +332,7 @@ If the call fails, the recap shows the lists with a fixed sentence.
 
 **Audio.**
 - Pass A (clean): Flash v2.5 reads each sentence with the demo voice, saved as 16 kHz WAV.
-- Pass B (real accent): **Karthik** (the demo speaker) and at least one other teammate read all 15 into the lab page's record button. Recordings are gitignored.
+- Pass B (real accent): **Karthik** (the demo speaker) and **Andrew** read all 15 into the lab page's record button. Recordings are gitignored.
 
 **Configurations** (same audio through each, Spanish forced, `no_verbatim` off):
 1. Realtime `scribe_v2_realtime`, manual commit
@@ -367,8 +367,8 @@ Hours are work time. Total ≈21.5 h including the scaffold, so there is **no sl
 | 0 | P0 | Minimal scaffold: npm workspaces, Next.js app, `/shared` with all schemas (incl. §4), `lib/claude.ts` + `lib/elevenlabs.ts` stubs, `.env.example`, extension shell, per-folder briefs | 1.5 | `npm run build` passes; teammates can import `/shared` |
 | 1 | P1 | **STT test harness** (`run.ts`, `score.ts`), all three configs | 1.5 | One WAV returns a transcript from each config |
 | 2 | P1 | Pass A: generate TTS reads, run, score | 0.5 | `results.md` has Pass A numbers |
-| 3 | P1 | Send Shravan the mock `CorrectResponse` stream + hook interface (do while waiting for readers) | 0.5 | Shravan confirms his mock page runs on it |
-| 4 | P1 | Pass B with Karthik's + one other teammate's recordings; **pick the provider** | 0.75 | Decision written here and posted |
+| 3 | P1 | Send Shravan the mock `CorrectResponse` stream + hook interface (do while waiting for readers) | 0.5 | Shravan confirms the mock page runs on it |
+| 4 | P1 | Pass B with Karthik's and Andrew's recordings; **pick the provider** | 0.75 | Decision written here and posted |
 | 5 | P2 | `/api/tutor/correct`: Haiku structured output + `validate.ts` | 1.5 | `curl` with "yo tiene la problema" returns two errors with spans in the text; a clean sentence returns none; an accent-only difference is dropped |
 | 6 | P2 | `/api/stt-token`, `pttRecorder`, `scribeRealtime`, `/api/stt-batch` fallback | 2.5 | Lab page shows live partials and a final transcript on release; killing the socket falls back to batch |
 | 7 | P2 | `/api/tutor/reply` + `policy.ts` + tutor prompt | 1.5 | `curl` streams a short Spanish reply; directive visible in server log |
@@ -392,9 +392,10 @@ Latency tuning order for task 13: shorten the system prompt and history window �
 | Who | What | When |
 |---|---|---|
 | → Shravan | `CorrectResponse` JSON examples (clean, two errors, with `wordUpdates`), a mock that emits partial transcript → final → corrections → caption stream, and the `useTutorSession` interface: `{ status, partial, turns, targetWords, start(), pressTalk(), releaseTalk(), sendText(), end(), recap }` | Task 3 (Phase 1) |
+| ← Naren (or anyone free) | Latin American voice ID (`docs/briefs/naren.md` task 0.3) | Before task 2 |
 | ← Naren | 15 error sentences + 5 controls in the §6 format; confirmed ElevenLabs balance; `meta.sentence` on hover events | Before task 2; hover meta by Phase 3 |
 | ← Karthik | `applyEvent` accepting `spoken_correct` / `spoken_incorrect`; a helper `recordTutorEvent(userId, lemma, type) → { from, to }`; `events.meta jsonb`; queries or helpers for recent hovers, due words, today's articles, settings; seed data | Signature by end of Phase 2; data by Phase 3 start |
-| ← Karthik + one more teammate | Read the 15 sentences (5 minutes each). Karthik is the demo speaker, so Karthik's reading decides the STT pick | Task 4 |
+| ← Karthik (+ Andrew reads too) | Read the 15 sentences (5 minutes each). Karthik is the demo speaker, so Karthik's reading decides the STT pick | Task 4 |
 | ← Karthik | Demo speaker: rehearse the scripted tutor sentences (each must pass ≥5 runs, plan.md §3) | Phase 4 |
 
 **Risks**
@@ -425,14 +426,14 @@ Never cut: on-screen corrections with span validation, the push-to-talk loop wit
 **Decided**
 - TTS: Flash v2.5 in dev and demo. Claude: direct Anthropic API behind `web/lib/claude.ts`, no Bedrock.
 - **Karthik speaks in the demo** and is a Pass B reader; Karthik's reading decides the STT pick.
+- **Andrew is the second Pass B reader.**
+- **Voice:** Naren (or anyone free) picks the Latin American voice and posts its ID: `docs/briefs/naren.md` task 0.3.
 - **Hover sentences:** Karthik adds `events.meta jsonb`; Naren sends `meta.sentence` on hover events.
 - Next step: the Phase 0 scaffold (task 0).
 
 **Still open**
-1. **Which voice?** Someone has to pick a Latin American Spanish voice from the Voice Library and set `ELEVENLABS_VOICE_ID`. Who, and by when (needed for task 2)?
-2. **Second Pass B reader:** who reads alongside Karthik?
-3. **Scaffold time:** this plan counts the 1.5 h scaffold on top of the voice tasks (≈21.5 h total). If the real limit is 20 h, cuts 1–3 should be taken up front. Which?
-4. **`scribe_v3_live`:** included as a test candidate by default. Say so if you want v2 only.
+1. **Scaffold time:** this plan counts the 1.5 h scaffold on top of the voice tasks (≈21.5 h total). If the real limit is 20 h, cuts 1–3 should be taken up front. Which?
+2. **`scribe_v3_live`:** included as a test candidate by default. Say so if you want v2 only.
 
 ---
 

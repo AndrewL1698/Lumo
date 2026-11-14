@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Parrot</title>
+    <style>
+      body { width: 280px; margin: 8px; font-family: system-ui, sans-serif; font-size: 13px; }
+      p { margin: 4px 0; overflow-wrap: anywhere; }
+      section { margin-top: 10px; }
+    </style>
+  </head>
+  <body>
+    <h3>Parrot</h3>
+    <p id="worker">worker: …</p>
+    <p id="paired">paired: …</p>
+
+    <section>
+      <p>site: <span id="origin">…</span></p>
+      <button id="enable" disabled>Enable on this site</button>
+      <p id="enable-result"></p>
+    </section>
+
+    <section>
+      <label for="code">Pairing code</label><br />
+      <input id="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="123456" size="8" />
+      <button id="pair">Pair</button>
+      <p id="pair-result"></p>
+    </section>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
