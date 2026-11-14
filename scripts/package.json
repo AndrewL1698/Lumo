@@ -1,0 +1,19 @@
+{
+  "name": "scripts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build-wordlist": "tsx build-wordlist/index.ts",
+    "build-wordlist:sample": "tsx build-wordlist/index.ts --batches 2 --no-seed",
+    "seed-words": "tsx build-wordlist/seed.ts",
+    "audit-words": "tsx build-wordlist/audit.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "tsx": "^4.23.15"
+  }
+}

@@ -1,0 +1,4 @@
+node_modules/
+# Build cache; words.json is committed so teammates can re-seed without calling Claude.
+build-wordlist/out/*
+!build-wordlist/out/words.json
