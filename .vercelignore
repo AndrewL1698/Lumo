@@ -1,0 +1,12 @@
+# Never upload secrets or local build output to Vercel (deploys run `vercel` from the repo root).
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+node_modules
+**/node_modules
+**/.next
+extension/dist
+eval/latency/turns.jsonl
+eval/latency/probe-results
