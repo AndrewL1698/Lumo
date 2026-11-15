@@ -746,3 +746,54 @@ html[data-theme] .kd-panel :focus-visible {
     animation: none !important;
   }
 }
+
+/* ---------- Nav (components/Nav.tsx) ----------
+   Hover / keyboard focus: the text brightens and a soft amber glow underline fades in.
+   The current page keeps a solid underline. */
+.nav-link {
+  position: relative;
+  display: inline-block;
+  border-radius: var(--radius-xs);
+  transition: color 150ms ease;
+}
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -8px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-glow);
+  box-shadow: 0 0 8px 1px rgb(255 210 58 / 0.55);
+  opacity: 0;
+  transform: scaleX(0.6);
+  transition: opacity 200ms ease, transform 200ms var(--ease-out);
+}
+.nav-link:hover::after,
+.nav-link:focus-visible::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+.nav-link[aria-current="page"]::after {
+  opacity: 1;
+  transform: none;
+  background: var(--color-ink);
+  box-shadow: none;
+}
+html[data-theme="light"] .nav-link::after {
+  background: #e0a000;
+  box-shadow: 0 0 8px 1px rgb(224 160 0 / 0.45);
+}
+html[data-theme="light"] .nav-link[aria-current="page"]::after {
+  background: var(--color-ink);
+  box-shadow: none;
+}
+/* the logo link glows a little on hover */
+.nav-home svg {
+  transition: filter 150ms ease;
+}
+.nav-home:hover svg,
+.nav-home:focus-visible svg {
+  filter: drop-shadow(0 0 6px rgb(255 210 58 / 0.7));
+}

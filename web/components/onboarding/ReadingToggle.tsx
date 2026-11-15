@@ -2,7 +2,7 @@
 
 export function ReadingToggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className="flex cursor-pointer items-start gap-4 rounded-sm border border-line bg-panel p-5">
+    <label className="flex cursor-pointer items-start gap-4 rounded-sm border border-line bg-panel p-5 transition-colors duration-150 hover:border-muted">
       <input
         type="checkbox"
         role="switch"

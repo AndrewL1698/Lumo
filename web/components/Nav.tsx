@@ -16,7 +16,7 @@ export function Nav() {
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-panel">
       <nav className="mx-auto flex max-w-5xl items-center gap-x-5 px-4 py-4 sm:gap-x-8">
-        <Link href="/" className="flex shrink-0 items-center gap-2 font-display text-xl font-extrabold tracking-tight text-ink">
+        <Link href="/" className="nav-home flex shrink-0 items-center gap-2 rounded-sm font-display text-xl font-extrabold tracking-tight text-ink">
           <LuciMark size={30} />
           Luci
         </Link>
@@ -28,9 +28,7 @@ export function Nav() {
                 <Link
                   href={l.href}
                   aria-current={active ? "page" : undefined}
-                  className={`transition-colors duration-150 ${
-                    active ? "text-ink underline decoration-1 underline-offset-[10px]" : "text-muted hover:text-ink"
-                  }`}
+                  className={`nav-link ${active ? "text-ink" : "text-muted hover:text-ink focus-visible:text-ink"}`}
                 >
                   {l.label}
                 </Link>

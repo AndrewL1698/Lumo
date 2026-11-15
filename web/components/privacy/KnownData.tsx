@@ -208,7 +208,7 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
               aria-expanded={activityOpen}
               aria-controls="activity-list"
               onClick={() => setActivityOpen((o) => !o)}
-              className="flex items-center gap-3 rounded-sm text-left"
+              className="flex items-center gap-3 rounded-sm text-left transition-colors duration-150 hover:text-accent"
             >
               <svg
                 viewBox="0 0 20 20"
