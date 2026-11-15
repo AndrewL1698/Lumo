@@ -2,6 +2,7 @@
 
 import { send } from "../messages";
 import "./firefly"; // visual only: the wandering firefly
+import { READING_SITES } from "@parrot/shared";
 import { DEMO_RATE, IMMERSION_JUMPS, IMMERSION_RATES, budgetFor } from "../swapBudget";
 
 function el<T extends HTMLElement>(id: string): T {
@@ -15,6 +16,9 @@ const pairedEl = el("paired");
 const originEl = el("origin");
 const tryBtn = el<HTMLButtonElement>("try");
 const enableBtn = el<HTMLButtonElement>("enable");
+const nudgeEl = el("nudge");
+const nudgeText = el("nudge-text");
+const turnOnBtn = el<HTMLButtonElement>("turn-on");
 const enableResult = el("enable-result");
 const codeInput = el<HTMLInputElement>("code");
 const pairBtn = el<HTMLButtonElement>("pair");
@@ -72,12 +76,49 @@ async function init(): Promise<void> {
   originEl.textContent = origin ? new URL(origin).host : "Not a web page";
   enableBtn.disabled = origin === null;
   tryBtn.disabled = origin === null || activeTabId === null;
-  if (origin && status?.enabledOrigins.includes(origin)) {
+  const enabled = Boolean(origin && status?.enabledOrigins.includes(origin));
+  if (enabled) {
     enableResult.textContent = "Luci is on here on every visit.";
     showSiteOn();
     tryBtn.hidden = true; // nothing to try: it already runs here on every visit
   }
+
+  // New-site nudge (D-017): on a site Luci reads well but isn't on for yet, offer one click
+  // instead of the plain Enable button. Same flow underneath, friendlier words.
+  const site = origin ? READING_SITES.find((s) => s.origin === origin) : undefined;
+  if (site && !enabled) {
+    nudgeText.textContent = `Luci reads well on ${site.name}. Turn it on here?`;
+    nudgeEl.hidden = false;
+    enableBtn.hidden = true; // the card replaces it; sites off the list keep the plain button
+  }
 }
+
+/** Exactly what Enable does; `permissions.request` must stay inside the click (user gesture). */
+function turnOnHere(button: HTMLButtonElement, done: string): void {
+  if (!origin) return;
+  const target = origin;
+  chrome.permissions
+    .request({ origins: [target + "/*"] })
+    .then(async (granted) => {
+      if (!granted) {
+        enableResult.textContent = "permission denied";
+        return;
+      }
+      const res = await send({ type: "ENABLE_SITE", origin: target });
+      if (res.ok) {
+        button.disabled = true;
+        nudgeEl.hidden = true;
+        enableResult.textContent = done;
+      } else {
+        enableResult.textContent = `failed: ${res.error ?? "unknown error"}`;
+      }
+    })
+    .catch((err: unknown) => {
+      enableResult.textContent = `error: ${err instanceof Error ? err.message : String(err)}`;
+    });
+}
+
+turnOnBtn.addEventListener("click", () => turnOnHere(turnOnBtn, "On. Reload the page to start."));
 
 // "Try on this page": no prompt, this visit only. Opening the popup already granted activeTab for
 // this tab, so the worker can inject once; the grant dies on navigation and so does the trial.

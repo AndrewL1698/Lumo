@@ -147,6 +147,24 @@
       }
 
 
+      /* new-site nudge (D-017): a warm card on a recommended site */
+      #nudge {
+        margin-top: 10px;
+        padding: 10px 12px 12px;
+        border: 1px solid var(--amber-line);
+        border-radius: 8px;
+        background: rgb(255 210 58 / 0.08);
+      }
+      #nudge p { color: var(--ink); }
+      #nudge .primary { margin-top: 8px; }
+      /* when the nudge shows, its "Turn on" is the one main button; "Try on this page" steps back */
+      .card:has(#nudge:not([hidden])) #try {
+        background: transparent;
+        color: var(--ink);
+        border: 1px solid var(--amber-line);
+        box-shadow: none;
+        font-weight: 600;
+      }
       #imm-line { font-weight: 600; }
       .seg { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
       .seg > span { width: 52px; flex: none; color: var(--muted); font-size: 12px; }
@@ -272,6 +290,11 @@
       <p class="label" id="site-label">This site</p>
       <p class="site" id="origin">…</p>
       <button id="try" class="primary" disabled>Try on this page</button>
+      <!-- New-site nudge (Naren, D-017): shown instead of the Enable button on a recommended site -->
+      <div id="nudge" hidden>
+        <p id="nudge-text"></p>
+        <button id="turn-on" class="primary">Turn on</button>
+      </div>
       <button id="enable" class="secondary" disabled>Always on for this site</button>
       <p id="enable-result" class="note" role="status"></p>
     </section>

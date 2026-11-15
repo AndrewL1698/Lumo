@@ -6,7 +6,8 @@
   "permissions": [
     "storage",
     "scripting",
-    "activeTab"
+    "activeTab",
+    "declarativeContent"
   ],
   "host_permissions": [
     "http://localhost:3000/*"
