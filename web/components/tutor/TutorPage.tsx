@@ -4,6 +4,8 @@ import type { TutorSession, TutorTurn } from "@/app/tutor/session";
 import { btn } from "@/components/ui/PageHeader";
 import { CorrectionCards } from "./CorrectionCards";
 import { KnownToast } from "./KnownToast";
+import { HandsFreeMic } from "./HandsFreeMic";
+import { ModeToggle } from "./ModeToggle";
 import { PushToTalk } from "./PushToTalk";
 import { RecapPanel } from "./RecapPanel";
 import { TargetChips } from "./TargetChips";
@@ -19,6 +21,29 @@ const speaker = "font-display text-base font-semibold pt-2";
 // Pure view over a TutorSession. Pass useMockTutorSession() or Andrew's real useTutorSession().
 export function TutorPage({ session }: { session: TutorSession }) {
   const { status, partial, turns, targetWords, recap, notice, start, pressTalk, releaseTalk, sendText, end } = session;
+  const { mode = "ptt", setMode, muted = false, setMuted } = session;
+  const handsFree = mode === "handsfree" && !!setMode;
+  // Remember the choice on this browser. The default (and anything unreadable) is push-to-talk.
+  useEffect(() => {
+    try {
+      if (setMode && localStorage.getItem("luci.talkMode") === "handsfree") setMode("handsfree");
+    } catch {
+      // storage blocked: stay on push-to-talk
+    }
+  }, []);
+  const changeMode = (m: "ptt" | "handsfree") => {
+    setMode?.(m);
+    try {
+      localStorage.setItem("luci.talkMode", m);
+    } catch {
+      // ignore
+    }
+  };
+  const talkControl = handsFree ? (
+    <HandsFreeMic status={status} muted={muted} onToggleMute={() => setMuted?.(!muted)} />
+  ) : (
+    <PushToTalk status={status} onPress={pressTalk} onRelease={releaseTalk} />
+  );
   const plan = session.plan ?? null;
   // The lesson card starts open and folds away after your first answer (you can reopen it any time).
   const [lessonOpen, setLessonOpen] = useState(true);
@@ -394,16 +419,17 @@ export function TutorPage({ session }: { session: TutorSession }) {
       {/* Controls stay pinned to the bottom of the screen so the demo never needs scrolling. Wide screens: one
           row (talk, type, end) so the newest exchange keeps the space. Narrow: talk row, then typing below. */}
       <div className="sticky bottom-0 -mx-4 space-y-3 border-t border-line bg-panel px-4 pb-4 pt-4">
+        {setMode && <ModeToggle mode={mode} onChange={changeMode} />}
         {wide ? (
           <div className="flex items-center gap-4">
-            <PushToTalk status={status} onPress={pressTalk} onRelease={releaseTalk} />
+            {talkControl}
             {typeForm("flex min-w-0 flex-1 gap-2")}
             {endButton}
           </div>
         ) : (
           <>
             <div className="flex items-center justify-between gap-3 sm:gap-4">
-              <PushToTalk status={status} onPress={pressTalk} onRelease={releaseTalk} />
+              {talkControl}
               {endButton}
             </div>
             <details ref={typeBox} open className="text-muted" onToggle={(e) => setTypingOpen(e.currentTarget.open)}>
