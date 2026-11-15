@@ -157,6 +157,62 @@ async function enableSite(rawOrigin: string): Promise<ResponseMap["ENABLE_SITE"]
   return { ok: true };
 }
 
+// ---------------------------------------------------------------- try on this page (activeTab)
+
+/**
+ * "Try on this page" runs Luci on one tab for one visit, with no permission prompt: the popup
+ * click grants `activeTab`, which is enough for a single executeScript and dies on navigation.
+ * Deliberately NOT registerContentScripts and NOT added to enabledOrigins — that is what
+ * "Always on for this site" is for, and it is the one that asks for host access.
+ *
+ * The map is only bookkeeping (so the popup and cleanup know which tabs are on trial). Nothing
+ * gates on it: the worker already serves any content script that talks to it, trial or not.
+ * In chrome.storage.session, so it dies with the browser and never touches disk.
+ */
+const TRIAL_KEY = "trialTabs";
+
+async function readTrialTabs(): Promise<Record<string, string>> {
+  const stored = await chrome.storage.session.get(TRIAL_KEY);
+  return (stored[TRIAL_KEY] as Record<string, string> | undefined) ?? {};
+}
+
+async function tryHere(tabId: number, rawOrigin: string, url: string): Promise<ResponseMap["TRY_HERE"]> {
+  const origin = normalizeOrigin(rawOrigin);
+  if (!origin) return { ok: false, reason: "that is not a web page" };
+
+  // Never-list first, before anything is injected (specs §5.1). Checked against the FULL URL, not
+  // the origin: an origin has no path, so checking it alone would let /login, /checkout and the
+  // rest of the path rules through. Enforced here as well as in the content script, so a blocked
+  // page is never even touched.
+  if (neverListReason(url) ?? neverListReason(origin)) return { ok: false, reason: "never-list" };
+
+  try {
+    await chrome.scripting.executeScript({ target: { tabId }, files: ["content.js"] });
+  } catch (err) {
+    return { ok: false, reason: err instanceof Error ? err.message : "could not start Luci here" };
+  }
+
+  const tabs = await readTrialTabs();
+  tabs[String(tabId)] = origin;
+  await chrome.storage.session.set({ [TRIAL_KEY]: tabs });
+  return { ok: true };
+}
+
+/** Forget a trial tab. activeTab access is already gone by now; this just keeps the map honest. */
+async function endTrial(tabId: number): Promise<void> {
+  const tabs = await readTrialTabs();
+  if (!(String(tabId) in tabs)) return;
+  delete tabs[String(tabId)];
+  await chrome.storage.session.set({ [TRIAL_KEY]: tabs });
+}
+
+chrome.tabs.onRemoved.addListener((tabId) => void endTrial(tabId));
+chrome.tabs.onUpdated.addListener((tabId, info) => {
+  // A navigation ends the activeTab grant, so the trial ends with it. `status` is available
+  // without the "tabs" permission (only url/title/favIconUrl are withheld).
+  if (info.status === "loading") void endTrial(tabId);
+});
+
 let candidatesCache: { at: number; data: CandidatesResponse } | null = null;
 
 async function getCandidates(): Promise<ResponseMap["GET_CANDIDATES"]> {
@@ -426,6 +482,8 @@ async function handle(message: Message): Promise<ResponseMap[Message["type"]]> {
       return setImmersion(message.rate, message.percent, message.reset);
     case "TRANSLATE_SENTENCES":
       return translateSentences(message.articleKey, message.sentences);
+    case "TRY_HERE":
+      return tryHere(message.tabId, message.origin, message.url);
   }
 }
 

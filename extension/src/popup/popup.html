@@ -13,6 +13,7 @@
       #immersion { border-top: 1px solid #ddd; padding-top: 8px; }
       #immersion .row { margin: 6px 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
       #immersion button.active { font-weight: bold; outline: 2px solid #b8860b; }
+      #try { display: block; width: 100%; padding: 7px; margin-bottom: 6px; font: inherit; font-weight: 600; cursor: pointer; }
     </style>
   </head>
   <body>
@@ -22,7 +23,8 @@
 
     <section>
       <p>site: <span id="origin">…</span></p>
-      <button id="enable" disabled>Enable on this site</button>
+      <button id="try" disabled>Try on this page</button>
+      <button id="enable" disabled>Always on for this site</button>
       <p id="enable-result"></p>
     </section>
 

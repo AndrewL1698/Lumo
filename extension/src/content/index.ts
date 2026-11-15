@@ -1,6 +1,7 @@
-// Parrot content script. Injected only on origins the user enabled from the popup
-// (registered at runtime via chrome.scripting.registerContentScripts). No network calls here:
-// everything goes through the service worker, so the token never enters the page.
+// Parrot content script. Injected either on origins the user enabled from the popup (registered at
+// runtime via chrome.scripting.registerContentScripts) or, for one visit only, by "Try on this
+// page" via activeTab + executeScript. No network calls here: everything goes through the service
+// worker, so the token never enters the page.
 //
 // Pipeline (docs/architecture.md §6):
 //   walk visible text -> match English forms in wordindex -> score with the §5.2 weights and the
@@ -17,7 +18,19 @@ import wordbands from "../wordbands.json";
 import { LEVEL_BAND, MAX_SWAPS, STEPS, pageRules, type StepRules } from "../swapBudget";
 
 /** Bump when changing this file, so a stale bundle in Chrome is obvious in the console. */
-const BUILD = "2.7-imm";
+const BUILD = "2.8-n";
+
+/**
+ * Double-load guard. A tab can receive this script twice: registered for an enabled origin AND
+ * injected by "Try on this page". Injections into the same frame share one isolated world, so this
+ * flag survives between them and the second load does nothing. A real navigation builds a fresh
+ * world, so the flag is clear again and the never-list check below runs on every genuine load.
+ *
+ * (A bare top-level `return` is not legal in a module, so the flag gates the call to main().)
+ */
+const world = window as unknown as { __luciLoaded?: boolean };
+const alreadyLoaded = world.__luciLoaded === true;
+world.__luciLoaded = true;
 
 /** Words that must sit between two swaps, so they are never adjacent (specs §5.2.7). Loosened when the
  * page budget is high, so the popup slider visibly matters (never below 4: still never adjacent). */
@@ -804,4 +817,8 @@ async function main(): Promise<void> {
   }
 }
 
-void main().catch((err: unknown) => console.error("[parrot] startup failed:", err));
+if (alreadyLoaded) {
+  console.log("[parrot] already running in this tab, second injection ignored");
+} else {
+  void main().catch((err: unknown) => console.error("[parrot] startup failed:", err));
+}

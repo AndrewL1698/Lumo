@@ -12,6 +12,7 @@ function el<T extends HTMLElement>(id: string): T {
 const workerEl = el("worker");
 const pairedEl = el("paired");
 const originEl = el("origin");
+const tryBtn = el<HTMLButtonElement>("try");
 const enableBtn = el<HTMLButtonElement>("enable");
 const enableResult = el("enable-result");
 const codeInput = el<HTMLInputElement>("code");
@@ -28,6 +29,10 @@ const immReset = el<HTMLButtonElement>("imm-reset");
 const immNote = el("imm-note");
 
 let origin: string | null = null;
+/** Needed to inject into the right tab for "Try on this page". */
+let activeTabId: number | null = null;
+/** Full page URL, so the worker can apply the never-list's path rules. Stays inside the extension. */
+let activeUrl: string | null = null;
 
 async function init(): Promise<void> {
   const ping = await send({ type: "PING" }).catch(() => null);
@@ -37,20 +42,51 @@ async function init(): Promise<void> {
 
   // activeTab grants the tab URL while the popup is open.
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  activeTabId = tab?.id ?? null;
   try {
     const url = new URL(tab?.url ?? "");
-    if (url.protocol === "https:" || url.protocol === "http:") origin = url.origin;
+    if (url.protocol === "https:" || url.protocol === "http:") {
+      origin = url.origin;
+      activeUrl = url.href;
+    }
   } catch {
     origin = null;
+    activeUrl = null;
   }
 
   pairedEl.textContent = `paired: ${status ? (status.paired ? "yes" : "no") : "?"}`;
   originEl.textContent = origin ?? "(not a web page)";
   enableBtn.disabled = origin === null;
+  tryBtn.disabled = origin === null || activeTabId === null;
   if (origin && status?.enabledOrigins.includes(origin)) {
     enableResult.textContent = "already enabled";
+    tryBtn.hidden = true; // nothing to try: it already runs here on every visit
   }
 }
+
+// "Try on this page": no prompt, this visit only. Opening the popup already granted activeTab for
+// this tab, so the worker can inject once; the grant dies on navigation and so does the trial.
+tryBtn.addEventListener("click", () => {
+  if (!origin || activeTabId === null) return;
+  tryBtn.disabled = true;
+  enableResult.textContent = "starting…";
+  send({ type: "TRY_HERE", tabId: activeTabId, origin, url: activeUrl ?? origin })
+    .then((res) => {
+      if (res.ok) {
+        window.close(); // get out of the way so the swaps are visible
+        return;
+      }
+      enableResult.textContent =
+        res.reason === "never-list"
+          ? "Luci never runs on email, banking, school or login pages."
+          : (res.reason ?? "could not start Luci here");
+      tryBtn.disabled = false;
+    })
+    .catch((err: unknown) => {
+      enableResult.textContent = `error: ${err instanceof Error ? err.message : String(err)}`;
+      tryBtn.disabled = false;
+    });
+});
 
 enableBtn.addEventListener("click", () => {
   if (!origin) return;

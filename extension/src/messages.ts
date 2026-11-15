@@ -25,7 +25,13 @@ export type Message =
   /** Immersion dial (D-018): set the popup rate, jump to a percent, or reset progress (points and knewIt). */
   | { type: "SET_IMMERSION"; rate?: number; percent?: number; reset?: boolean }
   /** Whole sentences or paragraphs to natural Spanish (D-018). Same order as sent. */
-  | { type: "TRANSLATE_SENTENCES"; articleKey: string; sentences: string[] };
+  | { type: "TRANSLATE_SENTENCES"; articleKey: string; sentences: string[] }
+  /**
+   * Run Luci on this tab for this visit only, via activeTab. No permission prompt, no host access.
+   * `url` is the full page URL and never leaves the extension — the never-list's path rules
+   * (/login, /checkout, …) cannot be checked against an origin, which has no path.
+   */
+  | { type: "TRY_HERE"; tabId: number; origin: string; url: string };
 
 export interface ResponseMap {
   PING: { ok: true; from: "sw" };
@@ -57,6 +63,8 @@ export interface ResponseMap {
   SET_IMMERSION: { ok: boolean };
   /** One entry per sentence, same order. `null` = unusable, leave that text English. `null` overall = call failed. */
   TRANSLATE_SENTENCES: { items: (string | null)[] } | null;
+  /** `reason` is the literal "never-list" when the site is blocked outright; otherwise a message to show. */
+  TRY_HERE: { ok: boolean; reason?: string };
 }
 
 export type MessageType = Message["type"];
