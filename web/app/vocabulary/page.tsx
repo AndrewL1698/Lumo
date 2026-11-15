@@ -15,7 +15,7 @@ export default function Page() {
   const [fresh, setFresh] = useState<Set<string>>(new Set());
   useEffect(() => {
     if (!data) return;
-    const known = data.known.map((w) => w.lemma);
+    const known = data.known.filter((w) => !w.selfReported).map((w) => w.lemma); // "Just lit up" = proven in a lesson
     const f = justLearned(known);
     setFresh(f);
     saveKnownSnapshot(known, f);
@@ -49,7 +49,7 @@ export default function Page() {
   const total = data ? data.counts.learning + data.counts.known + data.counts.mastered : 0;
   return (
     <>
-      <PageHeader kicker="Vocabulary" title="Your jar" subtitle="Every word you catch is a firefly. It only glows steady once you've said it correctly out loud. Point at a word to remove it." />
+      <PageHeader kicker="Vocabulary" title="Your jar" subtitle="Every word you catch is a firefly. It glows steady once you've said it correctly out loud, or for a week after you click Knew it. Point at a word to remove it." />
 
       {loading && (
         <div role="status" aria-label="Loading" className="grid gap-12 md:grid-cols-[26rem_1fr]">

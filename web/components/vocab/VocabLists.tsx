@@ -51,7 +51,7 @@ export function VocabLists({
             {words.length === 0 ? (
               <p className="mt-3 text-muted">
                 {key === "known"
-                  ? "None yet. Say a word correctly in a lesson and it lights up here."
+                  ? "None yet. Say a word correctly in a lesson, or click Knew it while reading."
                   : key === "learning"
                     ? "None yet. Hover a Spanish word while reading to catch one."
                     : "None yet. Words you keep remembering for weeks end up here."}
@@ -64,7 +64,10 @@ export function VocabLists({
                       {w.article && <span className="font-normal text-muted">{w.article} </span>}
                       {w.lemma}
                     </span>
-                    <span className="text-muted">{w.english}</span>
+                    <span className="text-muted">
+                      {w.english}
+                      {w.selfReported && " · you said you know it"}
+                    </span>
                     {onDelete && (
                       <span className="ml-auto self-center">
                         <DeleteButton label={w.lemma} busy={busy} onClick={() => onDelete(w.lemma)} />

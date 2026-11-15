@@ -51,6 +51,9 @@ function layout(words: { w: VocabItem; level: Level }[], fresh: Set<string>): Fl
   return placed;
 }
 
+// D-027: a "Knew it" word sits with the known ones for a week; it is still learning underneath.
+const SELF_REPORTED_TEXT = "Glowing steady. You said you know it. Say it in a lesson to keep it lit; it fades in a week otherwise.";
+
 const LEVEL_TEXT: Record<Level, string> = {
   learning: "Glowing faintly. You've met this word; say it correctly out loud to light it up.",
   known: "Glowing steady. You used it correctly out loud.",
@@ -135,7 +138,7 @@ export function Jar({ data, fresh }: { data: VocabResponse; fresh: Set<string> }
               <span className={shown.level === "learning" ? "glow-learning" : "glow-known"}>{shown.w.lemma}</span>
             </p>
             <p className="mt-3 text-2xl text-ink">{shown.w.english}</p>
-            <p className="mt-5 max-w-sm text-muted">{LEVEL_TEXT[shown.level]}</p>
+            <p className="mt-5 max-w-sm text-muted">{shown.w.selfReported ? SELF_REPORTED_TEXT : LEVEL_TEXT[shown.level]}</p>
             {shown.level !== "mastered" && when(shown.w.dueAt) && <p className="mt-1 max-w-sm text-muted">{when(shown.w.dueAt)}</p>}
             {shown.fresh && <p className="mt-4 font-display text-lg font-semibold text-ink">Just lit up in your last session.</p>}
           </div>
