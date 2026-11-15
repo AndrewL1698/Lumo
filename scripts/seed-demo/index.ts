@@ -33,7 +33,7 @@ async function rest(path: string, init: RequestInit = {}) {
 // --clean: the same full wipe and settings reset as below, but nothing seeded (new-user demo).
 if (process.argv.includes("--clean")) {
   if (dry) {
-    console.log("seed-demo --clean: would wipe events, articles, tutor_sessions, user_words and reset settings");
+    console.log("seed-demo --clean: would wipe events, articles, tutor_sessions, user_words, pair_codes and reset settings");
     process.exit(0);
   }
   for (const table of ["events", "articles", "tutor_sessions", "user_words"]) {
@@ -44,6 +44,8 @@ if (process.argv.includes("--clean")) {
     headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
     body: JSON.stringify({ user_id: userId, data: settingsFixture }),
   });
+  // Old one-time pairing codes (not per-user; the demo has one user).
+  await rest(`pair_codes?code=neq.0`, { method: "DELETE" });
   console.log("seed-demo --clean: wiped the demo user's words, events, articles and tutor sessions; settings reset");
   process.exit(0);
 }

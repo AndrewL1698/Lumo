@@ -39,6 +39,13 @@ npm run seed-demo             # wipe + reseed user_words for DEMO_USER_ID (needs
 npm run seed-demo -- --clean  # same wipe + settings reset, nothing seeded: empty jar for a new-user demo
 ```
 
+**Two demo modes** (from the repo root):
+
+| Mode | Command | Then |
+|---|---|---|
+| Returning user | `npm run demo:returning` | Jar has the seeded words, tutor remembers last session; extension stays paired. |
+| New user | `npm run demo:new` | Empty jar, old pairing codes deleted. In the popup click **Unpair** (also resets immersion), then `/onboarding` shows a fresh one-time code. |
+
 `seed-demo` resets the demo user (`DEMO_USER_ID`) to the demo state:
 
 - **24 `user_words`** with backdated FSRS history: 4 mastered, 6 due, 5 known (always including *problema*), 5 learning (not due), and 4 hovered on the demo article in the last ~2h: *negocio*, *mundo*, *mercado* and the stage word *empresa* (`FLIP_LEMMA`). *empresa* is left in `learning` and is the newest hover, since the tutor targets the 3 newest hovers. It flips to known live on stage.

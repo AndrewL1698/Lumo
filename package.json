@@ -14,7 +14,9 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "dev:web": "npm run dev -w web",
-    "build:ext": "npm run build -w extension"
+    "build:ext": "npm run build -w extension",
+    "demo:returning": "npm run seed-demo -w scripts",
+    "demo:new": "npm run seed-demo -w scripts -- --clean"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
