@@ -16,7 +16,7 @@ import wordbands from "../wordbands.json";
 import { LEVEL_BAND, MAX_SWAPS, STEPS, pageRules, type StepRules } from "../swapBudget";
 
 /** Bump when changing this file, so a stale bundle in Chrome is obvious in the console. */
-const BUILD = "2.6-imm";
+const BUILD = "2.7-imm";
 
 /** Words that must sit between two swaps, so they are never adjacent (specs §5.2.7). Loosened when the
  * page budget is high, so the popup slider visibly matters (never below 4: still never adjacent). */
@@ -46,7 +46,7 @@ const BANDS: Record<string, number> = wordbands;
 let pageCap = MAX_SWAPS;
 let minGap = MIN_WORD_GAP;
 let userBand = 2;
-/** Immersion step rules for this page (D-018). Step 0 = today's behaviour on today's code path. */
+/** Immersion step rules for this page (D-018). Every step runs the same code path; step 0 = today's rules. */
 let rules: StepRules = STEPS[0]!;
 /** Lemmas whose latest verdict was "Knew it": shown steady (no flicker), never solid (D-018). Display only. */
 const knewIt = new Set<string>();
@@ -55,7 +55,6 @@ let sentenceBlocksDone = 0;
 let paragraphBlocksDone = 0;
 
 let swapCount = 0;
-let lastSwapWordIndex = -Infinity;
 let articleKey = "";
 const swappedLemmas = new Set<string>();
 /** Registers a new swap with the `seen` observer; set once main() starts (brief 3.2). */
@@ -245,71 +244,38 @@ function findMatches(nodes: Text[], byLemma: Map<string, Candidate>): Match[] {
   return found;
 }
 
-/** Spacing rules plus the 70/30 mix, applied over the whole page in document order. */
-function select(matches: Match[], budget: number): Match[] {
-  const review = matches.filter((m) => m.isReview).sort((a, b) => b.score - a.score);
-  const fresh = matches.filter((m) => !m.isReview).sort((a, b) => b.score - a.score);
-
-  const wantReview = Math.round(budget * REVIEW_SHARE);
-  const ranked = [
-    ...review.slice(0, wantReview),
-    ...fresh.slice(0, budget - Math.min(wantReview, review.length)),
-  ];
-  const keep = new Set(ranked);
-
-  // Walk in document order so the gap and one-per-sentence rules mean what they say.
-  const chosen: Match[] = [];
-  const usedSentences = new Set<string>();
-  const usedLemmas = new Set<string>(swappedLemmas);
-  let last = lastSwapWordIndex;
-
-  for (const m of matches.sort((a, b) => a.wordIndex - b.wordIndex)) {
-    if (chosen.length >= budget) break;
-    if (!keep.has(m)) continue;
-    if (usedSentences.has(m.sentenceKey)) continue;
-    if (usedLemmas.has(m.lemma)) continue; // one swap per lemma per page
-    if (m.wordIndex - last < minGap) continue;
-    chosen.push(m);
-    usedSentences.add(m.sentenceKey);
-    usedLemmas.add(m.lemma);
-    last = m.wordIndex;
-  }
-  return chosen;
-}
-
 /**
- * Immersion steps 1–3 (D-018): the same 70/30 ranking as select(), then up to rules.perSentence per sentence,
- * one swap per lemma per page, minGap words apart. Word indices restart at 0 every sweep, so the gap starts
- * fresh each sweep (each sweep only sees new text nodes).
+ * Score-first greedy pick (every step, D-018): best review words until the 70/30 share is met, then every fresh word,
+ * then review again to top up. A match is skipped if its lemma is already used on the page, its sentence already has
+ * rules.perSentence picks, or it sits within minGap words of a pick. Word indices restart at 0 every sweep (each sweep
+ * only sees new text nodes), so the gap starts fresh each sweep. Returned in document order.
  */
-function selectImmersive(matches: Match[], budget: number): Match[] {
+function pickWords(matches: Match[], budget: number): Match[] {
   const review = matches.filter((m) => m.isReview).sort((a, b) => b.score - a.score);
   const fresh = matches.filter((m) => !m.isReview).sort((a, b) => b.score - a.score);
-
-  const wantReview = Math.round(budget * REVIEW_SHARE);
-  const keep = new Set([
-    ...review.slice(0, wantReview),
-    ...fresh.slice(0, budget - Math.min(wantReview, review.length)),
-  ]);
+  const want = Math.round(budget * REVIEW_SHARE);
 
   const chosen: Match[] = [];
-  const perSentence = new Map<string, number>();
   const usedLemmas = new Set<string>(swappedLemmas);
-  let last = -Infinity;
-
-  for (const m of [...matches].sort((a, b) => a.wordIndex - b.wordIndex)) {
-    if (chosen.length >= budget) break;
-    if (!keep.has(m)) continue;
+  const perSentence = new Map<string, number>();
+  const add = (m: Match): void => {
+    if (chosen.length >= budget) return;
+    if (usedLemmas.has(m.lemma)) return; // one swap per lemma per page
     const inSentence = perSentence.get(m.sentenceKey) ?? 0;
-    if (inSentence >= rules.perSentence) continue;
-    if (usedLemmas.has(m.lemma)) continue;
-    if (m.wordIndex - last < minGap) continue;
+    if (inSentence >= rules.perSentence) return;
+    if (chosen.some((c) => Math.abs(c.wordIndex - m.wordIndex) < minGap)) return;
     chosen.push(m);
-    perSentence.set(m.sentenceKey, inSentence + 1);
     usedLemmas.add(m.lemma);
-    last = m.wordIndex;
+    perSentence.set(m.sentenceKey, inSentence + 1);
+  };
+
+  for (const m of review) {
+    if (chosen.length >= want) break;
+    add(m);
   }
-  return chosen;
+  for (const m of fresh) add(m);
+  for (const m of review) add(m); // top up if fresh ran out
+  return chosen.sort((a, b) => a.wordIndex - b.wordIndex);
 }
 
 // ---------------------------------------------------------------- swapping
@@ -337,32 +303,6 @@ function injectStyle(): void {
     `@keyframes parrot-flicker{0%,100%{opacity:1}45%{opacity:.6}55%{opacity:.9}}` +
     `@media (prefers-reduced-motion:reduce){${sel}{animation:none!important}}`;
   document.head.appendChild(style);
-}
-
-/** Replace `span` inside one text node. Never spans elements (architecture §6.6). */
-function applySwap(m: Match, span: string, replacement: string): boolean {
-  const text = m.node.nodeValue;
-  if (!text) return false;
-  const start = text.indexOf(span);
-  if (start < 0) return false; // span crosses an inline element: skip rather than guess
-
-  const tail = m.node.splitText(start);
-  tail.nodeValue = tail.nodeValue!.slice(span.length);
-
-  const el = document.createElement("span");
-  el.setAttribute(MARK_ATTR, "");
-  el.dataset.parrotEn = span;
-  el.dataset.parrotLemma = m.lemma;
-  el.dataset.parrotGlow = m.glow;
-  el.dataset.parrotSentence = m.sentence;
-  el.textContent = replacement;
-  m.node.parentNode?.insertBefore(el, tail);
-
-  swapCount++;
-  swappedLemmas.add(m.lemma);
-  lastSwapWordIndex = m.wordIndex;
-  observeForSeen?.(el);
-  return true;
 }
 
 /**
@@ -395,7 +335,6 @@ function locateSpan(m: Match, span: string, text = m.node.nodeValue ?? ""): numb
 }
 
 function wordOp(m: Match, start: number, span: string, replacement: string): SwapOp {
-  // Same element and bookkeeping as applySwap().
   const el = document.createElement("span");
   el.setAttribute(MARK_ATTR, "");
   el.dataset.parrotEn = span;
@@ -413,7 +352,6 @@ function wordOp(m: Match, start: number, span: string, replacement: string): Swa
     onApplied() {
       swapCount++;
       swappedLemmas.add(m.lemma);
-      lastSwapWordIndex = Math.max(lastSwapWordIndex, m.wordIndex);
       observeForSeen?.(el);
     },
   };
@@ -633,8 +571,8 @@ function blockOp(b: Block, spanish: string): SwapOp {
   };
 }
 
-/** Immersion steps 1–3 (D-018): many swaps per text node, placed by offset. Step 0 never comes here. */
-async function sweepImmersive(root: Node): Promise<void> {
+/** Every immersion step (D-018): many swaps per text node, placed by offset. Step 0 is just its rules (no blocks). */
+async function sweep(root: Node): Promise<void> {
   const blocksLeft =
     sentenceBlocksDone < rules.sentenceBlocks || paragraphBlocksDone < rules.paragraphBlocks;
   if (swapCount >= pageCap && !blocksLeft) return;
@@ -658,7 +596,7 @@ async function sweepImmersive(root: Node): Promise<void> {
     const r = sentenceRanges.get(m.node);
     return !r || m.offset + m.englishMatch.length <= r.start || m.offset >= r.end;
   });
-  const chosen = selectImmersive(matches, Math.max(0, pageCap - swapCount));
+  const chosen = pickWords(matches, Math.max(0, pageCap - swapCount));
   if (!chosen.length && !blocks.length) {
     console.log(`[parrot] step ${rules.step}: ${nodes.length} new text node(s), nothing worth swapping`);
     return;
@@ -718,50 +656,6 @@ async function sweepImmersive(root: Node): Promise<void> {
     : null;
 
   await Promise.all([words, sentencesDone]);
-}
-
-async function sweep(root: Node): Promise<void> {
-  if (rules.step > 0) return sweepImmersive(root);
-  if (swapCount >= pageCap) return;
-
-  const nodes = collectTextNodes(root).filter((n) => !seenNodes.has(n));
-  for (const n of nodes) seenNodes.add(n);
-  if (!nodes.length) return;
-
-  const candidates = await send({ type: "GET_CANDIDATES" }).catch(() => null);
-  const byLemma = new Map((candidates?.candidates ?? []).map((c) => [c.lemma, c]));
-
-  const matches = findMatches(nodes, byLemma);
-  const chosen = select(matches, pageCap - swapCount);
-  if (!chosen.length) {
-    console.log(`[parrot] ${nodes.length} new text node(s), nothing worth swapping`);
-    return;
-  }
-
-  // ONE batch for the page. Swaps appear only after it returns; load is never blocked.
-  const res = await send({
-    type: "TRANSLATE",
-    articleKey,
-    items: chosen.map((m) => ({
-      sentence: m.sentence,
-      lemma: m.lemma,
-      englishMatch: m.englishMatch,
-    })),
-  }).catch(() => null);
-
-  if (!res) {
-    console.log("[parrot] translate unavailable, leaving the page alone");
-    return;
-  }
-
-  let applied = 0;
-  res.items.forEach((item, i) => {
-    const m = chosen[i];
-    if (!item || !m) return; // null = sense mismatch, don't swap
-    if (swapCount >= pageCap) return;
-    if (applySwap(m, item.span, item.replacement)) applied++;
-  });
-  console.log(`[parrot] swapped ${applied} of ${chosen.length} (page total ${swapCount})`);
 }
 
 // ---------------------------------------------------------------- observers
