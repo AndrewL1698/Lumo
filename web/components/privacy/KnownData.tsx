@@ -23,6 +23,14 @@ type Glow = "seen" | "learning" | "known";
 const GLOW: Record<string, Glow> = { new: "seen", seen: "seen", learning: "learning", known: "known", known_assumed: "known", mastered: "known" };
 const GLOW_NAME: Record<Glow, string> = { seen: "Seen", learning: "Learning", known: "Known" };
 
+// Words page sections (D-010). "Seen" only appears when the extension has shown words not yet looked up.
+const WORD_GROUPS: { title: string; blurb: string; states: string[]; optional?: boolean }[] = [
+  { title: "Learning", blurb: "looked up or still shaky", states: ["learning"] },
+  { title: "Known", blurb: "used correctly or passed", states: ["known", "known_assumed"] },
+  { title: "Mastered", blurb: "solid for months", states: ["mastered"] },
+  { title: "Seen", blurb: "spotted on a page, not looked up yet", states: ["new", "seen"], optional: true },
+];
+
 function GlowDot({ glow, size = "h-6 w-6" }: { glow: Glow; size?: string }) {
   return (
     <span className={`jar-legend grid shrink-0 place-items-center rounded-full bg-[#1d2b44] ${size}`} data-level={glow} aria-hidden="true">
@@ -114,23 +122,42 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
         {data.words.length === 0 ? (
           <p className="text-muted">No words stored yet.</p>
         ) : (
-          <ul className="flex flex-wrap gap-x-2 gap-y-2">
-            {data.words.map((w) => {
-              const glow = GLOW[w.state] ?? "seen";
+          // Grouped by how well the learner knows them (D-010): the path a word takes, learning → known → mastered.
+          <div className="space-y-8">
+            {WORD_GROUPS.map((g) => {
+              const words = data.words.filter((w) => g.states.includes(w.state)).sort((a, b) => a.lemma.localeCompare(b.lemma, "es"));
+              if (g.optional && words.length === 0) return null;
               return (
-                <li
-                  key={w.lemma}
-                  className="group flex items-center gap-2 rounded-full py-1 pl-1.5 pr-1 transition-colors duration-150 hover:bg-line/60 focus-within:bg-line/60"
-                  title={w.lastHoverAt ? `Last looked up ${fmt(w.lastHoverAt)}` : undefined}
-                >
-                  <GlowDot glow={glow} />
-                  <span className="text-lg font-bold">{w.lemma}</span>
-                  <span className="sr-only">, {GLOW_NAME[glow]}</span>
-                  <DeleteButton label={w.lemma} busy={busy} onClick={() => void run({ kind: "word", lemma: w.lemma })} />
-                </li>
+                <div key={g.title}>
+                  <h3 className="mb-3 flex items-baseline gap-2 font-display text-lg font-bold">
+                    {g.title} <span className="font-sans text-base font-normal text-muted">{words.length}</span>
+                    <span className="font-sans text-sm font-normal text-muted">· {g.blurb}</span>
+                  </h3>
+                  {words.length === 0 ? (
+                    <p className="text-muted">None yet.</p>
+                  ) : (
+                    <ul className="flex flex-wrap gap-x-2 gap-y-2">
+                      {words.map((w) => {
+                        const glow = GLOW[w.state] ?? "seen";
+                        return (
+                          <li
+                            key={w.lemma}
+                            className="group flex items-center gap-2 rounded-full py-1 pl-1.5 pr-1 transition-colors duration-150 hover:bg-line/60 focus-within:bg-line/60"
+                            title={w.lastHoverAt ? `Last looked up ${fmt(w.lastHoverAt)}` : undefined}
+                          >
+                            <GlowDot glow={glow} />
+                            <span className="text-lg font-bold">{w.lemma}</span>
+                            <span className="sr-only">, {g.title}</span>
+                            <DeleteButton label={w.lemma} busy={busy} onClick={() => void run({ kind: "word", lemma: w.lemma })} />
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
+                </div>
               );
             })}
-          </ul>
+          </div>
         )}
       </section>
 

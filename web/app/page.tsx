@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { correctResponseFixture, rawTextFixture } from "@parrot/shared";
 import { LuciMark } from "@/components/LuciMark";
+import { Greeting } from "@/components/Greeting";
 import { CorrectionCards } from "@/components/tutor/CorrectionCards";
 import { TranscriptView } from "@/components/tutor/TranscriptView";
 import { btn, eyebrow } from "@/components/ui/PageHeader";
@@ -23,7 +24,8 @@ export default function Home() {
               Luci, from <i className="normal-case tracking-normal">luciérnaga</i>, firefly
             </span>
           </p>
-          <h1 className="mt-4 text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
+          <Greeting className="mt-4 font-display text-xl font-bold text-accent" />
+          <h1 className="mt-2 text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
             Read it. Say it.
             <br />
             <span className="glow-known">Light it up.</span>

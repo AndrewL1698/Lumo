@@ -12,10 +12,14 @@ const watch = process.argv.includes("--watch");
 const staticFiles = [
   ["manifest.json", "manifest.json"],
   ["src/popup/popup.html", "popup.html"],
+  ["icons/icon16.png", "icons/icon16.png"],
+  ["icons/icon32.png", "icons/icon32.png"],
+  ["icons/icon48.png", "icons/icon48.png"],
+  ["icons/icon128.png", "icons/icon128.png"],
 ];
 
 async function copyStatic() {
-  await mkdir(dist, { recursive: true });
+  await mkdir(join(dist, "icons"), { recursive: true });
   await Promise.all(staticFiles.map(([from, to]) => copyFile(join(root, from), join(dist, to))));
 }
 

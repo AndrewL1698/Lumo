@@ -2,8 +2,6 @@
 
 Owner: **Naren**. Team rules: root `CLAUDE.md`. Design: `docs/architecture.md` §6. Contracts: `@parrot/shared`.
 
-> **In progress, Sat evening (Karthik, agreed with Naren):** Luci rename + icons (`manifest.json`, popup heading) and the hover card (`src/content/hovercard.ts`: look, speaker icon, button feedback, plus click-to-open and click-away-to-close per D-011). Please don't edit those until Karthik posts that it's merged; this note is removed then.
-
 ## What lives here
 | Path | Does |
 |---|---|
