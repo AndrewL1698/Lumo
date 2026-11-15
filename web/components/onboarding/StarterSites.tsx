@@ -43,10 +43,10 @@ export function StarterSites({
   return (
     <section className="space-y-5">
       <div>
-        <h2 className="text-xl font-bold text-ink">Where should Luci work?</h2>
+        <h2 className="text-xl font-bold text-ink">Where should Lumo work?</h2>
         <p className="mt-1 max-w-2xl text-sm text-muted">
-          A starter list of sites people read every day. Uncheck any you don&apos;t want. Luci stays
-          off everywhere else until you turn it on. Luci is tuned for NPR; other sites are best
+          A starter list of sites people read every day. Uncheck any you don&apos;t want. Lumo stays
+          off everywhere else until you turn it on. Lumo is tuned for NPR; other sites are best
           effort.
         </p>
       </div>

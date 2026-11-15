@@ -1,4 +1,4 @@
-// Luci popup: worker health, try / enable on this site, pairing, immersion. Look: popup.html.
+// Lumo popup: worker health, try / enable on this site, pairing, immersion. Look: popup.html.
 
 import { send } from "../messages";
 import "./firefly"; // visual only: the wandering firefly
@@ -31,7 +31,7 @@ const immNote = el("imm-note");
 const pairingSection = el("pairing");
 const unpairBtn = el<HTMLButtonElement>("unpair");
 
-// ---------------------------------------------------------------- display only (Luci look)
+// ---------------------------------------------------------------- display only (Lumo look)
 
 /** Paired chip; the pairing card only shows while unpaired (or when the worker can't say). */
 function showPaired(paired: boolean | null): void {
@@ -56,7 +56,7 @@ let activeUrl: string | null = null;
 async function init(): Promise<void> {
   const ping = await send({ type: "PING" }).catch(() => null);
   workerEl.hidden = Boolean(ping?.ok);
-  workerEl.textContent = "Luci isn't responding";
+  workerEl.textContent = "Lumo isn't responding";
 
   const status = await send({ type: "GET_STATUS" }).catch(() => null);
 
@@ -80,16 +80,16 @@ async function init(): Promise<void> {
   tryBtn.disabled = origin === null || activeTabId === null;
   const enabled = Boolean(origin && status?.enabledOrigins.includes(origin));
   if (enabled) {
-    enableResult.textContent = "Luci is on here on every visit.";
+    enableResult.textContent = "Lumo is on here on every visit.";
     showSiteOn();
     tryBtn.hidden = true; // nothing to try: it already runs here on every visit
   }
 
-  // New-site nudge (D-017): on a site Luci reads well but isn't on for yet, offer one click
+  // New-site nudge (D-017): on a site Lumo reads well but isn't on for yet, offer one click
   // instead of the plain Enable button. Same flow underneath, friendlier words.
   const site = origin ? READING_SITES.find((s) => s.origin === origin) : undefined;
   if (site && !enabled) {
-    nudgeText.textContent = `Luci reads well on ${site.name}. Turn it on here?`;
+    nudgeText.textContent = `Lumo reads well on ${site.name}. Turn it on here?`;
     nudgeEl.hidden = false;
     enableBtn.hidden = true; // the card replaces it; sites off the list keep the plain button
   }
@@ -136,12 +136,12 @@ tryBtn.addEventListener("click", () => {
       }
       enableResult.textContent =
         res.reason === "never-list"
-          ? "Luci never runs on email, banking, school or login pages."
-          : (res.reason ?? "Couldn't start Luci here.");
+          ? "Lumo never runs on email, banking, school or login pages."
+          : (res.reason ?? "Couldn't start Lumo here.");
       tryBtn.disabled = false;
     })
     .catch((err: unknown) => {
-      enableResult.textContent = `Couldn't start Luci: ${err instanceof Error ? err.message : String(err)}`;
+      enableResult.textContent = `Couldn't start Lumo: ${err instanceof Error ? err.message : String(err)}`;
       tryBtn.disabled = false;
     });
 });
@@ -154,7 +154,7 @@ enableBtn.addEventListener("click", () => {
     .request({ origins: [target + "/*"] })
     .then(async (granted) => {
       if (!granted) {
-        enableResult.textContent = "Chrome didn't allow it, so Luci stays off here.";
+        enableResult.textContent = "Chrome didn't allow it, so Lumo stays off here.";
         return;
       }
       const res = await send({ type: "ENABLE_SITE", origin: target });
@@ -171,7 +171,7 @@ enableBtn.addEventListener("click", () => {
 pairBtn.addEventListener("click", () => {
   const code = codeInput.value.trim();
   if (!/^\d{6}$/.test(code)) {
-    pairResult.textContent = "Enter the 6-digit code from Luci's setup page.";
+    pairResult.textContent = "Enter the 6-digit code from Lumo's setup page.";
     return;
   }
   pairBtn.disabled = true;
@@ -241,7 +241,7 @@ function renderImmersion(): void {
     b.classList.toggle("active", rate === immersion.rate);
     b.setAttribute("aria-pressed", String(rate === immersion.rate)); // screen readers hear which speed is on
   }
-  immNote.textContent = "Grows as you prove words: Knew it, and words you use correctly with Luci.";
+  immNote.textContent = "Grows as you prove words: Knew it, and words you use correctly with Lumo.";
 }
 
 async function setImmersion(change: { rate?: number; percent?: number; reset?: boolean }): Promise<void> {
@@ -252,7 +252,7 @@ async function setImmersion(change: { rate?: number; percent?: number; reset?: b
     renderImmersion();
     await reloadActiveTab();
   } catch {
-    immNote.textContent = "not saved: Luci isn't reachable";
+    immNote.textContent = "not saved: Lumo isn't reachable";
   }
 }
 

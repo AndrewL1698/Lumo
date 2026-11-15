@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { LegalPage } from "@/components/legal/LegalPage";
 
-export const metadata = { title: "Privacy policy · Luci" };
+export const metadata = { title: "Privacy policy · Lumo" };
 
 export default function Page() {
   return (
@@ -9,13 +9,13 @@ export default function Page() {
       <section>
         <h2>Who we are</h2>
         <p>
-          Luci is a student project built at HackPrinceton Fall 2026. It runs as a single demo account. There are no user
+          Lumo is a student project built at HackPrinceton Fall 2026. It runs as a single demo account. There are no user
           accounts, ads or tracking cookies.
         </p>
       </section>
 
       <section>
-        <h2>What Luci stores</h2>
+        <h2>What Lumo stores</h2>
         <ul>
           <li>Spanish words you look up or practise, with their learning state and review dates.</li>
           <li>A short activity log: which word you hovered, when you read an article, and whether you used a word correctly.</li>
@@ -26,7 +26,7 @@ export default function Page() {
       </section>
 
       <section>
-        <h2>What Luci never collects</h2>
+        <h2>What Lumo never collects</h2>
         <ul>
           <li>Anything on sites you have not switched on.</li>
           <li>Email, chat, banking, health, school and work tools, or login and form pages, even if you allow them.</li>
@@ -49,7 +49,7 @@ export default function Page() {
         <p>
           Every stored item is listed on{" "}
           <Link href="/privacy" className="text-ink underline decoration-line transition-colors duration-150 hover:decoration-ink">
-            What Luci knows
+            What Lumo knows
           </Link>
           . You can delete any item, or everything at once. Deleting is permanent.
         </p>

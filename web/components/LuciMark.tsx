@@ -1,9 +1,8 @@
-// Luci the firefly (from docs/brand/luci-icon.svg), flattened: no radial glow, the highlight bar is the light.
+// Lumo the firefly (from docs/brand/luci-icon.svg), flattened: no radial glow, no ground bar.
 export function LuciMark({ size = 32, className = "" }: { size?: number; className?: string }) {
   return (
     <svg viewBox="0 0 128 128" width={size} height={size} className={className} aria-hidden="true">
       <rect width="128" height="128" rx="20" fill="#fff3c4" />
-      <rect x="22" y="94" width="84" height="14" rx="4" fill="#ffd23a" />
       <g transform="rotate(40 64 60)">
         <ellipse cx="64" cy="78" rx="13" ry="17" fill="#ffd23a" />
         <ellipse cx="64" cy="56" rx="12" ry="15" fill="#2a3a4a" />

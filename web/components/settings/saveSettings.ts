@@ -14,7 +14,7 @@ export async function saveSettings(patch: Partial<Settings>): Promise<{ ok: true
       body: JSON.stringify(merged),
     });
     if (res.status === 400) {
-      return { ok: false, message: "Those settings were rejected. Luci never runs on email, chat, banking and similar sites." };
+      return { ok: false, message: "Those settings were rejected. Lumo never runs on email, chat, banking and similar sites." };
     }
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return { ok: true };

@@ -4,7 +4,7 @@ export function PairingCode({ code }: { code: string }) {
     <section className="rounded-sm border border-line bg-panel p-5">
       <h2 className="text-xl font-bold text-ink">Pair the Chrome extension</h2>
       <p className="mt-1 text-sm text-muted">
-        Open the Luci popup in Chrome and enter this code. You'll also add reading sites there.
+        Open the Lumo popup in Chrome and enter this code. You'll also add reading sites there.
       </p>
       <p
         aria-label={`Pairing code ${code.split("").join(" ")}`}

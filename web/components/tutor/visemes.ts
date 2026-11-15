@@ -1,4 +1,4 @@
-// Spanish text -> mouth shapes (visemes) for Luci's lip-sync. Hand-written rules, no library.
+// Spanish text -> mouth shapes (visemes) for Lumo's lip-sync. Hand-written rules, no library.
 // Each segment has a weight (vowels longer than consonants, pauses at punctuation); a clip's real
 // duration is spread across the total weight.
 

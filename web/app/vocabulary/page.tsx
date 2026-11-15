@@ -37,7 +37,7 @@ export default function Page() {
       )}
       {error && !data && <ErrorState message={error} onRetry={() => void reload()} />}
       {data && total === 0 && data.streakDays === 0 && (
-        <EmptyState>Your jar is empty. Read a page with Luci switched on and hover a Spanish word to catch your first firefly.</EmptyState>
+        <EmptyState>Your jar is empty. Read a page with Lumo switched on and hover a Spanish word to catch your first firefly.</EmptyState>
       )}
 
       {data && (total > 0 || data.streakDays > 0) && (

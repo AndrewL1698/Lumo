@@ -1,4 +1,4 @@
-// Read-only tap on the tutor's voice for Luci's lip-sync. Andrew's audio queue
+// Read-only tap on the tutor's voice for Lumo's lip-sync. Andrew's audio queue
 // (web/lib/tutor/client/audioQueue.ts) is NOT changed; we only observe it:
 //  - ElevenLabs mode: fetch("/api/tts", {text}) -> res.arrayBuffer() -> ctx.decodeAudioData(buf) ->
 //    an AudioBufferSourceNode connected to ctx.destination. We remember which text each buffer came from,
@@ -165,7 +165,7 @@ export function currentSpeech(): Speech | null {
   return speech;
 }
 
-/** True once any real tutor voice has played; until then Luci may follow the reply text instead. */
+/** True once any real tutor voice has played; until then Lumo may follow the reply text instead. */
 export function heardVoice(): boolean {
   return heard;
 }

@@ -12,7 +12,7 @@ const STEPS = [
   {
     level: "seen",
     title: "Read",
-    body: "Turn Luci on for a news site. A few words show up in Spanish.",
+    body: "Turn Lumo on for a news site. A few words show up in Spanish.",
   },
   {
     level: "learning",
@@ -38,7 +38,7 @@ export default function Home() {
             <span className="glow-known">Light it up.</span>
           </h1>
           <p className="mt-6 max-w-lg text-xl text-muted">
-            Luci puts a few Spanish words into the news you read, then talks with you about it
+            Lumo puts a few Spanish words into the news you read, then talks with you about it
             tonight.
           </p>
           <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">

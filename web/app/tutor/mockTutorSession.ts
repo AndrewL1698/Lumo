@@ -33,28 +33,28 @@ const correctResponseUnclear: CorrectResponse = {
 const OPENER_WHY = "Opening with something you read today";
 
 const SCRIPT: { raw: string; response: CorrectResponse; reply?: string; replyEn?: string; why?: string }[] = [
-  { raw: rawTextFixture, response: correctResponseFixture, why: "Recast only: first time you've made these mistakes, so Luci repeats it correctly instead of stopping you" },
+  { raw: rawTextFixture, response: correctResponseFixture, why: "Recast only: first time you've made these mistakes, so Lumo repeats it correctly instead of stopping you" },
   { raw: "me gusta mucho la casa grande", response: correctResponseCleanFixture, why: "Steering toward 'aprovechar': you hovered it this morning" },
   {
     raw: "Hi, my name is Shravan",
     response: correctResponseEnglishFixture,
     reply: "¡En español, por favor! Puedes decir: «Hola, me llamo Shravan». ¿Cómo llegas al trabajo?",
     replyEn: "In Spanish, please! You can say: 'Hola, me llamo Shravan.' How do you get to work?",
-    why: "You answered in English, so Luci asks for Spanish and offers the words",
+    why: "You answered in English, so Lumo asks for Spanish and offers the words",
   },
   {
     raw: "me gusta jugar al fútbol con mis amigos",
     response: correctResponseOffTopicFixture,
     reply: "¡Qué bien! Pero volvamos a la huelga: ¿cómo te afecta a ti?",
     replyEn: "Nice! But let's get back to the strike: how does it affect you?",
-    why: "Off topic: Luci gently steers back to the article",
+    why: "Off topic: Lumo gently steers back to the article",
   },
   {
     raw: "eh la mesa sí no",
     response: correctResponseUnclear,
     reply: "No te entendí bien. ¿Puedes repetirlo, por favor?",
     replyEn: "I didn't quite understand. Can you say it again, please?",
-    why: "Couldn't follow that turn, so Luci asks you to repeat it",
+    why: "Couldn't follow that turn, so Lumo asks you to repeat it",
   },
 ];
 

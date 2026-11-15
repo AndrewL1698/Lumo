@@ -30,7 +30,7 @@ export default function Page() {
       <PageHeader
         kicker="Your course"
         title={data ? `${data.levelTitle} track` : "Your course"}
-        subtitle="Luci teaches one unit at a time. A unit is finished when you have said most of its words correctly and passed its check."
+        subtitle="Lumo teaches one unit at a time. A unit is finished when you have said most of its words correctly and passed its check."
       />
 
       {loading && <div role="status" aria-label="Loading" className="h-40 animate-pulse rounded-sm bg-line" />}
@@ -88,7 +88,7 @@ export default function Page() {
 
               <h3 className="mt-5 font-bold">Check</h3>
               <p className="text-muted">
-                {current.checkpointPassed ? "Passed." : "Not passed yet. Talk to Luci without slipping on this unit's grammar idea."}
+                {current.checkpointPassed ? "Passed." : "Not passed yet. Talk to Lumo without slipping on this unit's grammar idea."}
               </p>
 
               {data.lastLesson && data.lastLesson.unitId === current.id && (

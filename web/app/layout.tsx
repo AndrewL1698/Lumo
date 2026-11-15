@@ -13,7 +13,7 @@ const bricolage = Bricolage_Grotesque({ weight: ["600", "800"], subsets: ["latin
 const plexMono = IBM_Plex_Mono({ weight: ["400", "600"], subsets: ["latin"], variable: "--font-plex-mono", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Luci",
+  title: "Lumo",
   description: "Read it. Say it. Light it up. Your morning reading becomes tonight's Spanish conversation.",
 };
 

@@ -1,7 +1,7 @@
-// Visual only: one Luci firefly wandering the popup (styles: .popup-fly in popup.html).
+// Visual only: one Lumo firefly wandering the popup (styles: .popup-fly in popup.html).
 // No messages, no storage, no effect on the popup's controls: pointer-events are off and it only
 // moves through empty space (the side gutters, the grass, the header gap), crossing cards briefly.
-// Calm curvy legs (cubic Bézier, eased), transform only. Every few legs it lands on the Luci logo for a
+// Calm curvy legs (cubic Bézier, eased), transform only. Every few legs it lands on the Lumo logo for a
 // moment. Reduced motion: it just sits on the logo, glowing.
 
 const SIZE = 24;
@@ -63,7 +63,7 @@ function startFirefly(): void {
     if (pick < 0.32) return { x: rand(0, 4), y: rand(70, h - 90) }; // left gutter
     if (pick < 0.64) return { x: rand(w - SIZE - 4, w - SIZE), y: rand(70, h - 90) }; // right gutter
     if (pick < 0.9) return { x: rand(10, w - SIZE - 10), y: rand(h - 52, h - SIZE - 4) }; // over the grass
-    return { x: rand(90, Math.max(100, w - 150)), y: rand(2, 12) }; // between the title and "Open Luci"
+    return { x: rand(90, Math.max(100, w - 150)), y: rand(2, 12) }; // between the title and "Open Lumo"
   };
 
   let legsUntilLogo = Math.floor(rand(3, 6));
