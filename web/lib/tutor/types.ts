@@ -2,6 +2,7 @@
  * Seams between the voice-tutor modules (voice-plan §3). Types only: no runtime code, no DOM/Node imports.
  * Owner: Andrew. Module authors implement these; do not change them without asking.
  */
+import type { VadInfo } from "./client/vad";
 import type {
   CorrectionError,
   CorrectionResult,
@@ -273,6 +274,10 @@ export type UseTutorSession = {
   /** Hands-free only: the mic is muted. */
   muted?: boolean;
   setMuted?: (muted: boolean) => void;
+  /** Hands-free: stop Luci talking now. */
+  interrupt?: () => void;
+  /** Hands-free with ?debug=1: what the listener currently believes. */
+  meter?: (VadInfo & { status: string }) | null;
 };
 
 export type { CorrectResponse };
