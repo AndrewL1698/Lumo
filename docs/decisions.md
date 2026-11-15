@@ -77,3 +77,7 @@ Short entries. Newest at the bottom. Format: **ID · date · owner**, decision, 
 **Decision:** (1) **Clicking** a swapped word opens the hover card instantly and counts as a look-up (once per word, same as a hover). Clicking anywhere outside the card closes it. Hover still opens after 500 ms. (2) **Time-of-day greetings** from one shared list (`web/lib/greetings.ts`): a line on the home page using the learner's clock and streak ("¡Hola, night owl! 🌙 · day 3 in a row"), and the tutor's opening sentence fits the time of day via one line of session info plus the opener rule.
 **Why:** Clicking is what people try first on stage. The greetings make Luci feel like it knows you.
 **Note:** The tutor uses the server's clock, which is the learner's on the localhost demo. A hosted version would send the browser's time.
+
+### D-016 · Nov 14 · Karthik (heads-up to Naren and Shravan)
+**Decision:** (1) Swapped words in the extension glow by word state, using the web app's three lights: **faint** = only came across it (never met / seen), **flickering** = learning (hovered or looked up), **solid bright** = known or mastered. A look-up turns a faint word to flickering right away. Flicker is off for reduced motion. (2) On the home page, hovering or focusing *cocina*, *mesa* or *abuela* (in the sentence and in the legend) shows its meaning (*la cocina · kitchen*, …). The text is static, with no API call.
+**Why:** Before this, every swap looked the same, so the page couldn't show progress. The home demo's words had no meaning, which is exactly what visitors try to hover.
