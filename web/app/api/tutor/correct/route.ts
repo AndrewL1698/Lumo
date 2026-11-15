@@ -94,7 +94,7 @@ export async function POST(req: Request) {
   // Only sessions /api/tutor/context started may write learner events: an eval run or a session that
   // outlived a server restart runs on the fixture targets and must not change the demo user's words.
   const credit = !failed && getSession(sessionId).fromContext;
-  if (!failed && !credit) console.log(`[correct] ${utteranceId} no word credit: session not started by /context`);
+  if (!failed && !credit) console.log(`[correct] ${utteranceId} no word credit: session has no real (DB) context`);
   const tDb = Date.now();
   const wordUpdates = !credit
     ? []

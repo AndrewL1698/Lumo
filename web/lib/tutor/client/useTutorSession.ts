@@ -109,11 +109,25 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
   /** The take being recorded / transcribed. */
   let take: { id: string; timeline: TimelineRecorder } | null = null;
 
+  /** TTS chunks that failed in a row; a chunk that starts playing resets it (voice-plan §1.7). */
+  let ttsFailuresInARow = 0;
+  let browserVoice = false;
+  const onTtsFailed = () => {
+    if (browserVoice) return;
+    ttsFailuresInARow += 1;
+    if (ttsFailuresInARow < 2) {
+      set.notice("Audio unavailable for part of the reply; showing captions.");
+      return;
+    }
+    // HACK: ElevenLabs looks down: the browser's built-in voice for the rest of the session (from the next
+    // reply; this one keeps its captions). Stop the old queue so a late ElevenLabs chunk can't overlap.
+    browserVoice = true;
+    queue?.stopAll();
+    queue = createAudioQueue({ mode: "browser", level: () => level });
+    set.notice("Luci's voice is unavailable, so your browser's voice will read her replies.");
+  };
   const getQueue = (): AudioQueue => {
-    queue ??= createAudioQueue({
-      level: () => level,
-      onChunkFailed: () => set.notice("Audio unavailable for part of the reply; showing captions."),
-    });
+    queue ??= createAudioQueue({ level: () => level, onChunkFailed: onTtsFailed });
     return queue;
   };
 
@@ -294,6 +308,7 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
     const speak = (chunk: string) => {
       args.timeline?.mark("tFirstChunk");
       q.enqueue(myTurn, index++, chunk, () => {
+        ttsFailuresInARow = 0;
         if (!live()) return;
         reply.started.push(chunk);
         // HACK: the queue has no separate "TTS bytes arrived" signal, so both marks are set at audio start.
@@ -349,8 +364,9 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
     } catch {
       if (!live()) return; // aborted by a barge-in, end() or unmount
       if (!gotText) {
-        caption(TUTOR.cannedRepeat);
-        chunker.push(TUTOR.cannedRepeat);
+        const canned = args.rawText === null ? TUTOR.cannedOpener : TUTOR.cannedRepeat;
+        caption(canned);
+        chunker.push(canned);
       }
       // A stream that broke midway keeps what it has.
     }

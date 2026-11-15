@@ -50,6 +50,8 @@ export const TUTOR = {
   firstChunkCommaMinChars: 25,
   sampleRate: 16_000,
   cannedRepeat: "Perdón, ¿puedes repetirlo?",
+  /** The opener's fallback: the learner hasn't said anything yet, so "can you repeat that?" makes no sense. */
+  cannedOpener: "¡Hola! ¿De qué quieres hablar hoy?",
   /** /api/tutor/context: DB load budget before falling back to the fixture (task 10). */
   contextTimeoutMs: 3000,
   /** /api/tutor/correct: per-word learner-model write budget; a slow write gives no WordUpdate (task 12). */

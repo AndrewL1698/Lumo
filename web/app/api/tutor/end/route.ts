@@ -25,7 +25,8 @@ export async function POST(req: Request) {
   if (isTutorMock()) return json(recapFixture, Recap);
 
   const session = findSession(body.sessionId);
-  if (!session || !session.fromContext) {
+  // fromContext only gates learner-model writes; a session on the fixture context (DB down) still gets its recap.
+  if (!session) {
     return json(
       { topErrors: [], wordsNowKnown: [], reviewTomorrow: [], summary_en: SUMMARY_EMPTY, tips: [] },
       Recap,
