@@ -9,10 +9,11 @@ Short entries. Newest at the bottom. Format: **ID · date · owner**, decision, 
 **Why:** The Amazon "Best Practical AI Innovation" track text lists no AWS or Bedrock requirement. Judging is on creativity, usefulness, technical implementation and UX.
 **Alternative:** Bedrock client swap is a constructor change (architecture §8) if rules change.
 
-### D-002 · _pending_ · Andrew
-**Decision:** STT provider.
-**Why:** _Fill in: % of planted errors surviving in TTS-read pass and teammate-read pass._
-**Alternatives:** _Scribe v2 Realtime vs. batch fallback / other._
+### D-002 · Nov 14 · Andrew
+**Decision:** STT is ElevenLabs **Scribe v2 Realtime** (`scribe_v2_realtime`, manual commit on button release), with batch `scribe_v2` as the fallback when the realtime socket fails or takes longer than 1.5 s.
+**Why:** Pass A (the 20 eval sentences read by the TTS voice, `eval/stt-test/results.md`): planted errors survived in 73% (11/15) on v2 realtime, 80% (12/15) on batch v2 and 67% (10/15) on v3 realtime. Clean controls stayed clean on all three (5/5). Batch beats realtime by only one sentence, under the two-sentence switch rule in voice-plan §6. Realtime commits in about 70 ms (median) against about 270 ms for batch, and the browser measures about 190 ms from release to transcript. All three configurations "fix" the same three acoustically subtle errors (*Los noticias*, *Ellos piensa*, and one more). So the demo's planted error is one that survives every configuration, such as *la problema*.
+**Pending:** Pass B (a teammate reading the 15 sentences). It can change the pick only if batch wins by two or more sentences.
+**Alternatives:** Batch as the main path (more verbatim on Pass A, but adds about 200 ms to every turn); v3 realtime (lowest survival).
 
 ### D-003 · _proposed_ · Karthik
 **Decision:** Rename Parrot to **Luci** (firefly mascot). Glow brightness on swapped words shows `WordState`, and a glowworm underline is the swap marker. Full concept in `docs/brand/`.
@@ -81,3 +82,9 @@ Short entries. Newest at the bottom. Format: **ID · date · owner**, decision, 
 ### D-016 · Nov 14 · Karthik (heads-up to Naren and Shravan)
 **Decision:** (1) Swapped words in the extension glow by word state, using the web app's three lights: **faint** = only came across it (never met / seen), **flickering** = learning (hovered or looked up), **solid bright** = known or mastered. A look-up turns a faint word to flickering right away. Flicker is off for reduced motion. (2) On the home page, hovering or focusing *cocina*, *mesa* or *abuela* (in the sentence and in the legend) shows its meaning (*la cocina · kitchen*, …). The text is static, with no API call.
 **Why:** Before this, every swap looked the same, so the page couldn't show progress. The home demo's words had no meaning, which is exactly what visitors try to hover.
+
+### D-017 · Nov 14 · Andrew
+**Decision:** Latency pass for the tutor. (1) **Prompt caching** on both lanes' system prompts (Haiku and Sonnet 5.5 cache from 512 tokens; ours are about 1,000–1,800 with the schema). (2) A **hedged corrector**: two identical Haiku calls, and the first valid answer wins. (3) The first TTS chunk can go out as soon as a sentence ends at the end of a stream delta. Server-side refusal fallbacks stay on. Production mode is not needed: run one rehearsal turn after starting the server so every route is compiled.
+**Why:** The probe (`eval/latency/probe.ts`) showed where the time goes. The corrector is about 700 ms to first token plus about 450 ms writing about 120 tokens, and its slow turns are random spikes (one sample took 1.9 s to first token), which a hedge absorbs. Sonnet sends its first words at about 600–800 ms, then pauses about 300–700 ms before the rest arrives in a burst, on both the plain and fallback paths. That pause, not our code, sets the first-chunk time.
+**Measured** (20 turns each, wifi, from STT final; add about 190 ms for button release): correction median/p90 1194/1517 ms → 1128/~1330 ms. Audio ready 1528/1733 ms at baseline. Caching alone left correction unchanged, and fallbacks on vs off showed no difference beyond noise. Accuracy on the 20 sentences after the hedge: recall 10/15 and 12/15, false alarms 0/5. Over 40 hedged pairs the two answers never disagreed on the error count.
+**Not done:** splitting the first chunk at its first comma ("Sí," at about 650 ms instead of the full sentence at about 1.3 s). It would cut first audio by about half a second, but may leave an audible pause after the first word. Decide by ear.

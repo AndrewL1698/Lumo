@@ -7,10 +7,11 @@ These are the only tests we write. No unit-test suites.
 | Who | Paths |
 |---|---|
 | Naren | `sentences.json` (STT test set), the ~50-sentence accuracy set |
-| Andrew | `stt-test/run.ts`, `stt-test/score.ts`, `stt-test/results.md`, `latency/summarize.ts` |
+| Andrew | `stt-test/run.ts`, `stt-test/score.ts`, `stt-test/results.md`, `latency/summarize.ts`, `latency/probe.ts` |
 | Karthik | correction-accuracy script (suggested: `accuracy/run.ts`) |
 
-Only `package.json`, `tsconfig.json` and `README.md` exist now.
+What exists: `accuracy/run.ts` + `accuracy/sentences.json` (50), `latency/summarize.ts`, `latency/probe.ts`,
+`stt-test/run.ts` + `stt-test/score.ts`.
 
 ## Data formats
 - `sentences.json`: array of `{ id, text, error_span, corrected_span, error_type }`. 15 error-planted sentences + 5 clean controls.
@@ -18,10 +19,12 @@ Only `package.json`, `tsconfig.json` and `README.md` exist now.
   - `error_type` uses the `SpokenErrorType` values from `@parrot/shared`: `conjugation`, `agreement`, `word_choice`, `word_order`, `missing_word`, `extra_word`.
   - Clean controls: `error_span`, `corrected_span`, `error_type` are `null`.
 - `latency/turns.jsonl`: one `TurnTimeline` per line, appended by `/api/tutor/metrics`. Gitignored.
+- `latency/probe-results/<ISO timestamp>.json`: one file per `latency/probe.ts` run (timings only, no audio).
 - Audio recordings go in any `audio/` folder under `eval/` (gitignored). Never commit teammates' voices.
 
 ## Commands
 - Run: `npx tsx eval/<path>.ts` from the repo root. Keys: `node --env-file=web/.env.local --import tsx eval/<path>.ts`.
+- Latency probe (mic-free, needs `npm run dev:web`): `npx tsx eval/latency/probe.ts [--n 10] [--url …] [--file …] [--no-tts]`.
 - Typecheck: `npx tsc -p eval`.
 
 ## Rules that bite here

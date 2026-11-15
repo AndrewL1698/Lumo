@@ -1,0 +1,482 @@
+[
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s01",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "El periodista explicó que la problema del tráfico no tiene solución fácil.",
+    "ms": 67
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s01",
+    "config": "rt:scribe_v3_live",
+    "transcript": "El periodista explicó que la problema del tráfico no tiene solución fácil.",
+    "ms": 62
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s01",
+    "config": "batch:scribe_v2",
+    "transcript": "El periodista explicó que la problema del tráfico no tiene solución fácil",
+    "ms": 257
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s02",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "Según el artículo, la crisis económica es muy complicado.",
+    "ms": 116
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s02",
+    "config": "rt:scribe_v3_live",
+    "transcript": "Según el artículo, la crisis económica es muy complicada.",
+    "ms": 62
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s02",
+    "config": "batch:scribe_v2",
+    "transcript": "Según el artículo, la crisis económica es muy complicado",
+    "ms": 269
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s03",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "Las noticias de esta semana fueron bastante tristes.",
+    "ms": 79
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s03",
+    "config": "rt:scribe_v3_live",
+    "transcript": "Las noticias de esta semana fueron bastante tristes.",
+    "ms": 59
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s03",
+    "config": "batch:scribe_v2",
+    "transcript": "Las noticias de esta semana fueron bastante tristes",
+    "ms": 230
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s04",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "La estatua nueva está de bronce, según el artículo que leí.",
+    "ms": 69
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s04",
+    "config": "rt:scribe_v3_live",
+    "transcript": "La estatua nueva está de bronce, según el artículo que leí.",
+    "ms": 68
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s04",
+    "config": "batch:scribe_v2",
+    "transcript": "La estatua nueva está de bronce según el artículo que leí",
+    "ms": 278
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s05",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "Mi jefe es en una reunión y no puede atender llamadas.",
+    "ms": 66
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s05",
+    "config": "rt:scribe_v3_live",
+    "transcript": "Mi jefe es en una reunión y no puede atender llamadas.",
+    "ms": 85
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s05",
+    "config": "batch:scribe_v2",
+    "transcript": "Mi jefe es en una reunión y no puede atender llamadas",
+    "ms": 255
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s06",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "Los estudiantes están nerviosos porque el examen está mañana.",
+    "ms": 67
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s06",
+    "config": "rt:scribe_v3_live",
+    "transcript": "Los estudiantes están nerviosos porque el examen está mañana.",
+    "ms": 72
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s06",
+    "config": "batch:scribe_v2",
+    "transcript": "Los estudiantes están nerviosos porque el examen está mañana",
+    "ms": 246
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s07",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "El gerente dice que ustedes necesita enviar el reporte antes del viernes.",
+    "ms": 58
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s07",
+    "config": "rt:scribe_v3_live",
+    "transcript": "El gerente dice que ustedes necesita enviar el reporte antes del viernes.",
+    "ms": 59
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s07",
+    "config": "batch:scribe_v2",
+    "transcript": "El gerente dice que ustedes necesita enviar el reporte antes del viernes",
+    "ms": 289
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s08",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "Ellos piensan viajar a Perú para visitar Machu Picchu en el verano.",
+    "ms": 68
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s08",
+    "config": "rt:scribe_v3_live",
+    "transcript": "Ellos piensa viajar a Perú para visitar Machu Picchu en el verano.",
+    "ms": 80
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s08",
+    "config": "batch:scribe_v2",
+    "transcript": "Ellos piensan viajar a Perú para visitar Machu Picchu en el verano",
+    "ms": 305
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s09",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "Cuando empecé la escuela primaria tuve seis años.",
+    "ms": 55
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s09",
+    "config": "rt:scribe_v3_live",
+    "transcript": "Cuando empecé la escuela primaria tuve 6 años.",
+    "ms": 70
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s09",
+    "config": "batch:scribe_v2",
+    "transcript": "Cuando empecé la escuela primaria tuve seis años",
+    "ms": 253
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s10",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "El viernes pasado nosotros veíamos esa película dos veces seguidas en el cine.",
+    "ms": 91
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s10",
+    "config": "rt:scribe_v3_live",
+    "transcript": "El viernes pasado nosotros veíamos esa película dos veces seguidas en el cine.",
+    "ms": 94
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s10",
+    "config": "batch:scribe_v2",
+    "transcript": "El viernes pasado nosotros veíamos esa película dos veces seguidas en el cine",
+    "ms": 298
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s11",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "Fueron las 11:00 p.m. cuando por fin llegamos a casa.",
+    "ms": 89
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s11",
+    "config": "rt:scribe_v3_live",
+    "transcript": "Fueron las 23:00 cuando por fin llegamos a casa.",
+    "ms": 86
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s11",
+    "config": "batch:scribe_v2",
+    "transcript": "Fueron las once de la noche cuando por fin llegamos a casa",
+    "ms": 278
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s12",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "Fuimos a playa el fin de semana pasado con toda la familia.",
+    "ms": 60
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s12",
+    "config": "rt:scribe_v3_live",
+    "transcript": "Fuimos a playa el fin de semana pasado con toda la familia.",
+    "ms": 85
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s12",
+    "config": "batch:scribe_v2",
+    "transcript": "Fuimos a playa el fin de semana pasado con toda la familia",
+    "ms": 257
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s13",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "El artículo mencionó que agua es esencial para la salud de los niños.",
+    "ms": 58
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s13",
+    "config": "rt:scribe_v3_live",
+    "transcript": "El artículo mencionó que agua es esencial para la salud de los niños.",
+    "ms": 99
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s13",
+    "config": "batch:scribe_v2",
+    "transcript": "El artículo mencionó que agua es esencial para la salud de los niños",
+    "ms": 281
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s14",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "Me gustan los deportes que mencionan en las noticias todos los días.",
+    "ms": 62
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s14",
+    "config": "rt:scribe_v3_live",
+    "transcript": "Me gustan los deportes que mencionan en las noticias todos los días.",
+    "ms": 68
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s14",
+    "config": "batch:scribe_v2",
+    "transcript": "Me gustan los deportes que mencionan en las noticias todos los días",
+    "ms": 321
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s15",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "A ella le gustan el libro que leyó para la clase de historia.",
+    "ms": 62
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s15",
+    "config": "rt:scribe_v3_live",
+    "transcript": "A ella le gustan el libro que leyó para la clase de historia.",
+    "ms": 62
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "s15",
+    "config": "batch:scribe_v2",
+    "transcript": "A ella le gustan el libro que leyó para la clase de historia",
+    "ms": 259
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "c01",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "El alcalde anunció un nuevo plan para mejorar el transporte público.",
+    "ms": 67
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "c01",
+    "config": "rt:scribe_v3_live",
+    "transcript": "El alcalde anunció un nuevo plan para mejorar el transporte público.",
+    "ms": 73
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "c01",
+    "config": "batch:scribe_v2",
+    "transcript": "El alcalde anunció un nuevo plan para mejorar el transporte público",
+    "ms": 245
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "c02",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "¿Muchos estudiantes universitarios buscan empleo antes de graduarse este año?",
+    "ms": 71
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "c02",
+    "config": "rt:scribe_v3_live",
+    "transcript": "Muchos estudiantes universitarios buscan empleo antes de graduarse este año.",
+    "ms": 84
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "c02",
+    "config": "batch:scribe_v2",
+    "transcript": "Muchos estudiantes universitarios buscan empleo antes de graduarse este año",
+    "ms": 446
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "c03",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "La empresa decidió abrir una nueva oficina en Bogotá el próximo mes.",
+    "ms": 58
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "c03",
+    "config": "rt:scribe_v3_live",
+    "transcript": "La empresa decidió abrir una nueva oficina en Bogotá el próximo mes.",
+    "ms": 66
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "c03",
+    "config": "batch:scribe_v2",
+    "transcript": "La empresa decidió abrir una nueva oficina en Bogotá el próximo mes",
+    "ms": 272
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "c04",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "Los científicos descubrieron una especie nueva de rana en la selva amazónica.",
+    "ms": 58
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "c04",
+    "config": "rt:scribe_v3_live",
+    "transcript": "Los científicos descubrieron una especie nueva de rana en la selva amazónica.",
+    "ms": 67
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "c04",
+    "config": "batch:scribe_v2",
+    "transcript": "Los científicos descubrieron una especie nueva de rana en la selva amazónica",
+    "ms": 285
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "c05",
+    "config": "rt:scribe_v2_realtime",
+    "transcript": "Ustedes deben revisar el informe antes de la reunión de mañana.",
+    "ms": 69
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "c05",
+    "config": "rt:scribe_v3_live",
+    "transcript": "Ustedes deben revisar el informe antes de la reunión de mañana.",
+    "ms": 62
+  },
+  {
+    "pass": "A",
+    "reader": "tts",
+    "id": "c05",
+    "config": "batch:scribe_v2",
+    "transcript": "Ustedes deben revisar el informe antes de la reunión de mañana",
+    "ms": 271
+  }
+]

@@ -8,7 +8,7 @@ import { SpokenErrorType } from "@parrot/shared";
 import type { Level, TargetWord } from "@parrot/shared";
 import { z } from "zod";
 import { CLAUDE_FALLBACKS, MODELS } from "./config";
-import { buildCorrectorPrompt } from "./tutor/prompts";
+import { buildCorrectorPrompt, RECAP_SYSTEM } from "./tutor/prompts";
 import type { ModelCorrection } from "./tutor/types";
 
 /** Thrown by either lane when the model returns stop_reason "refusal". */
@@ -57,22 +57,40 @@ export async function correctUtterance(args: {
 }): Promise<ModelCorrection> {
   const { signal, ...promptArgs } = args;
   const { system, user } = buildCorrectorPrompt(promptArgs);
-  const response = await getClaude().messages.parse(
-    {
-      model: MODELS.correction,
-      max_tokens: 1024,
-      thinking: { type: "disabled" },
-      output_config: { effort: "low", format: zodOutputFormat(ModelCorrectionSchema) },
-      system,
-      messages: [{ role: "user", content: user }],
-    },
-    { signal },
-  );
-  if (response.stop_reason === "refusal") throw new ClaudeRefusalError("corrector refused");
-  if (response.parsed_output === null) {
-    throw new Error(`corrector returned no parsable output (stop_reason: ${response.stop_reason})`);
+  const once = async (s: AbortSignal): Promise<ModelCorrection> => {
+    const response = await getClaude().messages.parse(
+      {
+        model: MODELS.correction,
+        max_tokens: 1024,
+        thinking: { type: "disabled" },
+        output_config: { effort: "low", format: zodOutputFormat(ModelCorrectionSchema) },
+        // The system prompt only varies by level (~900 tokens; Haiku 5.5 caches from 512), so cache it.
+        system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
+        messages: [{ role: "user", content: user }],
+      },
+      { signal: s },
+    );
+    if (response.stop_reason === "refusal") throw new ClaudeRefusalError("corrector refused");
+    if (response.parsed_output === null) {
+      throw new Error(`corrector returned no parsable output (stop_reason: ${response.stop_reason})`);
+    }
+    return response.parsed_output;
+  };
+
+  // HACK(latency): hedged request. Haiku's slow turns are random first-token and generation spikes, so two
+  // identical calls race and the first valid answer wins; the other is aborted. About $0.0002 extra per turn.
+  const racers = [new AbortController(), new AbortController()];
+  const stopAll = () => racers.forEach((c) => c.abort());
+  if (signal?.aborted) stopAll();
+  else signal?.addEventListener("abort", stopAll, { once: true });
+  try {
+    return await Promise.any(racers.map((c) => once(c.signal)));
+  } catch (err) {
+    throw err instanceof AggregateError ? err.errors[0] : err; // both failed: report the first reason
+  } finally {
+    stopAll();
+    signal?.removeEventListener("abort", stopAll);
   }
-  return response.parsed_output;
 }
 
 /** One tiny call so the structured-output schema is compiled before the first real turn. Never throws. */
@@ -121,7 +139,10 @@ export async function* streamTutorReply(args: {
     max_tokens: 300,
     thinking: { type: "between_tools" as const },
     output_config: { effort: "low" as const },
-    system: args.system,
+    // System prompt + <session> block is fixed for a session: cache it (Sonnet 5.5 caches from 512 tokens).
+    // No history marker: the last user turn carries the directive and is replayed as plain text next turn,
+    // so an entry written there would never be read.
+    system: [{ type: "text" as const, text: args.system, cache_control: { type: "ephemeral" as const } }],
     messages: args.messages,
   };
   const options = { signal: args.signal };
@@ -140,9 +161,29 @@ export async function* streamTutorReply(args: {
   if (final.stop_reason === "refusal") throw new ClaudeRefusalError("tutor refused");
 }
 
-// TODO(andrew): end-of-session recap prose.
-export async function writeRecap(_input: unknown): Promise<{ summary_en: string; tips: string[] }> {
-  throw new Error("not implemented");
+const RecapProseSchema = z.object({ summary_en: z.string(), tips: z.array(z.string()) });
+
+/** End-of-session recap prose: Haiku, thinking off, structured output. `user` is buildRecapUserMessage's output. */
+export async function writeRecap(
+  user: string,
+  signal?: AbortSignal,
+): Promise<{ summary_en: string; tips: string[] }> {
+  const response = await getClaude().messages.parse(
+    {
+      model: MODELS.correction,
+      max_tokens: 600,
+      thinking: { type: "disabled" },
+      output_config: { effort: "low", format: zodOutputFormat(RecapProseSchema) },
+      system: RECAP_SYSTEM,
+      messages: [{ role: "user", content: user }],
+    },
+    { signal },
+  );
+  if (response.stop_reason === "refusal") throw new ClaudeRefusalError("recap refused");
+  if (response.parsed_output === null) {
+    throw new Error(`recap returned no parsable output (stop_reason: ${response.stop_reason})`);
+  }
+  return response.parsed_output;
 }
 
 // ---- In-context translate (/api/translate) — owner: Karthik ----

@@ -139,7 +139,7 @@ Required: working prototype, clear use case + target user, basic documentation, 
 - [ ] CLAUDE.md Commands filled + `.env.example` (Andrew)
 - [x] AWS decision closed: not required (`decisions.md` D-001)
 - [ ] README skeleton committed (Shravan)
-- [ ] STT decision in `decisions.md` (Andrew)
+- [x] STT decision in `decisions.md` (Andrew; Pass B still to add)
 - [ ] `scripts/README.md` word-list method (Karthik)
 - [ ] `docs/demo-script.md` locked (Naren)
 - [ ] Screenshots in `docs/img/` (Shravan)
