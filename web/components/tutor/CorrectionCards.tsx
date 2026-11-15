@@ -15,21 +15,20 @@ function FlagLine({ result }: { result: CorrectionResult }) {
   if (result.flag === "english") {
     return (
       <div className="space-y-1">
-        <p className="text-lg font-semibold text-wait">That was English.</p>
+        <p className="text-lg font-semibold text-wait">That was in English. Try it in Spanish{result.spanish_version ? ":" : "."}</p>
         {result.spanish_version && (
-          <p className="text-lg text-ink">
-            In Spanish: <span lang="es" className="font-display font-semibold text-go">{result.spanish_version}</span>
+          <p lang="es" className="font-display text-lg font-semibold text-go">
+            {result.spanish_version}
           </p>
         )}
-        <p className="text-muted">Say it in Spanish to light up your words.</p>
       </div>
     );
   }
   if (result.flag === "unclear") {
-    return <p className="text-lg font-semibold text-wait">Luci couldn&apos;t quite follow that. Try saying it again?</p>;
+    return <p className="text-lg font-semibold text-wait">We couldn&apos;t make that out. Try again in Spanish.</p>;
   }
   if (result.flag === "off_topic") {
-    return <p className="text-lg font-semibold text-wait">Good Spanish, but a bit off topic.</p>;
+    return <p className="text-lg font-semibold text-wait">That didn&apos;t quite answer the question.</p>;
   }
   return null;
 }

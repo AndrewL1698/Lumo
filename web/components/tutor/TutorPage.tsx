@@ -210,7 +210,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
               <TranscriptView raw={t.rawText} result={t.correction} />
               {!t.correction && <p className="text-muted">Checking…</p>}
               {t.correctionFailed && <p className="text-muted">This answer could not be checked. It was still received.</p>}
-              <CorrectionCards raw={t.rawText} result={t.correction} />
+              {!t.correctionFailed && <CorrectionCards raw={t.rawText} result={t.correction} />}
             </div>
           </div>
         )}
