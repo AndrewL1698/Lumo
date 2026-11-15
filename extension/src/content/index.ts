@@ -10,6 +10,7 @@ import type { Candidate, ExtensionEvent } from "@parrot/shared";
 import { send } from "../messages";
 import { neverListReason, neverListPageReason } from "../neverlist";
 import { installHoverCard, type HoverTarget } from "./hovercard";
+import { showAmbience, hideAmbience } from "./ambience";
 import { watchSeen } from "./seen";
 import wordindex from "../wordindex.json";
 import wordbands from "../wordbands.json";
@@ -749,6 +750,24 @@ async function loadBudget(): Promise<void> {
   );
 }
 
+/**
+ * Keep the ambience layer in step with the on/off switch while the page stays open: the popup and
+ * the web app both write Settings through chrome.storage.local, so a change there is the signal.
+ * Only the layer reacts — swaps already on the page stay put, and new swaps need a reload.
+ */
+function watchLuciSwitch(): void {
+  try {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area !== "local" || (!changes.settings && !changes.autoGrow)) return;
+      void loadBudget()
+        .then(() => (pageCap === 0 ? hideAmbience() : showAmbience()))
+        .catch(() => {}); // worker gone: leave the layer as it is rather than flickering
+    });
+  } catch {
+    // Extension reloaded under an open tab: no listener, the page just keeps what it has.
+  }
+}
+
 async function main(): Promise<void> {
   console.log(`[parrot] running on ${location.hostname} · build ${BUILD}`);
 
@@ -761,10 +780,13 @@ async function main(): Promise<void> {
 
   articleKey = await computeArticleKey();
   await loadBudget();
+  // Registered before the early return, so switching Luci ON mid-page lights the layer too.
+  watchLuciSwitch();
   if (pageCap === 0) {
     console.log("[parrot] swaps set to 0 for this page");
     return;
   }
+  showAmbience();
   injectStyle();
   wireHoverCard();
   observeForSeen = watchSeen((lemma) => queue(newEvent("seen", { lemma })));
