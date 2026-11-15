@@ -18,7 +18,7 @@ function RealTutor() {
 function MockTutor() {
   return (
     <div className="night-page">
-      <p className="mx-auto mb-6 max-w-5xl text-sm text-muted">
+      <p className="mx-auto mb-3 max-w-5xl text-xs text-muted sm:mb-6 sm:text-sm">
         <strong className="mr-1 text-wait">Rehearsal.</strong>A scripted conversation. The mic is off and nothing is saved.
       </p>
       <TutorPage session={useMockTutorSession()} />
