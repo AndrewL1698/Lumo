@@ -84,7 +84,7 @@ export function PushToTalk({
         {BUTTON[status]}
       </button>
       {/* On phones the button label carries the state; the sentence would stack the bar into a tall block. */}
-      <p className={`sr-only font-mono text-sm sm:not-sr-only ${listening ? "text-accent" : "text-muted"}`} aria-live="polite">
+      <p className={`sr-only text-sm sm:not-sr-only ${listening ? "text-accent" : "text-muted"}`} aria-live="polite">
         {STATUS[status]}
       </p>
     </div>

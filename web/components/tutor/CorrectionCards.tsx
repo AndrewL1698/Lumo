@@ -15,13 +15,13 @@ export function CorrectionCards({ raw, result }: { raw: string; result?: Correct
   if (!result) return null;
   const errors = visibleErrors(raw, result);
   if (errors.length === 0) {
-    return <p className="font-mono text-sm uppercase tracking-wider text-go">No mistakes found</p>;
+    return <p className="text-lg font-semibold text-go">No mistakes. Nicely said.</p>;
   }
   return (
     <ul className="divide-y divide-line border-y border-line">
       {errors.map((e, i) => (
         <li key={i} className="grid gap-1 py-3 sm:grid-cols-[9rem_1fr] sm:gap-4">
-          <span className="font-mono text-xs uppercase tracking-wider text-muted sm:pt-1">{TYPE_LABEL[e.type] ?? e.type}</span>
+          <span className="text-sm text-muted sm:pt-1">{TYPE_LABEL[e.type] ?? e.type}</span>
           <div>
             <p className="text-lg">
               <s className="text-stop decoration-stop">{e.span}</s>

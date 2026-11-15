@@ -13,7 +13,7 @@ import { visibleErrors } from "./highlight";
 import { LuciFirefly, sparkToJar, type LuciReaction } from "./LuciFirefly";
 import { rememberLearned } from "@/components/vocab/justLearned";
 
-const speaker = "font-mono text-xs uppercase tracking-wider pt-2";
+const speaker = "font-display text-base font-semibold pt-2";
 
 // Pure view over a TutorSession. Pass useMockTutorSession() or Andrew's real useTutorSession().
 export function TutorPage({ session }: { session: TutorSession }) {
@@ -172,7 +172,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
                 <p className={`${speaker} text-muted`}>You</p>
                 <div className="space-y-3">
                   <TranscriptView raw={t.rawText} result={t.correction} />
-                  {!t.correction && <p className="font-mono text-sm text-muted">Checking</p>}
+                  {!t.correction && <p className="text-muted">Checking…</p>}
                   {t.correctionFailed && <p className="text-muted">This answer could not be checked. It was still received.</p>}
                   <CorrectionCards raw={t.rawText} result={t.correction} />
                 </div>
@@ -200,12 +200,11 @@ export function TutorPage({ session }: { session: TutorSession }) {
                   <p className="relative text-xl leading-snug text-ink sm:text-2xl">{t.tutorText}</p>
                   {t.tutorEnglish &&
                     (turns.slice(i + 1).some((x) => x.rawText) ? (
-                      <p className="mt-3 text-lg text-muted">
-                        <span className="mr-2 font-mono text-xs uppercase tracking-wider">English</span>
+                      <p className="mt-3 text-lg italic text-muted" lang="en">
                         {t.tutorEnglish}
                       </p>
                     ) : (
-                      <p className="mt-3 font-mono text-xs uppercase tracking-wider text-muted">English shows after you answer</p>
+                      <p className="mt-3 text-sm text-muted">The English shows after you answer.</p>
                     ))}
                 </div>
               </div>

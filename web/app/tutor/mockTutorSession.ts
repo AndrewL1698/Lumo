@@ -75,7 +75,6 @@ export function useMockTutorSession(): TutorSession {
     setStatus("speaking");
     setTurns([{ id: "opener", rawText: "", tutorEnglish: OPENER_EN }]);
     streamCaption("opener", OPENER);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const pressTalk = useCallback(() => {
@@ -83,7 +82,6 @@ export function useMockTutorSession(): TutorSession {
     setStatus("listening");
     const words = SCRIPT[turnNo.current % SCRIPT.length].raw.split(" ");
     words.forEach((_, i) => later(() => setPartial(words.slice(0, i + 1).join(" ")), PARTIAL_MS * (i + 1)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const releaseTalk = useCallback(() => {
@@ -99,7 +97,6 @@ export function useMockTutorSession(): TutorSession {
       setStatus("speaking");
       streamCaption(id, replyTextFixture);
     }, CHECK_MS);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const sendText = useCallback((_text: string) => {

@@ -1,7 +1,7 @@
 import type { Recap } from "@parrot/shared";
 import { btn } from "@/components/ui/PageHeader";
 
-const label = "font-mono text-xs uppercase tracking-wider text-muted";
+const label = "font-display text-xl font-semibold text-ink";
 
 export function RecapPanel({ recap, onClose }: { recap: Recap; onClose?: () => void }) {
   return (
@@ -23,7 +23,7 @@ export function RecapPanel({ recap, onClose }: { recap: Recap; onClose?: () => v
                   <s className="text-stop decoration-stop">{e.span}</s>
                   <span className="mx-2 text-muted">→</span>
                   <span className="font-bold text-go">{e.correction}</span>
-                  {e.count > 1 && <span className="ml-3 font-mono text-sm text-muted">{e.count} times</span>}
+                  {e.count > 1 && <span className="ml-3 text-sm text-muted">{e.count} times</span>}
                 </p>
                 <p className="mt-1 text-muted">{e.explanation_en}</p>
               </li>

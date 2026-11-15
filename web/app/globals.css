@@ -71,6 +71,42 @@ a {
   font-variant-numeric: tabular-nums;
 }
 
+/* Night theme: the tutor page (".night-page") turns the whole page, nav and footer included, to deep navy
+   with warm glow accents. Contrast on #0f1a2e: ink 15:1, muted 8:1, go/stop/accent all above 7:1. */
+body:has(.night-page) {
+  --color-bg: #0f1a2e;
+  --color-panel: #142139;
+  --color-ink: #eef1f6;
+  --color-muted: #aab5c7;
+  --color-line: #263552;
+  --color-sun: #1a2944;
+  --color-sun-line: #6f5c22;
+  --color-accent: #f5c94a;
+  --color-go: #6fd497;
+  --color-wait: #f5c94a;
+  --color-stop: #ff8a80;
+  color-scheme: dark;
+}
+/* the tutor's words to light up glow softly at night */
+body:has(.night-page) .glow-learning {
+  box-shadow: 0 0 14px 2px rgb(255 210 58 / 0.18);
+}
+body:has(.night-page) .glow-known {
+  box-shadow: 0 0 18px 4px rgb(255 210 58 / 0.4);
+}
+/* Luci's dark body gets a faint rim so it reads against the night */
+body:has(.night-page) .luci-body {
+  stroke: #46597a;
+  stroke-width: 1.5;
+}
+
+/* Text on the yellow glow is always dark, by day and by night. */
+.bg-glow,
+.glow-known,
+.jar-lit {
+  color: #1a2028 !important;
+}
+
 /* Glow = word state. Flat colour behind the word, never a shadow. */
 .glow-seen {
   background: color-mix(in srgb, var(--color-glow) 18%, transparent);
@@ -112,8 +148,8 @@ ruby.fix {
   ruby-align: center;
 }
 ruby.fix rt {
-  font-family: var(--font-mono);
-  font-size: 0.7em;
+  font-family: var(--font-display);
+  font-size: 0.72em;
   font-weight: 600;
   color: var(--color-go);
   letter-spacing: 0;
