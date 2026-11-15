@@ -81,7 +81,7 @@ export default function Home() {
         <ol className="mt-8 space-y-8">
           {STEPS.map((s) => (
             <li key={s.title} className="flex items-start gap-5">
-              <span className="jar-legend mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[#1d2b44]" data-level={s.level} aria-hidden="true">
+              <span className="jar-legend mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-full bg-jar" data-level={s.level} aria-hidden="true">
                 <span className="jar-light" />
               </span>
               <div>

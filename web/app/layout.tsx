@@ -17,9 +17,20 @@ export const metadata: Metadata = {
   description: "Read it. Say it. Light it up. Your morning reading becomes tonight's Spanish conversation.",
 };
 
+// Runs before the first paint so a saved light theme never flashes dark (components/ThemeToggle.tsx).
+const THEME_SCRIPT = `try{if(localStorage.getItem("luci-theme")==="light")document.documentElement.dataset.theme="light"}catch(e){}`;
+
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${atkinson.variable} ${bricolage.variable} ${plexMono.variable}`}>
+    <html
+      lang="en"
+      data-theme="dark"
+      suppressHydrationWarning // the theme script may change data-theme before React hydrates
+      className={`${atkinson.variable} ${bricolage.variable} ${plexMono.variable}`}
+    >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="relative flex min-h-screen flex-col">
         <NightSky>
           <SkyFireflies />

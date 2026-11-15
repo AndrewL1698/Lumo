@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LuciMark } from "@/components/LuciMark";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const LINKS = [
   { href: "/tutor", label: "Tutor" },
@@ -37,6 +38,7 @@ export function Nav() {
             );
           })}
         </ul>
+        <ThemeToggle />
       </nav>
     </header>
   );

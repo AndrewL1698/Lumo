@@ -31,7 +31,7 @@ export function VocabLists({ data, fresh = new Set<string>() }: { data: VocabRes
         return (
           <section key={key}>
             <h2 className="flex items-center gap-3 text-xl font-extrabold">
-              <span className="jar-legend grid h-6 w-6 place-items-center rounded-full bg-[#1d2b44]" data-level={key} aria-hidden="true">
+              <span className="jar-legend grid h-6 w-6 place-items-center rounded-full bg-jar" data-level={key} aria-hidden="true">
                 <span className="jar-light" />
               </span>
               {title}

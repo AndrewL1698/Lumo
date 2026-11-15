@@ -15,7 +15,8 @@ function rng(seed: number) {
 // Grass blades as tapered brush strokes (filled curves), seeded so server and client draw the same field.
 const GRASS = (() => {
   const r = rng(7);
-  const tones = ["#33453b", "#3e5246", "#4a5e51", "#566b5d", "#3a4c41", "#5f7466"];
+  // six grass tones as CSS variables (globals.css), so light mode can repaint the meadow
+  const tones = [0, 1, 2, 3, 4, 5].map((i) => `var(--grass-${i})`);
   const blades: { d: string; fill: string; o: number }[] = [];
   for (let i = 0; i < 260; i++) {
     const x = r() * 1460 - 10;
@@ -55,7 +56,7 @@ export function Grass() {
       preserveAspectRatio="xMidYMax slice"
     >
       {GRASS.map((b, i) => (
-        <path key={i} d={b.d} fill={b.fill} fillOpacity={b.o} />
+        <path key={i} d={b.d} style={{ fill: b.fill }} fillOpacity={b.o} />
       ))}
     </svg>
   );
