@@ -87,6 +87,7 @@ function buildCard(): HTMLElement {
 
 function render(el: HTMLElement, t: HoverTarget, handlers: Handlers): void {
   el.textContent = "";
+  el.setAttribute("aria-label", `${t.spanish}: ${t.english}`); // what a screen reader announces for the card
 
   const es = document.createElement("div");
   Object.assign(es.style, { fontSize: "17px", fontWeight: "600", display: "flex", gap: "8px", alignItems: "center" });
@@ -123,6 +124,12 @@ function render(el: HTMLElement, t: HoverTarget, handlers: Handlers): void {
   speak.addEventListener("mouseleave", () => {
     if (!speak.disabled) speakGlow(false);
   });
+  // Keyboard focus gets a visible amber ring (the hover glow alone is mouse-only).
+  speak.addEventListener("focus", () => {
+    if (speak.matches(":focus-visible")) speak.style.outline = `2px solid ${C.accent}`;
+  });
+  speak.addEventListener("blur", () => (speak.style.outline = ""));
+  speak.style.outlineOffset = "2px";
   speak.addEventListener("click", () => {
     if (speak.disabled) return;
     speak.disabled = true;
@@ -208,6 +215,7 @@ function render(el: HTMLElement, t: HoverTarget, handlers: Handlers): void {
 /** Card for a whole Spanish sentence or paragraph: just the English it replaced. No audio, no verdicts. */
 function renderBlock(el: HTMLElement, t: HoverTarget): void {
   el.textContent = "";
+  el.setAttribute("aria-label", "English translation");
   ++renderId; // a pending word-card close must not hide this card
   const label = document.createElement("div");
   label.textContent = "English";
