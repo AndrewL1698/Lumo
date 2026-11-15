@@ -46,6 +46,7 @@ type Setters = {
   recap: (r: Recap | null) => void;
   notice: (n: string | null) => void;
   lastTimeline: (t: TurnTimeline | null) => void;
+  plan: (p: UseTutorSession["plan"]) => void;
 };
 
 /** One tutor reply (the opener or the answer to one utterance). */
@@ -510,6 +511,7 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
         sessionId = context.sessionId;
         level = context.level;
         set.targetWords(context.targetWords);
+        set.plan(context.plan ?? null);
         if (micOk) recorder = rec;
         else {
           rec.dispose();
@@ -642,6 +644,7 @@ export function useTutorSession(opts?: { forceBatch?: boolean }): UseTutorSessio
   const [recap, setRecap] = useState<Recap | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [lastTimeline, setLastTimeline] = useState<TurnTimeline | null>(null);
+  const [plan, setPlan] = useState<UseTutorSession["plan"]>(null);
 
   const forceBatchRef = useRef(false);
   useEffect(() => {
@@ -659,6 +662,7 @@ export function useTutorSession(opts?: { forceBatch?: boolean }): UseTutorSessio
         recap: setRecap,
         notice: setNotice,
         lastTimeline: setLastTimeline,
+        plan: setPlan,
       },
       () => forceBatchRef.current,
     ),
@@ -676,6 +680,7 @@ export function useTutorSession(opts?: { forceBatch?: boolean }): UseTutorSessio
     recap,
     notice,
     lastTimeline,
+    plan,
     start: ctl.start,
     pressTalk: ctl.pressTalk,
     releaseTalk: ctl.releaseTalk,

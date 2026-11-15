@@ -53,6 +53,14 @@ export const TargetWord = z.object({
 });
 export type TargetWord = z.infer<typeof TargetWord>;
 
+/** J2 "Today's lesson" card: what the tutor planned and why, built in code from the learner data (no model call). English only. */
+export const TutorPlan = z.object({
+  article: z.object({ title: z.string(), why: z.string() }).nullable(), // e.g. why: "You read it today and hovered 3 words in it"
+  words: z.array(z.object({ lemma: z.string(), english: z.string(), reason: z.string() })), // same order as targetWords
+  watchError: z.string().nullable(), // e.g. "la problema → el problema (agreement, 3× last session)"
+});
+export type TutorPlan = z.infer<typeof TutorPlan>;
+
 /** GET /api/tutor/context (architecture §4 plus sessionId and targetWords). */
 export const TutorContext = z.object({
   sessionId: z.string(),
@@ -62,6 +70,7 @@ export const TutorContext = z.object({
   level: Level,
   topErrors: z.array(z.string()),
   targetWords: z.array(TargetWord).max(5),
+  plan: TutorPlan.optional(), // absent = no lesson card (e.g. building the plan failed)
 });
 export type TutorContext = z.infer<typeof TutorContext>;
 

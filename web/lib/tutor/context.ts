@@ -3,7 +3,7 @@
  * Pure except randomUUID; no db/learner imports (only the type) so checks run offline.
  */
 import { randomUUID } from "node:crypto";
-import { TutorContext, tutorContextFixture } from "@parrot/shared";
+import { TutorContext, TutorPlan, tutorContextFixture } from "@parrot/shared";
 import type { TargetWord } from "@parrot/shared";
 import type { TutorContextData } from "../learner/queries";
 
@@ -37,8 +37,8 @@ export function pickTargetWords(data: TutorContextData): TargetWord[] {
   return out;
 }
 
-export function buildTutorContext(data: TutorContextData, sessionId: string): TutorContext {
-  return TutorContext.parse({
+export function buildTutorContext(data: TutorContextData, sessionId: string, now: Date = new Date()): TutorContext {
+  const context = TutorContext.parse({
     sessionId,
     hoveredWords: data.hoveredWords.map((h) => (h.sentence === undefined ? { lemma: h.lemma } : { lemma: h.lemma, sentence: h.sentence })),
     dueWords: data.dueWords.map((d) => d.lemma),
@@ -47,6 +47,103 @@ export function buildTutorContext(data: TutorContextData, sessionId: string): Tu
     topErrors: data.topErrors,
     targetWords: pickTargetWords(data),
   });
+  // J2 lesson card is optional: any problem building it just leaves `plan` off.
+  try {
+    const plan = TutorPlan.safeParse(buildPlan(data, context.targetWords, now));
+    if (plan.success) context.plan = plan.data;
+  } catch {
+    // no plan
+  }
+  return context;
+}
+
+// ---------- J2 "Today's lesson" plan: reasons from data we already hold, no model call ----------
+
+/** Article = newest of today's titles the learner hovered words in (else the newest); each target's reason from its hover/due row; first recurring error. */
+export function buildPlan(data: TutorContextData, targets: TargetWord[], now: Date): TutorPlan {
+  const title = data.articleTitles.find((t) => data.hoveredWords.some((h) => h.articleTitle === t)) ?? data.articleTitles[0];
+  let article: TutorPlan["article"] = null;
+  if (typeof title === "string" && title.trim()) {
+    const n = data.hoveredWords.filter((h) => h.articleTitle === title).length;
+    article = { title, why: n ? `You read it today and hovered ${n} word${n === 1 ? "" : "s"} in it` : "You read it today" };
+  }
+
+  const find = <T extends { lemma: string }>(rows: T[], lemma: string) => rows.find((r) => r.lemma.toLowerCase() === lemma.toLowerCase());
+  const words = targets.map((t) => {
+    let reason: string | null = null;
+    if (t.source === "hovered") {
+      const h = find(data.hoveredWords, t.lemma);
+      if (h) reason = hoverReason(h, now);
+    } else {
+      const d = find(data.dueWords, t.lemma);
+      if (d) reason = dueReason(d.dueAt, now);
+    }
+    return { lemma: t.lemma, english: t.english, reason: reason ?? (t.source === "due" ? "Due for review" : "Hovered while reading") };
+  });
+
+  const first = data.topErrors[0];
+  return { article, words, watchError: typeof first === "string" && first.trim() ? formatError(first) : null };
+}
+
+function hoverReason(h: TutorContextData["hoveredWords"][number], now: Date): string {
+  const ago = timeAgo(h.hoveredAt, now);
+  let s = ago ? `Hovered ${ago}` : "Hovered while reading";
+  if (h.outcome === "didnt_know") s += ' (you clicked "Didn\'t know")';
+  else if (h.outcome === "knew_it") s += ' (you clicked "Knew it")';
+  if (typeof h.sentence === "string" && h.sentence.trim()) s += ` in: "${shortSentence(h.sentence, h.lemma)}"`;
+  else if (typeof h.articleTitle === "string" && h.articleTitle.trim()) s += ` in "${h.articleTitle}"`;
+  return s;
+}
+
+function dueReason(dueAt: string, now: Date): string {
+  const t = Date.parse(dueAt);
+  const days = Number.isFinite(t) ? Math.floor((now.getTime() - t) / 86_400_000) : 0;
+  return days >= 1 ? `Due for review (${days} day${days === 1 ? "" : "s"} overdue)` : "Due for review";
+}
+
+/** "just now", "5m ago", "2h ago", "3d ago"; null for a missing or unparseable time. */
+function timeAgo(iso: string, now: Date): string | null {
+  const t = Date.parse(iso);
+  if (!Number.isFinite(t)) return null;
+  const min = Math.floor((now.getTime() - t) / 60_000);
+  if (min < 1) return "just now";
+  if (min < 60) return `${min}m ago`;
+  if (min < 24 * 60) return `${Math.floor(min / 60)}h ago`;
+  return `${Math.floor(min / (24 * 60))}d ago`;
+}
+
+const SENTENCE_MAX = 60;
+
+/** Whitespace-collapsed sentence, cut to ~60 chars at word boundaries around the word when it's long. */
+export function shortSentence(sentence: string, lemma: string): string {
+  const s = sentence.replace(/\s+/g, " ").trim();
+  if (s.length <= SENTENCE_MAX) return s;
+  const lower = s.toLowerCase();
+  const l = lemma.toLowerCase();
+  let at = lower.indexOf(l);
+  if (at < 0 && l.length > 4) at = lower.indexOf(l.slice(0, -2)); // verb stems: aprovechar → aprovech(an)
+  let start = Math.max(0, Math.min(at - 20, s.length - SENTENCE_MAX)); // ~20 chars before the word, window kept full
+  if (start > 0) {
+    const sp = s.indexOf(" ", start);
+    if (sp >= 0 && sp < at) start = sp + 1; // don't start mid-word
+  }
+  let end = Math.min(s.length, start + SENTENCE_MAX);
+  if (end < s.length) {
+    const sp = s.lastIndexOf(" ", end);
+    if (sp > start + SENTENCE_MAX / 2) end = sp;
+  }
+  const body = s.slice(start, end).trim();
+  const pre = start > 0 && !body.startsWith("…") ? "…" : "";
+  const post = end < s.length && !body.endsWith("…") ? "…" : "";
+  return pre + body + post;
+}
+
+/** `agreement: "la problema" → "el problema" (3×)` → `la problema → el problema (agreement, 3× last session)`; else as is. */
+function formatError(e: string): string {
+  const m = /^(\w+): "(.*)" → "(.*)" \((\d+)×\)$/.exec(e.trim());
+  if (!m) return e.trim();
+  const [, type, span, correction, count] = m;
+  return `${span} → ${correction} (${type!.replace(/_/g, " ")}, ${count}× last session)`;
 }
 
 export function newSessionId(): string {
