@@ -1,7 +1,7 @@
 import { ApiError, EventsResponse, ExtensionEvent } from "@parrot/shared";
 import { checkExtensionToken } from "@/lib/auth";
 import { DEMO_USER_ID } from "@/lib/config";
-import { getDb } from "@/lib/db";
+import { errText, getDb } from "@/lib/db";
 import { json, parseBody, preflight, withCors } from "@/lib/http";
 import { applyEvents } from "@/lib/learner/record";
 import { isNeverListed } from "@/lib/neverlist";
@@ -96,7 +96,7 @@ export async function POST(req: Request) {
     )
     .select("id");
   if (error) {
-    console.error("[api/events] insert failed", error);
+    console.error("[api/events] insert failed:", errText(error));
     return withCors(json({ error: "could not store events" }, ApiError, { status: 500 }));
   }
 
@@ -120,7 +120,7 @@ export async function POST(req: Request) {
     await applyEvents(userId, fresh);
   } catch (err) {
     // TODO(demo): the events are stored but not applied; a retry now counts them as duplicates.
-    console.error("[api/events] learner update failed", err);
+    console.error("[api/events] learner update failed:", errText(err));
   }
 
   const counts = fresh.reduce<Record<string, number>>((c, e) => ((c[e.type] = (c[e.type] ?? 0) + 1), c), {});

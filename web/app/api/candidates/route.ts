@@ -2,7 +2,7 @@ import { CandidatesResponse } from "@parrot/shared";
 import { checkExtensionToken } from "@/lib/auth";
 import { getSettings, weakWords } from "@/lib/learner/queries";
 import { DEMO_USER_ID } from "@/lib/config";
-import { getDb } from "@/lib/db";
+import { errText, getDb } from "@/lib/db";
 import { json, preflight, withCors } from "@/lib/http";
 import { levelToBand, rowToUserWord, USER_WORD_COLUMNS } from "@/lib/learner/rows";
 import { toCandidate, type Candidate } from "@/lib/learner/score";
@@ -34,7 +34,7 @@ export async function GET(req: Request) {
     });
   } catch (err) {
     // Degrade to "no candidates": the extension simply makes no swaps.
-    console.error("[api/candidates] failed", err);
+    console.error("[api/candidates] failed:", errText(err));
   }
   return withCors(json({ candidates, generatedAt: now.getTime() }, CandidatesResponse));
 }

@@ -1,6 +1,7 @@
 import { ApiError, Settings, settingsFixture } from "@parrot/shared";
 import { checkExtensionToken } from "@/lib/auth";
 import { DEMO_USER_ID } from "@/lib/config";
+import { errText } from "@/lib/db";
 import { json, parseBody, preflight, withCors } from "@/lib/http";
 import { getSettings, putSettings } from "@/lib/learner/queries";
 import { isNeverListed } from "@/lib/neverlist";
@@ -17,7 +18,7 @@ export async function GET(req: Request) {
     return withCors(json(await getSettings(DEMO_USER_ID), Settings));
   } catch (err) {
     // Degrade: the web app and extension keep working on defaults.
-    console.error("[api/settings] read failed", err);
+    console.error("[api/settings] read failed:", errText(err));
     return withCors(json(settingsFixture, Settings));
   }
 }
@@ -35,7 +36,7 @@ export async function PUT(req: Request) {
   try {
     await putSettings(DEMO_USER_ID, body);
   } catch (err) {
-    console.error("[api/settings] write failed", err);
+    console.error("[api/settings] write failed:", errText(err));
     return withCors(json({ error: "could not save settings" }, ApiError, { status: 500 }));
   }
   return withCors(json(body, Settings));

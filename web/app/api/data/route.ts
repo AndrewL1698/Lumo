@@ -8,7 +8,7 @@ import {
   type StoredEvent,
 } from "@parrot/shared";
 import { DEMO_USER_ID } from "@/lib/config";
-import { getDb } from "@/lib/db";
+import { errText, getDb } from "@/lib/db";
 import { json, parseBody } from "@/lib/http";
 import { rowToUserWord, USER_WORD_COLUMNS } from "@/lib/learner/rows";
 import { NextResponse } from "next/server";
@@ -47,7 +47,7 @@ export async function GET() {
     }));
     return json({ words: words.data.map(rowToUserWord), events: storedEvents, articles: storedArticles }, DataResponse);
   } catch (err) {
-    console.error("[api/data] read failed", err);
+    console.error("[api/data] read failed:", errText(err));
     return json({ error: "could not load your data" }, ApiError, { status: 500 });
   }
 }
@@ -86,7 +86,7 @@ export async function DELETE(req: Request) {
     return json({ deleted }, DataDeleteResponse);
   } catch (err) {
     // Privacy page: never pretend a delete worked.
-    console.error("[api/data] delete failed", err);
+    console.error("[api/data] delete failed:", errText(err));
     return json({ error: "could not delete" }, ApiError, { status: 500 });
   }
 }
