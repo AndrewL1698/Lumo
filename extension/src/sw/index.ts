@@ -7,6 +7,7 @@ import {
   CandidatesResponse,
   EventsResponse,
   PairResponse,
+  READING_SITES,
   SentenceTranslateResponse,
   Settings,
   TranslateResponse,
@@ -155,6 +156,7 @@ async function enableSite(rawOrigin: string): Promise<ResponseMap["ENABLE_SITE"]
   if (!enabledOrigins.includes(origin)) {
     await chrome.storage.local.set({ enabledOrigins: [...enabledOrigins, origin] });
   }
+  await syncDotRules(); // this site is on now, so its dot goes away
   return { ok: true };
 }
 
@@ -213,6 +215,85 @@ chrome.tabs.onUpdated.addListener((tabId, info) => {
   // without the "tabs" permission (only url/title/favIconUrl are withheld).
   if (info.status === "loading") void endTrial(tabId);
 });
+
+// ---------------------------------------------------------------- new-site dot (D-017)
+
+/**
+ * A red dot on the toolbar icon when you are on a site Luci reads well but is not turned on for.
+ *
+ * Chrome does the matching, not us: declarativeContent rules are evaluated inside the browser, so
+ * the worker never learns which tab is on which URL and we never need the "tabs" permission
+ * (privacy non-negotiable 4). "declarativeContent" adds no install warning.
+ */
+const DOT_COLOR = "#e5484d";
+/** Dot diameter as a share of the icon, so it reads at 16px without burying the firefly. */
+const DOT_SHARE = 0.35;
+
+/** The toolbar icon with a dot burned into the bottom-right corner. */
+async function dottedIcon(size: number): Promise<ImageData> {
+  const res = await fetch(chrome.runtime.getURL(`icons/icon${size}.png`));
+  const bitmap = await createImageBitmap(await res.blob());
+  const canvas = new OffscreenCanvas(size, size);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("no 2d context");
+  ctx.drawImage(bitmap, 0, 0, size, size);
+
+  const r = Math.max(2.5, (size * DOT_SHARE) / 2);
+  const cx = size - r - 0.5;
+  const cy = size - r - 0.5;
+  // Thin white ring first, so the dot still reads against a dark toolbar.
+  ctx.beginPath();
+  ctx.arc(cx, cy, r + Math.max(0.75, size * 0.05), 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = DOT_COLOR;
+  ctx.fill();
+
+  return ctx.getImageData(0, 0, size, size);
+}
+
+/**
+ * Rebuild the rules: one matcher per recommended site the learner has NOT enabled yet.
+ * Call after anything that changes enabledOrigins, so the dot clears as soon as a site is on.
+ */
+async function syncDotRules(): Promise<void> {
+  // Never let a cosmetic feature take the worker down.
+  if (!chrome.declarativeContent) return;
+  try {
+    const { enabledOrigins = [] } = await readState();
+    const pending = READING_SITES.filter((s) => !enabledOrigins.includes(s.origin));
+
+    const rules = pending.length
+      ? [
+          {
+            conditions: pending.map(
+              (s) =>
+                new chrome.declarativeContent.PageStateMatcher({
+                  pageUrl: { schemes: ["https"], hostEquals: new URL(s.origin).host },
+                }),
+            ),
+            actions: [
+              new chrome.declarativeContent.SetIcon({
+                imageData: { 16: await dottedIcon(16), 32: await dottedIcon(32) },
+              }),
+            ],
+          },
+        ]
+      : [];
+
+    await new Promise<void>((resolve) => {
+      chrome.declarativeContent.onPageChanged.removeRules(undefined, () => {
+        if (!rules.length) return resolve();
+        chrome.declarativeContent.onPageChanged.addRules(rules, () => resolve());
+      });
+    });
+    console.log(`[parrot] new-site dot armed for ${pending.length} site(s)`);
+  } catch (err) {
+    console.warn("[parrot] could not set the new-site dot:", err);
+  }
+}
 
 let candidatesCache: { at: number; data: CandidatesResponse } | null = null;
 
@@ -548,7 +629,11 @@ chrome.commands.onCommand.addListener((command) => {
   }
 });
 
-chrome.runtime.onStartup.addListener(() => void flush()); // anything stranded by a restart
+chrome.runtime.onStartup.addListener(() => {
+  void flush(); // anything stranded by a restart
+  void syncDotRules(); // declarativeContent rules do not survive a browser restart
+});
 chrome.runtime.onInstalled.addListener(() => {
   console.log("[parrot] service worker installed");
+  void syncDotRules();
 });

@@ -12,6 +12,10 @@
       #immersion .row { margin: 6px 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
       #immersion button.active { font-weight: bold; outline: 2px solid #b8860b; }
       #try { display: block; width: 100%; padding: 7px; margin-bottom: 6px; font: inherit; font-weight: 600; cursor: pointer; }
+      /* New-site nudge (D-017): shown instead of the plain Enable button on a recommended site. */
+      #nudge { border: 1px solid #e3d9b0; background: #fdf8e6; border-radius: 10px; padding: 10px; margin-bottom: 6px; }
+      #nudge p { margin: 0 0 8px; }
+      #turn-on { width: 100%; padding: 7px; font: inherit; font-weight: 600; cursor: pointer; }
     </style>
   </head>
   <body>
@@ -22,6 +26,10 @@
     <section>
       <p>site: <span id="origin">…</span></p>
       <button id="try" disabled>Try on this page</button>
+      <div id="nudge" hidden>
+        <p id="nudge-text"></p>
+        <button id="turn-on">Turn on</button>
+      </div>
       <button id="enable" disabled>Always on for this site</button>
       <p id="enable-result"></p>
     </section>
