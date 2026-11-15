@@ -58,4 +58,6 @@ export const TUTOR = {
   recordTimeoutMs: 1500,
   /** /api/tutor/placement: the level-check assessment; on timeout the learner keeps their own pick (D-020). */
   placementTimeoutMs: 8000,
+  /** D-022 course: unit words as targets, a lesson block in the prompt, lesson memory at session end. false = exactly today's tutor. */
+  curriculum: true,
 } as const;

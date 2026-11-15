@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LessonMemory } from "./progress";
 import { Level, WordState } from "./words";
 
 /** Error types graded in spoken mode. Accent/punctuation/spelling are never graded from speech (specs §7.2). */
@@ -49,15 +50,30 @@ export const TargetWord = z.object({
   lemma: z.string(),
   article: z.string().optional(),
   english: z.string(),
-  source: z.enum(["hovered", "due"]),
+  source: z.enum(["hovered", "due", "lesson"]), // "lesson" = a word from today's course unit (D-022)
 });
 export type TargetWord = z.infer<typeof TargetWord>;
+
+/** D-022: today's course unit as the tutor sees it. Absent = no course (flag off, DB down, level check). */
+export const LessonContext = z.object({
+  unitId: z.string(),
+  title: z.string(),
+  canDo: z.string(),
+  concept: z.string(), // concept name
+  teach: z.string(), // the one-sentence rule plus an example
+  position: z.string(), // "Intermediate · Unit 1 of 4"
+  prompts: z.array(z.string()),
+  lastTime: z.string().optional(), // summary of the last session on this track
+  nextStep: z.string().optional(),
+});
+export type LessonContext = z.infer<typeof LessonContext>;
 
 /** J2 "Today's lesson" card: what the tutor planned and why, built in code from the learner data (no model call). English only. */
 export const TutorPlan = z.object({
   article: z.object({ title: z.string(), why: z.string() }).nullable(), // e.g. why: "You read it today and hovered 3 words in it"
   words: z.array(z.object({ lemma: z.string(), english: z.string(), reason: z.string() })), // same order as targetWords
   watchError: z.string().nullable(), // e.g. "la problema → el problema (agreement, 3× last session)"
+  unit: z.object({ title: z.string(), canDo: z.string(), position: z.string() }).optional(), // D-022
 });
 export type TutorPlan = z.infer<typeof TutorPlan>;
 
@@ -71,6 +87,7 @@ export const TutorContext = z.object({
   topErrors: z.array(z.string()),
   targetWords: z.array(TargetWord).max(5),
   plan: TutorPlan.optional(), // absent = no lesson card (e.g. building the plan failed)
+  lesson: LessonContext.optional(), // D-022
 });
 export type TutorContext = z.infer<typeof TutorContext>;
 
@@ -148,6 +165,7 @@ export const Recap = z.object({
   reviewTomorrow: z.array(z.string()),
   summary_en: z.string(),
   tips: z.array(z.string()), // one-line rule + example per top error; [] if the model call fails
+  lesson: LessonMemory.optional(), // D-022: which unit this session worked on, checkpoint, next step
 });
 export type Recap = z.infer<typeof Recap>;
 

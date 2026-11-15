@@ -1,7 +1,11 @@
 import { EndRequest, Recap, recapFixture } from "@parrot/shared";
 import { NextResponse } from "next/server";
 import { ClaudeRefusalError, writeRecap } from "@/lib/claude";
-import { isTutorMock } from "@/lib/config";
+import { DEMO_USER_ID, isTutorMock, TUTOR } from "@/lib/config";
+import { lessonMemoryFor, unitById } from "@/lib/curriculum/checkpoint";
+import { errText } from "@/lib/db";
+import { saveSessionRecap } from "@/lib/learner/queries";
+import type { SessionState } from "@/lib/tutor/types";
 import { json, parseBody } from "@/lib/http";
 import { buildRecapLists, buildRecapUserMessage } from "@/lib/tutor/recap";
 import { findSession } from "@/lib/tutor/session";
@@ -17,6 +21,18 @@ function reason(err: unknown, timedOut: boolean): string {
   if (err instanceof ClaudeRefusalError) return "refusal";
   const msg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
   return msg.split("\n")[0].slice(0, 200);
+}
+
+/**
+ * D-022: for a session that taught a course unit, add the lesson memory and keep the recap for next time.
+ * Never throws and never delays the response for long: any failure just returns the plain recap.
+ */
+async function withLesson(session: SessionState, recap: Recap): Promise<Recap> {
+  const unit = TUTOR.curriculum && !session.placement && session.fromContext ? unitById(session.context.lesson?.unitId ?? "") : undefined;
+  if (!unit) return recap;
+  const full: Recap = { ...recap, lesson: lessonMemoryFor(session, unit, recap.summary_en) };
+  if (session.policy.turnIndex >= 1) await saveSessionRecap(DEMO_USER_ID, full).catch((err) => console.error("[end] save recap failed:", errText(err)));
+  return full;
 }
 
 export async function POST(req: Request) {
@@ -35,7 +51,7 @@ export async function POST(req: Request) {
 
   const lists = buildRecapLists(session);
   if (lists.topErrors.length === 0 && lists.wordsNowKnown.length === 0) {
-    return json({ ...lists, summary_en: SUMMARY_CLEAN, tips: [] }, Recap);
+    return json(await withLesson(session, { ...lists, summary_en: SUMMARY_CLEAN, tips: [] }), Recap);
   }
 
   const ac = new AbortController();
@@ -47,12 +63,12 @@ export async function POST(req: Request) {
   try {
     const prose = await writeRecap(buildRecapUserMessage(lists, session.context.level), ac.signal);
     return json(
-      { ...lists, summary_en: prose.summary_en, tips: prose.tips.slice(0, lists.topErrors.length) },
+      await withLesson(session, { ...lists, summary_en: prose.summary_en, tips: prose.tips.slice(0, lists.topErrors.length) }),
       Recap,
     );
   } catch (err) {
     console.error(`[end] ${body.sessionId} recap failed: ${reason(err, timedOut)}`);
-    return json({ ...lists, summary_en: SUMMARY_FALLBACK, tips: [] }, Recap);
+    return json(await withLesson(session, { ...lists, summary_en: SUMMARY_FALLBACK, tips: [] }), Recap);
   } finally {
     clearTimeout(timer);
   }

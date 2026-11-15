@@ -1,7 +1,8 @@
 import { CandidatesResponse, type Understanding } from "@parrot/shared";
 import { checkExtensionToken } from "@/lib/auth";
+import { lessonData } from "@/lib/learner/curriculum";
 import { getSettings, keyLemmas, understanding, weakWords } from "@/lib/learner/queries";
-import { DEMO_USER_ID } from "@/lib/config";
+import { DEMO_USER_ID, TUTOR } from "@/lib/config";
 import { errText, getDb } from "@/lib/db";
 import { json, preflight, withCors } from "@/lib/http";
 import { levelToBand, rowToUserWord, USER_WORD_COLUMNS } from "@/lib/learner/rows";
@@ -29,13 +30,16 @@ export async function GET(req: Request) {
   let points: Understanding | null = null;
   try {
     const db = getDb();
-    const [words, settings, weakList, keys, u] = await Promise.all([
+    const [words, settings, weakList, keys, u, lesson] = await Promise.all([
       db.from("user_words").select(`${USER_WORD_COLUMNS}, words(band)`).eq("user_id", DEMO_USER_ID),
       getSettings(DEMO_USER_ID),
       weakWords(DEMO_USER_ID),
       soft("keyLemmas", keyLemmas(DEMO_USER_ID, now)),
       soft("understanding", understanding(DEMO_USER_ID)),
+      // D-022: today's unit words are key words too, so reading reinforces the lesson.
+      TUTOR.curriculum ? soft("lesson", lessonData(DEMO_USER_ID)) : Promise.resolve(null),
     ]);
+    for (const lemma of lesson?.unit.words ?? []) keys?.add(lemma);
     if (words.error) throw words.error;
     const userBand = levelToBand(settings.level);
     points = u;

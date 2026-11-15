@@ -156,6 +156,13 @@ const recap = Recap.parse({
   reviewTomorrow: ["empresa", "mercado"],
   summary_en: "You talked about your week and your job. Watch the article with problema: it's el problema.",
   tips: ['Words ending in -ma from Greek are often masculine: "el problema", "el sistema", "el tema".'],
+  // D-022: the course memory the tutor opens with ("last time"). Checkpoint not passed: the el/la mistake.
+  lesson: {
+    unitId: "int-1",
+    checkpointPassed: false,
+    summary_en: "Started talking about work; mixed up el/la with problema.",
+    nextStep_en: "Use empresa and mercado in sentences; say el problema.",
+  },
 });
 
 if (dry) process.exit(0);

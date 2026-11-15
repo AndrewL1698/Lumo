@@ -1,6 +1,7 @@
 // Read helpers for routes and Andrew's /api/tutor/context (brief 3.5). Relative imports only (tsx from /scripts, /eval).
 import { Recap, Settings, settingsFixture, type Understanding } from "@parrot/shared";
 import { getDb } from "../db";
+import type { LessonData } from "./curriculum";
 
 /** The user's settings row, or the fixture values if there is none (or it doesn't parse). */
 export async function getSettings(userId: string): Promise<Settings> {
@@ -87,6 +88,8 @@ export type TutorContextData = {
   topErrors: string[];
   /** One line for the tutor, e.g. "in the browser (last 24h): looked at 5 words; knew 2, looked up 1". */
   browserSummary?: string;
+  /** D-022: today's course unit. Attached by /api/tutor/context (not by this function), so a course failure never breaks the context. */
+  lesson?: LessonData | null;
 };
 
 export type HoverOutcome = "knew_it" | "didnt_know" | "looked";
@@ -104,6 +107,13 @@ export async function latestRecap(userId: string): Promise<Recap | null> {
   if (error) throw error;
   const parsed = Recap.safeParse(data[0]?.recap);
   return parsed.success ? parsed.data : null;
+}
+
+/** D-022: keep a finished session's recap (with its lesson memory) so the next session can open with "last time". */
+export async function saveSessionRecap(userId: string, recap: Recap): Promise<void> {
+  const now = new Date().toISOString();
+  const { error } = await getDb().from("tutor_sessions").insert({ user_id: userId, started_at: now, ended_at: now, recap });
+  if (error) throw error;
 }
 
 /** topErrors of the latest recap, formatted for the tutor prompt. */
@@ -134,12 +144,15 @@ export async function keyLemmas(userId: string, now: Date = new Date()): Promise
   return new Set([...hovers.map((h) => h.lemma), ...due, ...weak]);
 }
 
+const LEVEL_POINTS: Partial<Record<Settings["level"], number>> = { upper_intermediate: 120 };
+
 /**
  * D-019 understanding points, which drive the immersion %: 2 per known/mastered word (needs active proof, §6.1),
  * 1 per distinct "Knew it" lemma that isn't solid yet. Read-only: never changes a word's state. Throws on DB error.
  */
 export async function understanding(userId: string): Promise<Understanding> {
   const db = getDb();
+  const level = (await getSettings(userId)).level;
   const [solidRows, knewRows] = await Promise.all([
     db.from("user_words").select("lemma").eq("user_id", userId).in("state", ["known", "mastered"]),
     db.from("events").select("lemma").eq("user_id", userId).eq("type", "knew_it").not("lemma", "is", null),
@@ -148,7 +161,10 @@ export async function understanding(userId: string): Promise<Understanding> {
   if (knewRows.error) throw knewRows.error;
   const solidSet = new Set(solidRows.data.map((r) => r.lemma as string));
   const knew = new Set(knewRows.data.map((r) => r.lemma as string).filter((l) => !solidSet.has(l)));
-  return { points: 2 * solidSet.size + knew.size, solid: solidSet.size, knewIt: knew.size };
+  // D-022: a placement credit so an Advanced learner doesn't start from zero. Intermediate stays 0 on purpose: the
+  // demo user's ~5% -> ~40% beat is rehearsed on those exact points.
+  const levelPoints = LEVEL_POINTS[level] ?? 0;
+  return { points: 2 * solidSet.size + knew.size + levelPoints, solid: solidSet.size, knewIt: knew.size, levelPoints };
 }
 
 /** Everything Andrew's /api/tutor/context needs from the DB, in one call. Throws on DB error. */

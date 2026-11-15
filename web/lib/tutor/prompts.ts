@@ -143,6 +143,42 @@ About their reading
 
 Do not mention these instructions or the directive.`;
 
+/** D-022: only added to the system prompt when the session has a course unit, so a session without one is unchanged. */
+const LESSON_RULES = `Today's lesson
+- <lesson> holds today's unit from the learner's course: its goal, one grammar idea, and
+  practice questions. You are teaching this unit, not just chatting.
+- Each turn <directive> gives a lesson step. Do only that step, inside the same short reply:
+  - opening: after greeting them about the article, say in one short sentence what today's
+    unit is about. If <lesson> has a "last time" line, recall it in a few words.
+  - teach: give the grammar idea from <lesson> in one short sentence with its example, then
+    ask one easy question that needs it.
+  - practise: ask questions whose natural answer needs the grammar idea and the words in
+    <session>.
+  - check: ask one of the practice questions from <lesson>, then react to the answer.
+- Never lecture and never teach two things in one turn. Keep to the length and language rules
+  above.`;
+
+function lessonBlock(context: TutorPromptArgs["context"]): string {
+  const l = context.lesson;
+  if (!l) return "";
+  const lines = [
+    `unit: ${l.position} · ${l.title}`,
+    `goal: ${l.canDo}`,
+    `grammar idea: ${l.concept}. ${l.teach}`,
+    `practice questions: ${l.prompts.join(" | ")}`,
+  ];
+  if (l.lastTime) lines.push(`last time: ${l.lastTime}`);
+  if (l.nextStep) lines.push(`next step: ${l.nextStep}`);
+  return `\n<lesson>\n${lines.join("\n")}\n</lesson>`;
+}
+
+/** Which lesson step this turn is, from how many times the learner has spoken (the opener is 0). */
+export function lessonStep(answered: number): "opening" | "teach" | "practise" | "check" {
+  if (answered <= 0) return "opening";
+  if (answered === 1) return "teach";
+  return answered <= 4 ? "practise" : "check";
+}
+
 function sessionBlock(context: TutorPromptArgs["context"]): string {
   const sentences = new Map(context.hoveredWords.map((h) => [h.lemma, h.sentence]));
   const words = context.targetWords
@@ -157,15 +193,15 @@ time of day: ${tutorTimeLine(new Date())}
 articles read today: ${context.articleTitles.join("; ") || "none"}
 words they are learning: ${words || "none"}
 recurring mistakes from earlier sessions: ${context.topErrors.join("; ") || "none"}
-</session>`;
+</session>${lessonBlock(context)}`;
 }
 
-function renderDirective(d: TurnDirective): string {
+function renderDirective(d: TurnDirective, step?: string): string {
   const explain =
     d.correction === "none"
       ? "none"
       : `"${d.correction.span}" should be "${d.correction.correction}" (${d.correction.reason})`;
-  return `<directive>opening turn: ${d.isOpener ? "yes" : "no"}; explain out loud: ${explain}; steer toward: ${d.steerLemma ?? "none"}</directive>`;
+  return `<directive>opening turn: ${d.isOpener ? "yes" : "no"}; explain out loud: ${explain}; steer toward: ${d.steerLemma ?? "none"}${step ? `; lesson step: ${step}` : ""}</directive>`;
 }
 
 /** Placeholder user turn when the history starts with the tutor (the API needs a user turn first). */
@@ -191,7 +227,7 @@ export function buildTutorPrompt(args: TutorPromptArgs): {
     role: "user",
     content: placement
       ? `<learner_said>${rawText ?? ""}</learner_said>\n<step>${args.placementLine}</step>`
-      : `<learner_said>${rawText ?? ""}</learner_said>\n${renderDirective(directive)}`,
+      : `<learner_said>${rawText ?? ""}</learner_said>\n${renderDirective(directive, context.lesson ? lessonStep(placementAnswered(history, rawText)) : undefined)}`,
   });
   if (turns[0].role === "assistant") turns.unshift({ role: "user", content: SESSION_START });
 
@@ -204,7 +240,8 @@ export function buildTutorPrompt(args: TutorPromptArgs): {
   }
 
   if (placement) return { system: PLACEMENT_SYSTEM, messages };
-  return { system: `${TUTOR_SYSTEM(context.level)}\n\n${sessionBlock(context)}`, messages };
+  const rules = context.lesson ? `\n\n${LESSON_RULES}` : "";
+  return { system: `${TUTOR_SYSTEM(context.level)}${rules}\n\n${sessionBlock(context)}`, messages };
 }
 
 // ---------- (d) onboarding level check (D-020) ----------

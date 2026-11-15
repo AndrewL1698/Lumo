@@ -10,7 +10,8 @@
     "audit-words": "tsx build-wordlist/audit.ts",
     "learner-sanity": "tsx ../web/lib/learner/sanity.ts",
     "seed-demo": "tsx seed-demo/index.ts",
-    "check-words": "tsx check-words.ts"
+    "check-words": "tsx check-words.ts",
+    "check-curriculum": "tsx check-curriculum.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",

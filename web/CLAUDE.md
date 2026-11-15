@@ -5,8 +5,8 @@ Next.js 16 App Router, Tailwind v4, React 19. Team rules: root `CLAUDE.md`. Cont
 ## Owners (stay in your rows)
 | Who | Paths |
 |---|---|
-| Shravan | `app/layout.tsx`, `app/globals.css`, `app/page.tsx`, `app/{onboarding,tutor,vocabulary,privacy,settings}/page.tsx`, `components/` |
-| Karthik | `app/api/{pair,candidates,translate,events,vocab,data,settings}/route.ts`, `lib/learner/`, `lib/db.ts` queries |
+| Shravan | `app/layout.tsx`, `app/globals.css`, `app/page.tsx`, `app/{onboarding,tutor,progress,vocabulary,privacy,settings}/page.tsx`, `components/` |
+| Karthik | `app/api/{pair,candidates,translate,events,vocab,data,settings,progress}/route.ts`, `lib/learner/`, `lib/curriculum/` (the course, D-022), `lib/db.ts` queries |
 | Andrew | `app/api/{tts,stt-token,stt-batch}/route.ts`, `app/api/tutor/**`, `app/tutor-lab/`, `lib/tutor/`, `lib/claude.ts`, `lib/elevenlabs.ts`, `lib/config.ts` |
 
 ## What lives here
