@@ -224,7 +224,11 @@ async function getSettings(): Promise<ResponseMap["GET_SETTINGS"]> {
 async function setImmersion(rate?: number, percent?: number, reset?: boolean): Promise<ResponseMap["SET_IMMERSION"]> {
   const { immersion = DEFAULT_IMMERSION } = await readState();
   const next: Immersion = { ...immersion };
-  if (rate !== undefined && (IMMERSION_RATES as readonly number[]).includes(rate)) next.rate = rate;
+  if (rate !== undefined && (IMMERSION_RATES as readonly number[]).includes(rate) && rate !== next.rate) {
+    // The rate only speeds up points earned from now on: keep the current percent (review A1).
+    next.points = (next.points * next.rate) / rate;
+    next.rate = rate;
+  }
   if (percent !== undefined && Number.isFinite(percent)) {
     next.points = pointsForPercent(Math.max(0, Math.min(100, percent)), next.rate);
   }
@@ -259,9 +263,12 @@ async function setSwapAmount(perPageCap?: number, autoGrow?: boolean): Promise<R
 /** Whole sentences/paragraphs to Spanish (D-018). Groups of ≤40 in parallel; a failed group's slots are null. */
 async function translateSentences(articleKey: string, sentences: string[]): Promise<ResponseMap["TRANSLATE_SENTENCES"]> {
   if (!sentences.length) return { items: [] };
+  // The server rejects a whole request if one text is empty or over 2000 chars, so those stay English (review A1).
+  const sendable = sentences.map((s, i) => ({ s, i })).filter(({ s }) => s.length > 0 && s.length <= 2000);
+  if (!sendable.length) return { items: sentences.map(() => null) };
   const groups: string[][] = [];
-  for (let i = 0; i < sentences.length; i += SENTENCES_PER_REQUEST) {
-    groups.push(sentences.slice(i, i + SENTENCES_PER_REQUEST));
+  for (let i = 0; i < sendable.length; i += SENTENCES_PER_REQUEST) {
+    groups.push(sendable.slice(i, i + SENTENCES_PER_REQUEST).map(({ s }) => s));
   }
   const results = await Promise.all(
     groups.map(async (group): Promise<(string | null)[] | null> => {
@@ -281,7 +288,10 @@ async function translateSentences(articleKey: string, sentences: string[]): Prom
     }),
   );
   if (results.every((r) => r === null)) return null;
-  return { items: results.flatMap((r, gi) => r ?? groups[gi]!.map(() => null)) };
+  const flat = results.flatMap((r, gi) => r ?? groups[gi]!.map(() => null));
+  const items: (string | null)[] = sentences.map(() => null);
+  sendable.forEach(({ i }, k) => (items[i] = flat[k] ?? null));
+  return { items };
 }
 
 // ---------------------------------------------------------------- text to speech
