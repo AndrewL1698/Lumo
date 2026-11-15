@@ -161,10 +161,9 @@ html[data-theme="light"] .night-sky-grain {
 .glow-known {
   box-shadow: 0 0 18px 4px rgb(255 210 58 / 0.38);
 }
-/* Luci's dark body gets a faint rim so it reads against the night */
+/* Luci (chibi): no hard outlines; the gradients give the shape */
 .luci-body {
-  stroke: #4c6080;
-  stroke-width: 1.5;
+  stroke: none;
 }
 
 /* Text on the yellow glow is always dark. */
@@ -246,7 +245,7 @@ ruby.fix rt {
 .luci .luci-eyes {
   /* blink only; pinned origin so it never measures the moving pupils */
   transform-box: view-box;
-  transform-origin: 60px 59px;
+  transform-origin: 60px 51px; /* the eye line of the round head */
   animation: luci-blink 5.5s infinite;
   transition: opacity 200ms ease;
 }
@@ -338,8 +337,9 @@ ruby.fix rt {
 }
 
 @keyframes luci-glow {
-  0%, 100% { opacity: calc(var(--halo) * 0.3); }
-  50% { opacity: calc(var(--halo) * 0.45); }
+  /* the halo is a soft radial gradient that already fades out, so it can run stronger than the old flat disc */
+  0%, 100% { opacity: calc(var(--halo) * 0.65); }
+  50% { opacity: calc(var(--halo) * 0.95); }
 }
 @keyframes luci-blink {
   0%, 94%, 100% { transform: scaleY(1); }
@@ -619,12 +619,8 @@ html[data-theme="light"] .home-fly {
 }
 
 /* Luci (tutor mascot): the dark body already reads on cream; the glow needs depth */
-html[data-theme="light"] .luci .luci-halo {
-  fill: #f0a000;
-}
-html[data-theme="light"] .luci .luci-tail {
-  stroke: #b07d00;
-  stroke-width: 1.5;
+html[data-theme="light"] .luci {
+  --luci-glow: #f0a000; /* the tail's halo gradient reads deeper on cream */
 }
 html[data-theme="light"] .luci .luci-sparks circle {
   fill: #e09a00;
@@ -811,4 +807,28 @@ html[data-theme="light"] .nav-link[aria-current="page"]::after {
 html[data-theme="light"] .setup-dot {
   background: #e09a00;
   box-shadow: 0 0 6px 2px rgb(224 154 0 / 0.5);
+}
+
+/* Luci's wings: a soft, slow flutter (the body never moves). Off for still/older turns and reduced motion. */
+.luci .luci-wing {
+  transform-box: fill-box;
+  animation: luci-flutter 1.6s ease-in-out infinite alternate;
+}
+.luci .luci-wing-l {
+  transform-origin: 85% 90%;
+}
+.luci .luci-wing-r {
+  transform-origin: 15% 90%;
+  animation-delay: -0.8s;
+}
+@keyframes luci-flutter {
+  from { transform: rotate(0deg) scaleY(1); }
+  to { transform: rotate(-5deg) scaleY(0.93); }
+}
+.luci .luci-wing-r {
+  animation-name: luci-flutter-r;
+}
+@keyframes luci-flutter-r {
+  from { transform: rotate(0deg) scaleY(1); }
+  to { transform: rotate(5deg) scaleY(0.93); }
 }

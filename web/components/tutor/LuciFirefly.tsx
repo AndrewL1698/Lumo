@@ -39,10 +39,13 @@ function tweenMouth(els: MouthEls, to: Shape, ms = 160) {
   els.tween.current = requestAnimationFrame(step);
 }
 
-const MOUTH_Y = 71;
+const MOUTH_Y = 60;
+/** The chibi face keeps every lip-sync shape, drawn small (w / h / curve scaled), so the mouth stays cute. */
+const MOUTH_SCALE = 0.55;
 
-function drawMouth(els: MouthEls, p: Shape, bob: number) {
-  els.last.current = { ...p };
+function drawMouth(els: MouthEls, shape: Shape, bob: number) {
+  els.last.current = { ...shape }; // unscaled, so blends and lip-sync keep working in the original units
+  const p = { ...shape, w: shape.w * MOUTH_SCALE, h: shape.h * MOUTH_SCALE, curve: shape.curve * MOUTH_SCALE, teeth: 0 };
   const { line, open, fill, clip, teeth, tongue } = els;
   if (!line.current || !open.current || !fill.current || !clip.current || !teeth.current || !tongue.current) return;
   // head nod: its own HTML wrapper (fixed box, fixed origin), so it never fights the float or the lean
@@ -55,7 +58,7 @@ function drawMouth(els: MouthEls, p: Shape, bob: number) {
     line.current.style.display = "";
     open.current.style.display = "none";
     line.current.setAttribute("d", `M${L} ${MOUTH_Y} Q60 ${(MOUTH_Y + curve).toFixed(2)} ${R} ${MOUTH_Y}`);
-    line.current.setAttribute("stroke-width", curve < 2 ? "3" : "2.4");
+    line.current.setAttribute("stroke-width", curve < 1.1 ? "2" : "1.7");
     return;
   }
   line.current.style.display = "none";
@@ -78,7 +81,7 @@ function drawMouth(els: MouthEls, p: Shape, bob: number) {
   teeth.current.setAttribute("width", (w * 1.2).toFixed(2));
   teeth.current.setAttribute("y", (top - 0.5).toFixed(2));
   teeth.current.setAttribute("height", Math.min(2.4, 0.6 + h * 0.4).toFixed(2));
-  teeth.current.setAttribute("opacity", p.teeth.toFixed(2));
+  teeth.current.setAttribute("opacity", "0"); // a tiny, gentle mouth: never teeth
   tongue.current.setAttribute("cy", (bottom - h * 0.12).toFixed(2));
   tongue.current.setAttribute("rx", (w * 0.55).toFixed(2));
   tongue.current.setAttribute("ry", Math.max(0.5, h * 0.22).toFixed(2));
@@ -200,7 +203,8 @@ function useLipSync(
   }, [active, els, speechText, onTextDone]);
 }
 
-// Luci the firefly, the tutor's face. Pure SVG + CSS animations (globals.css, "Luci firefly" block).
+// Luci the firefly, the tutor's face: an original soft chibi character (round head, plump body, small oval eyes,
+// rosy cheeks, translucent veined wings, a glowing tail). Pure SVG + CSS animations (globals.css, "Luci firefly").
 // Decorative only: status text elsewhere carries the meaning for screen readers.
 // mood follows the session status; reaction plays once after each answer (changing reactionKey replays it).
 // Size comes from className (responsive), or `size` in px.
@@ -233,7 +237,9 @@ export function LuciFirefly({
     last: { current: { ...SHAPES.rest } },
     tween: { current: 0 },
   }).current;
-  const clipId = `luci-mouth-${useId().replace(/:/g, "")}`;
+  const uid = useId().replace(/:/g, "");
+  const clipId = `luci-mouth-${uid}`;
+  const gid = `luci-${uid}`; // gradient ids, unique per Luci on the page
   const reactRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = reactRef.current;
@@ -284,50 +290,87 @@ export function LuciFirefly({
         <div ref={els.bob} className="h-full w-full">
          <div ref={reactRef} className="luci-react relative h-full w-full" data-react={reaction ?? undefined}>
         <svg viewBox="0 0 120 120" width="100%" height="100%" overflow="visible">
-              {/* tail light: a flat halo and the lamp itself */}
-              <circle className="luci-halo" cx="60" cy="92" r="24" fill="#ffd23a" />
-              <ellipse className="luci-tail" cx="60" cy="90" rx="16" ry="13" fill="#ffd23a" />
-              {/* wings: fixed angle on the group, the beat on the shape */}
-              <g transform="rotate(-32 34 46)">
-                <ellipse className="luci-wing luci-wing-l" cx="34" cy="46" rx="13" ry="21" fill="#6fa8d6" fillOpacity=".55" />
+              <defs>
+                {/* gentle gradients for depth: lighter on top, a little darker below */}
+                <radialGradient id={`${gid}-halo`}>
+                  <stop offset="0" style={{ stopColor: "var(--luci-glow, #ffd23a)", stopOpacity: 0.95 }} />
+                  <stop offset="0.55" style={{ stopColor: "var(--luci-glow, #ffd23a)", stopOpacity: 0.35 }} />
+                  <stop offset="1" style={{ stopColor: "var(--luci-glow, #ffd23a)", stopOpacity: 0 }} />
+                </radialGradient>
+                <radialGradient id={`${gid}-tail`} cx="0.42" cy="0.35" r="0.75">
+                  <stop offset="0" stopColor="#fffbe6" />
+                  <stop offset="0.45" stopColor="#ffe066" />
+                  <stop offset="1" stopColor="#f2b400" />
+                </radialGradient>
+                <radialGradient id={`${gid}-head`} cx="0.4" cy="0.3" r="0.8">
+                  <stop offset="0" stopColor="#5b7a9e" />
+                  <stop offset="0.6" stopColor="#3c5370" />
+                  <stop offset="1" stopColor="#2c3d52" />
+                </radialGradient>
+                <radialGradient id={`${gid}-body`} cx="0.45" cy="0.25" r="0.85">
+                  <stop offset="0" stopColor="#4a6584" />
+                  <stop offset="1" stopColor="#26354a" />
+                </radialGradient>
+                <linearGradient id={`${gid}-wing`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stopColor="#e3f1fb" stopOpacity="0.85" />
+                  <stop offset="1" stopColor="#6fa8d6" stopOpacity="0.55" />
+                </linearGradient>
+                <radialGradient id={`${gid}-tip`} cx="0.4" cy="0.35">
+                  <stop offset="0" stopColor="#fff8d6" />
+                  <stop offset="1" stopColor="#ffd23a" />
+                </radialGradient>
+              </defs>
+              {/* glowing tail with a soft radial glow around it */}
+              <circle className="luci-halo" cx="60" cy="95" r="27" fill={`url(#${gid}-halo)`} />
+              {/* translucent wings with thin veins: fixed angle on the outer group, the soft flutter on the inner one */}
+              <g transform="rotate(-30 38 66)">
+                <g className="luci-wing luci-wing-l">
+                  <ellipse cx="38" cy="66" rx="11" ry="18" fill={`url(#${gid}-wing)`} />
+                  <path d="M38 80 L38 52 M38 70 Q33 63 31 56 M38 64 Q43 58 44 53" fill="none" stroke="#ffffff" strokeOpacity=".55" strokeWidth=".7" strokeLinecap="round" />
+                </g>
               </g>
-              <g transform="rotate(32 86 46)">
-                <ellipse className="luci-wing luci-wing-r" cx="86" cy="46" rx="13" ry="21" fill="#6fa8d6" fillOpacity=".55" />
+              <g transform="rotate(30 82 66)">
+                <g className="luci-wing luci-wing-r">
+                  <ellipse cx="82" cy="66" rx="11" ry="18" fill={`url(#${gid}-wing)`} />
+                  <path d="M82 80 L82 52 M82 70 Q87 63 89 56 M82 64 Q77 58 76 53" fill="none" stroke="#ffffff" strokeOpacity=".55" strokeWidth=".7" strokeLinecap="round" />
+                </g>
               </g>
-              {/* antennae */}
-              <path d="M52 40 C48 28 42 22 36 20 M68 40 C72 28 78 22 84 20" fill="none" stroke="#6a7f9f" strokeWidth="3" strokeLinecap="round" />
-              <circle cx="36" cy="20" r="4" fill="#ffd23a" />
-              <circle cx="84" cy="20" r="4" fill="#ffd23a" />
-              {/* body */}
-              <circle className="luci-body" cx="60" cy="62" r="27" fill="#2a3a4a" />
-              {/* face */}
+              <ellipse className="luci-tail" cx="60" cy="95" rx="14" ry="11.5" fill={`url(#${gid}-tail)`} />
+              {/* plump little body, then the round head on top */}
+              <ellipse className="luci-body" cx="60" cy="79" rx="17" ry="14" fill={`url(#${gid}-body)`} />
+              {/* short antennae with soft round tips */}
+              <path d="M54 30 C52 24 49 20 46 18 M66 30 C68 24 71 20 74 18" fill="none" stroke="#3c5370" strokeWidth="2.6" strokeLinecap="round" />
+              <circle cx="45.5" cy="17.5" r="3.4" fill={`url(#${gid}-tip)`} />
+              <circle cx="74.5" cy="17.5" r="3.4" fill={`url(#${gid}-tip)`} />
+              <circle cx="60" cy="50" r="23" fill={`url(#${gid}-head)`} />
+              <ellipse cx="51" cy="37" rx="8" ry="4.2" fill="#ffffff" fillOpacity=".12" transform="rotate(-18 51 37)" />
+              {/* small, simple eyes: dark ovals with a tiny shine (they glance together when listening) */}
               <g className="luci-eyes">
-                <circle cx="49" cy="59" r="8.5" fill="#fcfcf8" />
-                <circle cx="71" cy="59" r="8.5" fill="#fcfcf8" />
-                <circle className="luci-pupil" cx="50" cy="60" r="4.6" fill="#1a2028" />
-                <circle className="luci-pupil" cx="72" cy="60" r="4.6" fill="#1a2028" />
-                <circle cx="51.8" cy="57.8" r="1.6" fill="#fcfcf8" />
-                <circle cx="73.8" cy="57.8" r="1.6" fill="#fcfcf8" />
+                <ellipse className="luci-pupil" cx="51" cy="51" rx="3" ry="3.9" fill="#121a24" />
+                <ellipse className="luci-pupil" cx="69" cy="51" rx="3" ry="3.9" fill="#121a24" />
+                <circle className="luci-pupil" cx="52" cy="49.4" r="1.05" fill="#ffffff" />
+                <circle className="luci-pupil" cx="70" cy="49.4" r="1.05" fill="#ffffff" />
               </g>
-              {/* happy eyes for reactions (crescents), shown instead of the round eyes */}
-              <g className="luci-eyes-happy" fill="none" stroke="#fcfcf8" strokeWidth="3" strokeLinecap="round">
-                <path d="M43 61 Q49 53 55 61" />
-                <path d="M65 61 Q71 53 77 61" />
+              {/* happy eyes for reactions (soft arcs), shown instead of the ovals */}
+              <g className="luci-eyes-happy" fill="none" stroke="#121a24" strokeWidth="2.2" strokeLinecap="round">
+                <path d="M47.5 52 Q51 47.5 54.5 52" />
+                <path d="M65.5 52 Q69 47.5 72.5 52" />
               </g>
-              <circle cx="42" cy="70" r="3.6" fill="#f0a39a" fillOpacity=".7" />
-              <circle cx="78" cy="70" r="3.6" fill="#f0a39a" fillOpacity=".7" />
-              {/* mouth: lips together (smile / pressed) or open with teeth and tongue; shaped per sound */}
-              <path ref={els.line} d="M54 71 Q60 76 66 71" fill="none" stroke="#fcfcf8" strokeWidth="2.4" strokeLinecap="round" />
+              {/* rosy cheeks */}
+              <ellipse cx="45" cy="57.5" rx="4.2" ry="2.6" fill="#f59aa6" fillOpacity=".55" />
+              <ellipse cx="75" cy="57.5" rx="4.2" ry="2.6" fill="#f59aa6" fillOpacity=".55" />
+              {/* mouth: a tiny smile at rest; still opens and shapes per sound while talking (drawn small, no teeth) */}
+              <path ref={els.line} d="M57 60 Q60 62 63 60" fill="none" stroke="#121a24" strokeWidth="1.7" strokeLinecap="round" />
               <g ref={els.open} style={{ display: "none" }}>
                 <clipPath id={clipId}>
-                  <path ref={els.clip} d="M54 71 Q60 71 66 71 Z" />
+                  <path ref={els.clip} d="M57 60 Q60 60 63 60 Z" />
                 </clipPath>
-                <path ref={els.fill} d="M54 71 Q60 71 66 71 Z" fill="#4a1f25" />
+                <path ref={els.fill} d="M57 60 Q60 60 63 60 Z" fill="#5a2430" />
                 <g clipPath={`url(#${clipId})`}>
-                  <rect ref={els.teeth} x="56" y="70" width="8" height="2" rx="0.6" fill="#fcfcf8" opacity="0" />
-                  <ellipse ref={els.tongue} cx="60" cy="75" rx="3.5" ry="1.6" fill="#f0a39a" opacity="0" />
+                  <rect ref={els.teeth} x="58" y="59" width="4" height="1" rx="0.4" fill="#fcfcf8" opacity="0" />
+                  <ellipse ref={els.tongue} cx="60" cy="62" rx="2" ry="1" fill="#f59aa6" opacity="0" />
                 </g>
-                <path ref={els.outline} d="M54 71 Q60 71 66 71 Z" fill="none" stroke="#fcfcf8" strokeWidth="1.6" strokeLinejoin="round" />
+                <path ref={els.outline} d="M57 60 Q60 60 63 60 Z" fill="none" stroke="#5a2430" strokeWidth=".8" strokeLinejoin="round" />
               </g>
           {/* thinking dots, shown while checking */}
           <g className="luci-think">
