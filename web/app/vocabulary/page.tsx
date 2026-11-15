@@ -98,7 +98,7 @@ export default function Page() {
           className="mt-16 border-t border-line pt-8"
         >
           <summary className="cursor-pointer list-none font-display text-2xl font-extrabold transition-colors duration-150 hover:text-accent [&::-webkit-details-marker]:hidden">
-            What Luci keeps about you
+            What Lumo keeps about you
             <span className="ml-3 font-sans text-base font-normal text-muted">
               {keepsOpen ? "Hide" : "Articles, activity, and delete everything"}
             </span>

@@ -4,8 +4,8 @@ import type { TutorStatus } from "@/app/tutor/session";
 const STATUS: Record<TutorStatus, string> = {
   idle: "Listening. Just talk.",
   listening: "You're talking",
-  checking: "Luci is thinking",
-  speaking: "Luci is talking. Speak up to interrupt.",
+  checking: "Lumo is thinking",
+  speaking: "Lumo is talking. Speak up to interrupt.",
 };
 
 // Hands-free (D-023): the mic stays open and Luci listens for you. The only control is mute.
@@ -31,7 +31,7 @@ export function HandsFreeMic({
         {muted ? "Mic muted. Tap to unmute" : status === "listening" ? "Listening…" : "Mic on. Tap to mute"}
       </button>
       <p className={`sr-only text-sm sm:not-sr-only ${!muted && status === "listening" ? "text-accent" : "text-muted"}`} aria-live="polite">
-        {muted ? "Muted. Luci can't hear you." : STATUS[status]}
+        {muted ? "Muted. Lumo can't hear you." : STATUS[status]}
       </p>
     </div>
   );
