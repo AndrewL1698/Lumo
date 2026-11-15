@@ -65,8 +65,8 @@ function whyLine(
   if (steerLemma) return `Steering toward '${steerLemma}'`;
   const counts = Object.values(state.errorCounts);
   if (counts.some((c) => c >= MIN_REPEATS))
-    return "Not explaining out loud yet: Luci spaces out spoken corrections";
+    return "Not explaining out loud yet: Lumo spaces out spoken corrections";
   if (counts.some((c) => c >= 1))
-    return "Not correcting out loud yet: Luci waits until a mistake comes up in two turns";
+    return "Not correcting out loud yet: Lumo waits until a mistake comes up in two turns";
   return WHY.talking;
 }

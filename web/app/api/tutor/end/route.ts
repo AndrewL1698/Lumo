@@ -12,7 +12,7 @@ import { findSession } from "@/lib/tutor/session";
 
 const RECAP_TIMEOUT_MS = 4000;
 const SUMMARY_EMPTY = "Thanks for practising! There's nothing to recap from this session yet.";
-const SUMMARY_CLEAN = "Nice work! Keep talking to Luci to practise your new words.";
+const SUMMARY_CLEAN = "Nice work! Keep talking to Lumo to practise your new words.";
 const SUMMARY_FALLBACK = "Nice work today! Here is what to look at before your next session.";
 
 /** One short line for the server log; never sent to the client. */

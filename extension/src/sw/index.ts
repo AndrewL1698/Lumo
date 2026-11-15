@@ -127,7 +127,7 @@ async function pair(code: string): Promise<ResponseMap["PAIR"]> {
     await chrome.storage.local.set({ pairingToken: parsed.data.token });
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "could not reach Luci" };
+    return { ok: false, error: err instanceof Error ? err.message : "could not reach Lumo" };
   }
 }
 
@@ -137,7 +137,7 @@ async function enableSite(rawOrigin: string): Promise<ResponseMap["ENABLE_SITE"]
 
   // Hard never-list, enforced even though the user just granted the permission (specs §5.1).
   const blocked = neverListReason(origin);
-  if (blocked) return { ok: false, error: `Luci never runs here (${blocked})` };
+  if (blocked) return { ok: false, error: `Lumo never runs here (${blocked})` };
 
   const pattern = origin + "/*";
   const granted = await chrome.permissions.contains({ origins: [pattern] });
@@ -192,7 +192,7 @@ async function tryHere(tabId: number, rawOrigin: string, url: string): Promise<R
   try {
     await chrome.scripting.executeScript({ target: { tabId }, files: ["content.js"] });
   } catch (err) {
-    return { ok: false, reason: err instanceof Error ? err.message : "could not start Luci here" };
+    return { ok: false, reason: err instanceof Error ? err.message : "could not start Lumo here" };
   }
 
   const tabs = await readTrialTabs();
@@ -431,7 +431,7 @@ async function setSwapAmount(perPageCap?: number, autoGrow?: boolean): Promise<R
   candidatesCache = null; // the next page load re-reads progress
   if (perPageCap === undefined) return { ok: true };
   const fresh = await fetchSettings();
-  if (!fresh) return { ok: false, error: "could not reach Luci" };
+  if (!fresh) return { ok: false, error: "could not reach Lumo" };
   // HACK: unused since D-019 (no slider); 200 = Settings.perPageCap max.
   const next: Settings = { ...fresh, perPageCap: Math.max(0, Math.min(200, Math.round(perPageCap))) };
   try {
@@ -440,7 +440,7 @@ async function setSwapAmount(perPageCap?: number, autoGrow?: boolean): Promise<R
     await chrome.storage.local.set({ settings: next });
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "could not reach Luci" };
+    return { ok: false, error: err instanceof Error ? err.message : "could not reach Lumo" };
   }
 }
 

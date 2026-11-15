@@ -147,7 +147,7 @@ function createController(rawSet: Setters, forceBatch: () => boolean, placement:
     browserVoice = true;
     queue?.stopAll();
     queue = createAudioQueue({ mode: "browser", level: () => level });
-    set.notice("Luci's voice is unavailable, so your browser's voice will read her replies.");
+    set.notice("Lumo's voice is unavailable, so your browser's voice will read her replies.");
   };
   const getQueue = (): AudioQueue => {
     queue ??= createAudioQueue({ level: () => level, onChunkFailed: onTtsFailed });
