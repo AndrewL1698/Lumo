@@ -1,6 +1,9 @@
-<!-- Extension icon (D-010): the web app's firefly, enlarged to fill the tile, without the ground bar. -->
+<!-- Extension icon (D-010): the web app's firefly, enlarged to fill the tile, without the ground bar.
+     No background tile: the firefly sits on transparency, so it reads on any Chrome theme. -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="512" height="512">
-  <rect width="128" height="128" rx="26" fill="#fff3c4"/>
+  <!-- Recentre and fill: with the tile gone the firefly's own outline is the icon, so its measured
+       alpha box (centred 73.4,60.5) is moved to 64,64 and scaled to 116 of the 128 box. -->
+  <g transform="translate(64 64) scale(1.2147) translate(-73.38 -60.5)">
   <g transform="translate(61 67) scale(1.2) translate(-64 -55)">
     <g transform="rotate(40 64 60)">
       <ellipse cx="64" cy="78" rx="13" ry="17" fill="#ffc81f"/>
@@ -10,5 +13,6 @@
       <circle cx="64" cy="37" r="10" fill="#2a3a4a"/>
       <path d="M60 29 C56 19 50 15 44 14 M68 29 C72 19 78 15 84 14" fill="none" stroke="#2a3a4a" stroke-width="4" stroke-linecap="round"/>
     </g>
+  </g>
   </g>
 </svg>
