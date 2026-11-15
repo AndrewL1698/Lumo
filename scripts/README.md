@@ -36,6 +36,7 @@ Every Claude batch is cached in `build-wordlist/out/batches/`, so reruns only ca
 npm run learner-sanity        # walks specs §6.1/§6.2 through web/lib/learner, prints PASS/FAIL
 npm run seed-demo -- --dry    # print the demo state plan, no DB writes
 npm run seed-demo             # wipe + reseed user_words for DEMO_USER_ID (needs seeded `words`)
+npm run seed-demo -- --clean  # same wipe + settings reset, nothing seeded: empty jar for a new-user demo
 ```
 
 `seed-demo` resets the demo user (`DEMO_USER_ID`) to the demo state:

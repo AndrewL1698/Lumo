@@ -197,6 +197,18 @@
         cursor: pointer;
       }
       #imm-reset:hover { color: var(--ink); }
+      /* HACK(demo): reset pairing between judge groups. Quiet text link beside the chip. */
+      #unpair {
+        padding: 0;
+        border: 0;
+        background: none;
+        color: var(--muted);
+        font-size: 12px;
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        cursor: pointer;
+      }
+      #unpair:hover { color: var(--ink); }
 
       .pair-row { display: flex; gap: 6px; margin-top: 6px; }
       #code {
@@ -283,6 +295,7 @@
     <div class="chips" aria-live="polite">
       <span id="paired" class="chip">Checking…</span>
       <span id="worker" class="chip warn" hidden></span>
+      <button id="unpair" hidden>Unpair</button>
     </div>
 
     <section class="card" aria-labelledby="site-label">

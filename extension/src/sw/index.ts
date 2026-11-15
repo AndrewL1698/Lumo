@@ -591,6 +591,11 @@ async function handle(message: Message): Promise<ResponseMap[Message["type"]]> {
       return enableSite(message.origin);
     case "PAIR":
       return pair(message.code);
+    case "UNPAIR":
+      // HACK(demo): reset between judge groups. Requests fall back to FALLBACK_TOKEN, as before pairing.
+      await chrome.storage.local.remove("pairingToken");
+      candidatesCache = null;
+      return { ok: true };
     case "GET_CANDIDATES":
       return getCandidates();
     case "TRANSLATE":

@@ -12,6 +12,8 @@ export type Message =
   | { type: "GET_STATUS" }
   | { type: "ENABLE_SITE"; origin: string }
   | { type: "PAIR"; code: string }
+  /** HACK(demo): forget the pairing token so the next judge group sees pairing again. */
+  | { type: "UNPAIR" }
   | { type: "GET_CANDIDATES" }
   | {
       type: "TRANSLATE";
@@ -38,6 +40,7 @@ export interface ResponseMap {
   GET_STATUS: { paired: boolean; enabledOrigins: string[] };
   ENABLE_SITE: { ok: boolean; error?: string };
   PAIR: { ok: boolean; error?: string };
+  UNPAIR: { ok: true };
   /** `null` when we have no token yet or the call failed: the page simply makes no swaps. */
   GET_CANDIDATES: CandidatesResponse | null;
   /** One entry per request item, same order. `null` = sense mismatch, don't swap. */
