@@ -50,6 +50,13 @@ export async function creditTargetWords(args: {
             timer = setTimeout(() => reject(new Error(`record timeout after ${timeoutMs}ms`)), timeoutMs);
           });
           const change = await Promise.race([record(userId, v.lemma, v.event), timeout]);
+          if (change.to === "known" && change.from !== "known") {
+            const src = session.context.targetWords.find((t) => t.lemma === v.lemma)?.source;
+            const origin = src === "hovered" ? "article" : src === "lesson" ? "course" : "review";
+            console.log(
+              `[tutor] taught ${v.lemma} (${origin}): ${change.from} → known, +2 understanding points (+1 if it had a "Knew it")`,
+            );
+          }
           if (v.event === "spoken_correct" && !session.creditedLemmas.includes(v.lemma))
             session.creditedLemmas.push(v.lemma);
           return change.from !== change.to ? { lemma: v.lemma, from: change.from, to: change.to } : null;

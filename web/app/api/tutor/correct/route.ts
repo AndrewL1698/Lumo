@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { ClaudeRefusalError, correctUtterance } from "@/lib/claude";
 import { DEMO_USER_ID, isTutorMock, TUTOR } from "@/lib/config";
 import { json, parseBody } from "@/lib/http";
+import { understanding } from "@/lib/learner/queries";
 import { recordTutorEvent } from "@/lib/learner/record";
 import { recordCorrection, getSession } from "@/lib/tutor/session";
 import { creditTargetWords } from "@/lib/tutor/targetWords";
@@ -108,6 +109,15 @@ export async function POST(req: Request) {
         record: recordTutorEvent,
       });
   const dbMs = credit ? Date.now() - tDb : 0;
+  // Not awaited: the new understanding total, so the log shows immersion going up (the extension reads it on reload).
+  if (wordUpdates.some((u) => u.to === "known"))
+    void understanding(DEMO_USER_ID)
+      .then((u) =>
+        console.log(
+          `[tutor] understanding now ${u.points} points (${u.solid} known, ${u.knewIt} Knew it): immersion rises on the next page load`,
+        ),
+      )
+      .catch(() => {});
 
   const serverMs = Date.now() - t0;
   console.log(

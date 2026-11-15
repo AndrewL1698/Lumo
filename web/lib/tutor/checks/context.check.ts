@@ -7,6 +7,7 @@ import { TutorContext, tutorContextFixture } from "@parrot/shared";
 import type { TutorContextData } from "../../learner/queries";
 import { buildTutorContext, loadTutorContext, pickTargetWords, shortSentence } from "../context";
 import { getSession, resetSessions } from "../session";
+import { UNITS } from "../../curriculum/units";
 
 const NPR_TITLE = "Nvidia CEO Jensen Huang resigns amid spy scandal : NPR";
 const at = "2026-11-14T12:00:00.000Z";
@@ -56,6 +57,41 @@ async function main() {
   assert.equal(targets[3]!.english, "house");
   assert.equal(targets[4]!.english, "to make the most of");
   assert.equal("article" in targets[4]!, false, "null article is omitted");
+
+  // 1b. lesson branch (D-022). Returning demo (int-1 holds the NPR hovers): unchanged, no article catch-up slots.
+  const lessonOf = (id: string): NonNullable<TutorContextData["lesson"]> => {
+    const unit = UNITS.find((u) => u.id === id)!;
+    return {
+      unit,
+      position: "check",
+      words: unit.words.map((lemma) => ({ lemma, article: null, english: `${lemma} (en)`, cognate: false, state: "new" as const })),
+      lastLesson: null,
+    };
+  };
+  assert.deepEqual(
+    pickTargetWords({ ...seeded, lesson: lessonOf("int-1") }).map((t) => [t.lemma, t.source]),
+    [["empresa", "hovered"], ["mercado", "hovered"], ["mundo", "hovered"], ["negocio", "lesson"], ["problema", "lesson"]],
+  );
+  // New demo (beg-0 shares no word with the article): 2 article words first, "Didn't know" before "looked",
+  // "Knew it" skipped, a "Didn't know" cognate allowed; then the unit.
+  const newDemo: TutorContextData = {
+    ...seeded,
+    level: "beginner",
+    hoveredWords: [
+      { lemma: "mundo", hoveredAt: at, article: "el", english: "world", cognate: false, outcome: "looked" },
+      { lemma: "mercado", hoveredAt: at, article: "el", english: "market", cognate: false, outcome: "knew_it" },
+      { lemma: "investigación", hoveredAt: at, article: "la", english: "investigation", cognate: true, outcome: "didnt_know" },
+      { lemma: "empresa", hoveredAt: at, articleTitle: NPR_TITLE, article: "la", english: "company", cognate: false, outcome: "didnt_know" },
+    ],
+    lesson: lessonOf("beg-0"),
+  };
+  assert.deepEqual(
+    pickTargetWords(newDemo).map((t) => [t.lemma, t.source]),
+    [["investigación", "hovered"], ["empresa", "hovered"], ["ser", "lesson"], ["nombre", "lesson"], ["vivir", "lesson"]],
+  );
+  const newCtx = buildTutorContext(newDemo, "sess_new", now);
+  assert.ok(newCtx.plan!.words[1]!.reason.includes(`you clicked "Didn't know"`), newCtx.plan!.words[1]!.reason);
+
   const ctx = buildTutorContext(seeded, "sess_check", now);
   TutorContext.parse(ctx);
   assert.deepEqual(ctx.articleTitles, [NPR_TITLE]);

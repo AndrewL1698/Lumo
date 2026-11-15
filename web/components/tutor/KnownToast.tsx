@@ -29,7 +29,7 @@ export function KnownToast({
       <p className="mt-2 font-display text-3xl font-extrabold text-ink">
         <span className="glow-known">{lemma}</span>
       </p>
-      <p className="mt-2 text-ink">You said it right out loud, so it lights up for good. Added to your jar.</p>
+      <p className="mt-2 text-ink">You said it right out loud, so it lights up for good. Your articles get more Spanish on the next reload.</p>
     </div>
   );
 }

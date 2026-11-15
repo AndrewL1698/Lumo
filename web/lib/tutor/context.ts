@@ -12,6 +12,7 @@ const MAX_LESSON_HOVERED = 3; // hovered words that belong to today's unit
 const MAX_LESSON_DUE = 1;
 const MAX_DUE_TARGETS = 2;
 const MAX_TARGETS = 5;
+const MAX_READING = 2; // article words outside today's unit: the lesson's catch-up half
 
 type WordLike = { lemma: string; article: string | null; english: string; cognate: boolean };
 
@@ -36,12 +37,20 @@ export function pickTargetWords(data: TutorContextData): TargetWord[] {
     }
   };
   if (lesson) {
-    // D-022: today's unit first, so the tutor teaches a logical set. Unit words the learner hovered, then due, then
-    // the rest of the unit that isn't known yet; then at most one outside hover, then outside due words as before.
+    // D-022: unit words the learner hovered, then unit due. Then up to 2 article words from outside the unit
+    // ("Didn't know" first, "Knew it" skipped): the lesson's first half catches up on them (prompts.ts CATCH_UP_RULES).
+    // Then the rest of the unit that isn't known yet; then at most one outside hover, then outside due words.
     const inUnit = new Set(lesson.unit.words);
     const solid = new Set(lesson.words.filter((w) => w.state === "known" || w.state === "mastered").map((w) => w.lemma));
     take(data.hoveredWords.filter((w) => inUnit.has(w.lemma)), "hovered", MAX_LESSON_HOVERED);
+    const room = Math.min(MAX_READING, MAX_LESSON_HOVERED - out.length); // 0 when the unit already has 3 hovers
     take(data.dueWords.filter((w) => inUnit.has(w.lemma)), "due", MAX_LESSON_DUE);
+    const rank = (w: { outcome?: string }) => (w.outcome === "didnt_know" ? 0 : 1);
+    const reading = data.hoveredWords
+      .filter((w) => !inUnit.has(w.lemma) && w.outcome !== "knew_it")
+      .sort((a, b) => rank(a) - rank(b)) // stable: newest first inside each group
+      .map((w) => ({ ...w, cognate: w.cognate && w.outcome !== "didnt_know" })); // they said they didn't know it
+    take(reading, "hovered", room);
     take(lesson.words.filter((w) => !solid.has(w.lemma)), "lesson", MAX_TARGETS);
     take(data.hoveredWords.filter((w) => !inUnit.has(w.lemma)), "hovered", 1);
     take(data.dueWords.filter((w) => !inUnit.has(w.lemma)), "due", MAX_DUE_TARGETS);
