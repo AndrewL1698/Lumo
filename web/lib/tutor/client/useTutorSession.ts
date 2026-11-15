@@ -34,7 +34,7 @@ import { createAudioQueue } from "./audioQueue";
 import { createPttRecorder, encodeWav } from "./pttRecorder";
 import { createScribeClient } from "./scribeRealtime";
 import { createTimeline } from "./timeline";
-import { createVad, type Vad } from "./vad";
+import { createVad, type Vad, type VadInfo } from "./vad";
 
 const TOKEN_MAX_AGE_MS = 10 * 60_000; // tokens expire after 15 min; refetch well before that
 const JSON_HEADERS = { "Content-Type": "application/json" };
@@ -49,6 +49,8 @@ type Setters = {
   lastTimeline: (t: TurnTimeline | null) => void;
   plan: (p: UseTutorSession["plan"]) => void;
   sessionId: (id: string | null) => void;
+  /** Hands-free ?debug=1 meter (D-025). */
+  meter: (m: (VadInfo & { status: string }) | null) => void;
 };
 
 /** One tutor reply (the opener or the answer to one utterance). */
@@ -68,6 +70,8 @@ type Controller = Pick<UseTutorSession, "start" | "pressTalk" | "releaseTalk" | 
   /** Hands-free (D-023). Off = push-to-talk exactly as before. */
   setHandsFree: (on: boolean) => void;
   setMuted: (muted: boolean) => void;
+  /** Stop Luci talking right now (D-025). */
+  interrupt: () => void;
 };
 
 function newId(): string {
@@ -529,7 +533,13 @@ function createController(rawSet: Setters, forceBatch: () => boolean, placement:
       vad.reset(); // busy turning the last take into text
       return;
     }
-    const ev = vad.push(rms, performance.now(), { tutorSpeaking: curStatus === "speaking", partial: lastPartial });
+    const now = performance.now();
+    const ev = vad.push(rms, now, { tutorSpeaking: curStatus === "speaking", partial: lastPartial });
+    if (ev) console.log(`[handsfree] ${vad.info().last} (${curStatus})`, formatInfo(vad.info(), rms));
+    if (debugMeter && now - lastMeterAt > 100) {
+      lastMeterAt = now;
+      set.meter({ ...vad.info(), level: rms, status: curStatus });
+    }
     if (ev === "start") {
       api.pressTalk(); // also stops Luci: a real barge-in
       if (!listening) vad.reset(); // the press was refused (no mic, busy)
@@ -537,6 +547,10 @@ function createController(rawSet: Setters, forceBatch: () => boolean, placement:
       api.releaseTalk();
     }
   }
+  const debugMeter = typeof window !== "undefined" && /[?&]debug=1/.test(window.location.search);
+  let lastMeterAt = 0;
+  const formatInfo = (i: VadInfo, rms: number) =>
+    `level ${rms.toFixed(3)} floor ${i.floor.toFixed(3)} start>${i.startLevel.toFixed(3)} quiet<${i.silenceLevel.toFixed(3)} echo ${i.echo.toFixed(3)} peak ${i.peak.toFixed(3)}`;
 
   function startMonitor() {
     if (!recorder?.monitor) return;
@@ -564,6 +578,12 @@ function createController(rawSet: Setters, forceBatch: () => boolean, placement:
         recorder.setMuted?.(false);
         micMuted = false;
       }
+    },
+
+    interrupt() {
+      if (!started) return;
+      stopReply(true); // the same thing a real barge-in does
+      vad?.reset();
     },
 
     setMuted(muted) {
@@ -762,6 +782,7 @@ export function useTutorSession(opts?: { forceBatch?: boolean; placement?: boole
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [mode, setModeState] = useState<"ptt" | "handsfree">("ptt");
   const [muted, setMutedState] = useState(false);
+  const [meter, setMeter] = useState<(VadInfo & { status: string }) | null>(null);
 
   const forceBatchRef = useRef(false);
   const placementRef = useRef(false);
@@ -783,6 +804,7 @@ export function useTutorSession(opts?: { forceBatch?: boolean; placement?: boole
         lastTimeline: setLastTimeline,
         plan: setPlan,
         sessionId: setSessionId,
+        meter: setMeter,
       },
       () => forceBatchRef.current,
       () => placementRef.current,
@@ -828,5 +850,7 @@ export function useTutorSession(opts?: { forceBatch?: boolean; placement?: boole
     setMode,
     muted,
     setMuted,
+    interrupt: ctl.interrupt,
+    meter,
   };
 }

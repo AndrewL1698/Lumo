@@ -36,4 +36,6 @@ export interface TutorSession {
   setMode?: (mode: "ptt" | "handsfree") => void;
   muted?: boolean;
   setMuted?: (muted: boolean) => void;
+  interrupt?: () => void;
+  meter?: ({ state: string; level: number; floor: number; startLevel: number; silenceLevel: number; echo: number; peak: number; last: string; status: string }) | null;
 }

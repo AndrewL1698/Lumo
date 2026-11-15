@@ -21,7 +21,7 @@ const speaker = "font-display text-base font-semibold pt-2";
 // Pure view over a TutorSession. Pass useMockTutorSession() or Andrew's real useTutorSession().
 export function TutorPage({ session }: { session: TutorSession }) {
   const { status, partial, turns, targetWords, recap, notice, start, pressTalk, releaseTalk, sendText, end } = session;
-  const { mode = "ptt", setMode, muted = false, setMuted } = session;
+  const { mode = "ptt", setMode, muted = false, setMuted, interrupt, meter } = session;
   const handsFree = mode === "handsfree" && !!setMode;
   // Remember the choice on this browser. The default (and anything unreadable) is push-to-talk.
   useEffect(() => {
@@ -40,7 +40,13 @@ export function TutorPage({ session }: { session: TutorSession }) {
     }
   };
   const talkControl = handsFree ? (
-    <HandsFreeMic status={status} muted={muted} onToggleMute={() => setMuted?.(!muted)} />
+    <HandsFreeMic
+      status={status}
+      muted={muted}
+      onToggleMute={() => setMuted?.(!muted)}
+      onSend={releaseTalk}
+      onInterrupt={() => interrupt?.()}
+    />
   ) : (
     <PushToTalk status={status} onPress={pressTalk} onRelease={releaseTalk} />
   );
@@ -299,7 +305,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
         setEnding({ notice: notice ?? null });
         void end();
       }}
-      disabled={turns.length < 2}
+      disabled={turns.length < 1}
       className={`${btn.secondary} shrink-0`}
     >
       End session
@@ -420,6 +426,14 @@ export function TutorPage({ session }: { session: TutorSession }) {
           row (talk, type, end) so the newest exchange keeps the space. Narrow: talk row, then typing below. */}
       <div className="sticky bottom-0 -mx-4 space-y-3 border-t border-line bg-panel px-4 pb-4 pt-4">
         {setMode && <ModeToggle mode={mode} onChange={changeMode} />}
+        {handsFree && meter && (
+          // ?debug=1: what the listener believes, to tune hands-free on a real mic (D-025).
+          <p className="font-mono text-xs text-muted" aria-hidden="true">
+            {meter.state} · {meter.status} · level {meter.level.toFixed(3)} · room {meter.floor.toFixed(3)} · start&gt;
+            {meter.startLevel.toFixed(3)} · quiet&lt;{meter.silenceLevel.toFixed(3)} · echo {meter.echo.toFixed(3)} · peak{" "}
+            {meter.peak.toFixed(3)} · last: {meter.last || "none"}
+          </p>
+        )}
         {wide ? (
           <div className="flex items-center gap-4">
             {talkControl}
