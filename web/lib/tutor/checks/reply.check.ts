@@ -4,6 +4,10 @@ import { replyTextFixture } from "@parrot/shared";
 import { POST } from "../../../app/api/tutor/reply/route";
 import { getClaude } from "../../claude";
 import { TUTOR } from "../../config";
+import { WHY } from "../policy";
+import { getSession, recordCorrection, setSessionContext } from "../session";
+
+const MOCK_WHY_TEXT = "Steering toward 'huelga': you hovered it while reading";
 
 const URL_ = "http://localhost/api/tutor/reply";
 const utterance = { sessionId: "s1", utteranceId: "u1", rawText: "Hola, yo tengo la problema", history: [] };
@@ -25,6 +29,7 @@ async function main() {
   assert.equal(res.headers.get("Cache-Control"), "no-store");
   assert.equal(res.headers.get("Content-Type"), "text/plain; charset=utf-8");
   assert.equal(res.headers.get("X-Reply-Fallback"), null);
+  assert.equal(decodeURIComponent(res.headers.get("X-Parrot-Why") ?? ""), MOCK_WHY_TEXT);
   assert.equal(await res.text(), replyTextFixture);
 
   res = await POST(post(opener));
@@ -86,6 +91,7 @@ async function main() {
     assert.equal(res.status, 200);
     assert.equal(res.headers.get("X-Reply-Fallback"), "1");
     assert.equal(res.headers.get("X-Turn-Id"), turnId);
+    assert.equal(res.headers.get("X-Parrot-Why"), null); // canned line: no why
     assert.equal(res.headers.get("Content-Type"), "text/plain; charset=utf-8");
     assert.equal(await res.text(), TUTOR.cannedRepeat);
     assert.ok(Date.now() - t0 <= TUTOR.replyFirstTokenTimeoutMs + 500, "fallback did not hang");
@@ -146,6 +152,28 @@ async function main() {
   assert.equal(res.headers.get("X-Reply-Fallback"), null);
   assert.equal(res.headers.get("X-Turn-Id"), "u1");
   assert.equal(await res.text(), "Claro, ¿y tú?");
+  // s1's policy is still at turn 0 (only /correct advances it), so the first answer is "just talking".
+  assert.equal(decodeURIComponent(res.headers.get("X-Parrot-Why")!), WHY.talking);
+
+  // J1: the why header round-trips an accented lemma, with the steer reason from the context.
+  const ctx = getSession("s_why").context;
+  setSessionContext("s_why", { ...ctx, targetWords: [{ lemma: "mamá", english: "mom", source: "hovered" }] });
+  recordCorrection("s_why", [], []);
+  recordCorrection("s_why", [], []); // turn 2: steer
+  fakeFetch(sse([...head, delta("¿Y tu mamá?"), ...tail("end_turn")]));
+  res = await POST(post({ ...utterance, sessionId: "s_why" }));
+  assert.equal(res.headers.get("X-Reply-Fallback"), null);
+  assert.equal(
+    decodeURIComponent(res.headers.get("X-Parrot-Why")!),
+    "Steering toward 'mamá': you hovered it while reading",
+  );
+  assert.equal(await res.text(), "¿Y tu mamá?");
+  // Opener: everyday variant when there are no article titles.
+  setSessionContext("s_why", { ...getSession("s_why").context, articleTitles: [] });
+  fakeFetch(sse([...head, delta("¡Hola!"), ...tail("end_turn")]));
+  res = await POST(post({ ...opener, sessionId: "s_why" }));
+  assert.equal(decodeURIComponent(res.headers.get("X-Parrot-Why")!), WHY.openerEveryday);
+  assert.equal(await res.text(), "¡Hola!");
 
   // Refusal before any text → canned line.
   fakeFetch(sse([...head, ...tail("refusal")]));
