@@ -10,7 +10,7 @@
 import type { Candidate, ExtensionEvent } from "@parrot/shared";
 import { send } from "../messages";
 import { neverListReason, neverListPageReason } from "../neverlist";
-import { installHoverCard, type HoverTarget } from "./hovercard";
+import { CARD_ID, installHoverCard, type HoverTarget } from "./hovercard";
 import { showAmbience, hideAmbience } from "./ambience";
 import { watchSeen } from "./seen";
 import wordindex from "../wordindex.json";
@@ -43,8 +43,10 @@ const REVIEW_SHARE = 0.7;
 /** Re-run for text that arrives after load. Each pass costs one translate batch, so keep it short. */
 const SWEEP_DELAYS_MS = [0, 1500, 4000];
 
+// Never swap inside these. That includes Luci's own UI: the hover card is added to the page, and without this a
+// sweep could translate its text ("✓ You know this" became "✓ You conoces this").
 const SKIP_SELECTOR =
-  "a, button, input, textarea, select, code, pre, script, style, [contenteditable], form, [data-parrot], [data-parrot-block]";
+  `a, button, input, textarea, select, code, pre, script, style, [contenteditable], form, [data-parrot], [data-parrot-block], #${CARD_ID}`;
 
 const MARK_ATTR = "data-parrot";
 /** A whole sentence or paragraph turned Spanish (D-018 Part B). Not a word swap: no events, no seen observer. */
