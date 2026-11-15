@@ -1,0 +1,822 @@
+{
+  "scores": {
+    "file": "eval/accuracy/sentences.json",
+    "url": "http://localhost:3000",
+    "ranAt": "2026-11-15T01:45:37.234Z",
+    "sentences": 50,
+    "failedRequests": 0,
+    "recall": "91% (32/35)",
+    "precision": "100% (32/32)",
+    "falseAlarmRate": "0% (0/15)",
+    "serverMs": {
+      "median": 1051,
+      "p90": 1324
+    },
+    "roundTripMs": {
+      "median": 1065,
+      "p90": 1336
+    },
+    "byType": {
+      "conjugation": {
+        "planted": 8,
+        "caught": 6
+      },
+      "agreement": {
+        "planted": 8,
+        "caught": 8
+      },
+      "word_choice": {
+        "planted": 6,
+        "caught": 5
+      },
+      "word_order": {
+        "planted": 4,
+        "caught": 4
+      },
+      "missing_word": {
+        "planted": 5,
+        "caught": 5
+      },
+      "extra_word": {
+        "planted": 4,
+        "caught": 4
+      }
+    }
+  },
+  "rows": [
+    {
+      "id": "a01",
+      "control": false,
+      "type": "agreement",
+      "planted": "un casa",
+      "flags": [
+        {
+          "span": "compró un casa",
+          "type": "agreement",
+          "correction": "compró una casa",
+          "confidence": 0.95
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 998,
+      "roundTripMs": 1065.030417
+    },
+    {
+      "id": "a02",
+      "control": false,
+      "type": "agreement",
+      "planted": "muy grave",
+      "flags": [
+        {
+          "span": "son muy grave",
+          "type": "agreement",
+          "correction": "son muy graves",
+          "confidence": 0.95
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1003,
+      "roundTripMs": 1018.9975000000002
+    },
+    {
+      "id": "a03",
+      "control": false,
+      "type": "agreement",
+      "planted": "La agua",
+      "flags": [
+        {
+          "span": "La agua",
+          "type": "agreement",
+          "correction": "El agua",
+          "confidence": 0.9
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1109,
+      "roundTripMs": 1124.622166
+    },
+    {
+      "id": "a04",
+      "control": false,
+      "type": "agreement",
+      "planted": "dos libro",
+      "flags": [
+        {
+          "span": "dos libro",
+          "type": "agreement",
+          "correction": "dos libros",
+          "confidence": 0.95
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 897,
+      "roundTripMs": 916.9557499999996
+    },
+    {
+      "id": "a05",
+      "control": false,
+      "type": "agreement",
+      "planted": "El profesora",
+      "flags": [
+        {
+          "span": "El profesora",
+          "type": "agreement",
+          "correction": "La profesora",
+          "confidence": 0.95
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1151,
+      "roundTripMs": 1167.4909580000003
+    },
+    {
+      "id": "a06",
+      "control": false,
+      "type": "agreement",
+      "planted": "unas zapatos",
+      "flags": [
+        {
+          "span": "unas zapatos",
+          "type": "agreement",
+          "correction": "unos zapatos",
+          "confidence": 0.95
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1065,
+      "roundTripMs": 1078.7578330000006
+    },
+    {
+      "id": "a07",
+      "control": false,
+      "type": "agreement",
+      "planted": "muy húmeda",
+      "flags": [
+        {
+          "span": "El clima de esta región es muy húmeda durante el verano.",
+          "type": "agreement",
+          "correction": "El clima de esta región es muy húmedo durante el verano.",
+          "confidence": 0.9
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 994,
+      "roundTripMs": 1007.7389999999996
+    },
+    {
+      "id": "a08",
+      "control": false,
+      "type": "agreement",
+      "planted": "llegaron cansados",
+      "flags": [
+        {
+          "span": "llegaron cansados",
+          "type": "agreement",
+          "correction": "llegaron cansadas",
+          "confidence": 0.95
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1075,
+      "roundTripMs": 1086.3679590000002
+    },
+    {
+      "id": "a09",
+      "control": false,
+      "type": "conjugation",
+      "planted": "y compró",
+      "flags": [
+        {
+          "span": "Nosotros fuimos al mercado y compró",
+          "type": "conjugation",
+          "correction": "Nosotros fuimos al mercado y compramos",
+          "confidence": 0.9
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1105,
+      "roundTripMs": 1119.5443750000013
+    },
+    {
+      "id": "a10",
+      "control": false,
+      "type": "conjugation",
+      "planted": "Ustedes trabaja",
+      "flags": [
+        {
+          "span": "Ustedes trabaja",
+          "type": "conjugation",
+          "correction": "Ustedes trabajan",
+          "confidence": 0.95
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1737,
+      "roundTripMs": 1746.8288749999992
+    },
+    {
+      "id": "a11",
+      "control": false,
+      "type": "conjugation",
+      "planted": "no sabo",
+      "flags": [
+        {
+          "span": "sabo",
+          "type": "conjugation",
+          "correction": "sé",
+          "confidence": 0.9
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 972,
+      "roundTripMs": 978.5195839999997
+    },
+    {
+      "id": "a12",
+      "control": false,
+      "type": "conjugation",
+      "planted": "él pagará",
+      "flags": [
+        {
+          "span": "él pagará",
+          "type": "conjugation",
+          "correction": "él pagó",
+          "confidence": 0.9
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1120,
+      "roundTripMs": 1128.2183330000007
+    },
+    {
+      "id": "a13",
+      "control": false,
+      "type": "conjugation",
+      "planted": "y trabajan",
+      "flags": [
+        {
+          "span": "Mi padre tiene cincuenta años y trabajan",
+          "type": "agreement",
+          "correction": "Mi padre tiene cincuenta años y trabaja",
+          "confidence": 0.9
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1068,
+      "roundTripMs": 1078.8050409999996
+    },
+    {
+      "id": "a14",
+      "control": false,
+      "type": "conjugation",
+      "planted": "y jugué",
+      "flags": [],
+      "caught": false,
+      "falseFlags": 0,
+      "serverMs": 1059,
+      "roundTripMs": 1070.2282080000004
+    },
+    {
+      "id": "a15",
+      "control": false,
+      "type": "conjugation",
+      "planted": "no puedo",
+      "flags": [
+        {
+          "span": "Ella no puedo venir",
+          "type": "conjugation",
+          "correction": "Ella no puede venir",
+          "confidence": 0.95
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1010,
+      "roundTripMs": 1022.7952080000014
+    },
+    {
+      "id": "a16",
+      "control": false,
+      "type": "conjugation",
+      "planted": "niños dormieron",
+      "flags": [],
+      "caught": false,
+      "falseFlags": 0,
+      "serverMs": 796,
+      "roundTripMs": 807.971207999999
+    },
+    {
+      "id": "a17",
+      "control": false,
+      "type": "word_choice",
+      "planted": "es en el hospital",
+      "flags": [
+        {
+          "span": "Mi abuela es en el hospital",
+          "type": "conjugation",
+          "correction": "Mi abuela está en el hospital",
+          "confidence": 0.95
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 841,
+      "roundTripMs": 862.0876250000001
+    },
+    {
+      "id": "a18",
+      "control": false,
+      "type": "word_choice",
+      "planted": "Está mucha gente",
+      "flags": [
+        {
+          "span": "Está mucha gente",
+          "type": "agreement",
+          "correction": "Hay mucha gente",
+          "confidence": 0.9
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1241,
+      "roundTripMs": 1254.1757079999988
+    },
+    {
+      "id": "a19",
+      "control": false,
+      "type": "word_choice",
+      "planted": "está de madera",
+      "flags": [
+        {
+          "span": "está de madera",
+          "type": "word_choice",
+          "correction": "es de madera",
+          "confidence": 0.9
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1261,
+      "roundTripMs": 1273.643791999999
+    },
+    {
+      "id": "a20",
+      "control": false,
+      "type": "word_choice",
+      "planted": "saber a tu hermano",
+      "flags": [
+        {
+          "span": "Necesito saber a tu hermano",
+          "type": "word_choice",
+          "correction": "Necesito conocer a tu hermano",
+          "confidence": 0.9
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1007,
+      "roundTripMs": 1020.8905830000003
+    },
+    {
+      "id": "a21",
+      "control": false,
+      "type": "word_choice",
+      "planted": "está el sábado",
+      "flags": [],
+      "caught": false,
+      "falseFlags": 0,
+      "serverMs": 1324,
+      "roundTripMs": 1335.6266250000008
+    },
+    {
+      "id": "a22",
+      "control": false,
+      "type": "word_choice",
+      "planted": "por aprender",
+      "flags": [
+        {
+          "span": "por aprender",
+          "type": "word_choice",
+          "correction": "para aprender",
+          "confidence": 0.9
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 906,
+      "roundTripMs": 919.0118750000001
+    },
+    {
+      "id": "a23",
+      "control": false,
+      "type": "missing_word",
+      "planted": "durante fin",
+      "flags": [
+        {
+          "span": "durante fin de semana",
+          "type": "missing_word",
+          "correction": "durante el fin de semana",
+          "confidence": 0.85
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1127,
+      "roundTripMs": 1138.2352080000019
+    },
+    {
+      "id": "a24",
+      "control": false,
+      "type": "missing_word",
+      "planted": "vi película",
+      "flags": [
+        {
+          "span": "Ayer vi película",
+          "type": "missing_word",
+          "correction": "Ayer vi una película",
+          "confidence": 0.9
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1041,
+      "roundTripMs": 1053.3577089999999
+    },
+    {
+      "id": "a25",
+      "control": false,
+      "type": "missing_word",
+      "planted": "perdió autobús",
+      "flags": [
+        {
+          "span": "perdió autobús",
+          "type": "missing_word",
+          "correction": "perdió el autobús",
+          "confidence": 0.9
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 2098,
+      "roundTripMs": 2110.629334000001
+    },
+    {
+      "id": "a26",
+      "control": false,
+      "type": "missing_word",
+      "planted": "con profesor",
+      "flags": [
+        {
+          "span": "profesor que nos dio",
+          "type": "missing_word",
+          "correction": "profesor que nos dio el examen",
+          "confidence": 0.7
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1091,
+      "roundTripMs": 1104.4992090000014
+    },
+    {
+      "id": "a27",
+      "control": false,
+      "type": "missing_word",
+      "planted": "en hospital",
+      "flags": [
+        {
+          "span": "trabajar en hospital grande",
+          "type": "missing_word",
+          "correction": "trabajar en un hospital grande",
+          "confidence": 0.8
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1100,
+      "roundTripMs": 1113.8859589999993
+    },
+    {
+      "id": "a28",
+      "control": false,
+      "type": "word_order",
+      "planted": "un rojo coche",
+      "flags": [
+        {
+          "span": "un rojo coche",
+          "type": "word_order",
+          "correction": "un coche rojo",
+          "confidence": 0.85
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1555,
+      "roundTripMs": 1566.619999999999
+    },
+    {
+      "id": "a29",
+      "control": false,
+      "type": "word_order",
+      "planted": "Quiero te ver",
+      "flags": [
+        {
+          "span": "Quiero te ver",
+          "type": "word_order",
+          "correction": "Quiero verte",
+          "confidence": 0.9
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1173,
+      "roundTripMs": 1182.1409590000003
+    },
+    {
+      "id": "a30",
+      "control": false,
+      "type": "word_order",
+      "planted": "como no carne",
+      "flags": [
+        {
+          "span": "como no carne",
+          "type": "word_order",
+          "correction": "no como carne",
+          "confidence": 0.9
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1101,
+      "roundTripMs": 1111.1679579999982
+    },
+    {
+      "id": "a31",
+      "control": false,
+      "type": "word_order",
+      "planted": "a lo hacer",
+      "flags": [
+        {
+          "span": "Voy a lo hacer",
+          "type": "word_order",
+          "correction": "Voy a hacerlo",
+          "confidence": 0.9
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1099,
+      "roundTripMs": 1111.3532500000001
+    },
+    {
+      "id": "a32",
+      "control": false,
+      "type": "extra_word",
+      "planted": "se llama a Carlos",
+      "flags": [
+        {
+          "span": "se llama a Carlos",
+          "type": "word_choice",
+          "correction": "se llama Carlos",
+          "confidence": 0.9
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 994,
+      "roundTripMs": 1001.7732079999987
+    },
+    {
+      "id": "a33",
+      "control": false,
+      "type": "extra_word",
+      "planted": "a al cine",
+      "flags": [
+        {
+          "span": "ir a al cine",
+          "type": "word_choice",
+          "correction": "ir al cine",
+          "confidence": 0.9
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1477,
+      "roundTripMs": 1484.5247920000038
+    },
+    {
+      "id": "a34",
+      "control": false,
+      "type": "extra_word",
+      "planted": "Pienso de que",
+      "flags": [
+        {
+          "span": "Pienso de que",
+          "type": "word_choice",
+          "correction": "Pienso que",
+          "confidence": 0.9
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 960,
+      "roundTripMs": 971.7648330000011
+    },
+    {
+      "id": "a35",
+      "control": false,
+      "type": "extra_word",
+      "planted": "Lo tengo el libro",
+      "flags": [
+        {
+          "span": "Lo tengo el libro",
+          "type": "word_choice",
+          "correction": "Tengo el libro",
+          "confidence": 0.8
+        }
+      ],
+      "caught": true,
+      "falseFlags": 0,
+      "serverMs": 1181,
+      "roundTripMs": 1193.304250000001
+    },
+    {
+      "id": "c01",
+      "control": true,
+      "type": null,
+      "planted": null,
+      "flags": [],
+      "caught": false,
+      "falseFlags": 0,
+      "serverMs": 939,
+      "roundTripMs": 950.7802079999965
+    },
+    {
+      "id": "c02",
+      "control": true,
+      "type": null,
+      "planted": null,
+      "flags": [],
+      "caught": false,
+      "falseFlags": 0,
+      "serverMs": 817,
+      "roundTripMs": 829.3289169999989
+    },
+    {
+      "id": "c03",
+      "control": true,
+      "type": null,
+      "planted": null,
+      "flags": [],
+      "caught": false,
+      "falseFlags": 0,
+      "serverMs": 603,
+      "roundTripMs": 617.7495409999974
+    },
+    {
+      "id": "c04",
+      "control": true,
+      "type": null,
+      "planted": null,
+      "flags": [],
+      "caught": false,
+      "falseFlags": 0,
+      "serverMs": 755,
+      "roundTripMs": 772.2472500000003
+    },
+    {
+      "id": "c05",
+      "control": true,
+      "type": null,
+      "planted": null,
+      "flags": [],
+      "caught": false,
+      "falseFlags": 0,
+      "serverMs": 741,
+      "roundTripMs": 751.804333
+    },
+    {
+      "id": "c06",
+      "control": true,
+      "type": null,
+      "planted": null,
+      "flags": [],
+      "caught": false,
+      "falseFlags": 0,
+      "serverMs": 806,
+      "roundTripMs": 816.1295419999951
+    },
+    {
+      "id": "c07",
+      "control": true,
+      "type": null,
+      "planted": null,
+      "flags": [],
+      "caught": false,
+      "falseFlags": 0,
+      "serverMs": 667,
+      "roundTripMs": 680.2160829999993
+    },
+    {
+      "id": "c08",
+      "control": true,
+      "type": null,
+      "planted": null,
+      "flags": [],
+      "caught": false,
+      "falseFlags": 0,
+      "serverMs": 877,
+      "roundTripMs": 890.2645410000041
+    },
+    {
+      "id": "c09",
+      "control": true,
+      "type": null,
+      "planted": null,
+      "flags": [],
+      "caught": false,
+      "falseFlags": 0,
+      "serverMs": 1258,
+      "roundTripMs": 1271.3226670000004
+    },
+    {
+      "id": "c10",
+      "control": true,
+      "type": null,
+      "planted": null,
+      "flags": [],
+      "caught": false,
+      "falseFlags": 0,
+      "serverMs": 1051,
+      "roundTripMs": 1064.8330419999984
+    },
+    {
+      "id": "c11",
+      "control": true,
+      "type": null,
+      "planted": null,
+      "flags": [],
+      "caught": false,
+      "falseFlags": 0,
+      "serverMs": 798,
+      "roundTripMs": 809.3215829999972
+    },
+    {
+      "id": "c12",
+      "control": true,
+      "type": null,
+      "planted": null,
+      "flags": [],
+      "caught": false,
+      "falseFlags": 0,
+      "serverMs": 730,
+      "roundTripMs": 741.5510000000068
+    },
+    {
+      "id": "c13",
+      "control": true,
+      "type": null,
+      "planted": null,
+      "flags": [],
+      "caught": false,
+      "falseFlags": 0,
+      "serverMs": 877,
+      "roundTripMs": 889.2052919999987
+    },
+    {
+      "id": "c14",
+      "control": true,
+      "type": null,
+      "planted": null,
+      "flags": [],
+      "caught": false,
+      "falseFlags": 0,
+      "serverMs": 1132,
+      "roundTripMs": 1144.9719170000026
+    },
+    {
+      "id": "c15",
+      "control": true,
+      "type": null,
+      "planted": null,
+      "flags": [],
+      "caught": false,
+      "falseFlags": 0,
+      "serverMs": 994,
+      "roundTripMs": 1006.1549169999998
+    }
+  ]
+}

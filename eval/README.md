@@ -27,20 +27,20 @@ npx tsx eval/accuracy/run.ts --file <path.json>   # e.g. the 50-sentence accurac
 It prints the numbers and writes `eval/accuracy/results.json`, with every response, so misses can be inspected. The run creates throwaway session ids, and `/api/tutor/correct` doesn't record learner events for sessions it didn't start, so running the eval never changes the demo user's words.
 
 ### Results
-**Official: Naren's accuracy set (`eval/accuracy/sentences.json`), 50 sentences = 35 planted errors + 15 correct controls.** Three runs on Nov 14 evening, on main `31d8e85` (with turn flags and the eval guard), against `npm run dev:web` on localhost.
+**Official: Naren's accuracy set (`eval/accuracy/sentences.json`), 50 sentences = 35 planted errors + 15 correct controls.** Three runs on Nov 14 night, on main `e3fd59a` (after PR #40: racing corrector calls + prompt caching, turn flags, eval guard), against `npm run dev:web` on localhost.
 
 | | Recall | Precision | False alarms | serverMs median / p90 |
 |---|---|---|---|---|
-| Run 1 | 91% (32/35) | 100% (32/32) | 0% (0/15) | 1.14 s / 1.68 s |
-| Run 2 | 91% (32/35) | 100% (32/32) | 0% (0/15) | 1.05 s / 1.82 s |
-| Run 3 | 91% (32/35) | 100% (32/32) | 0% (0/15) | 1.08 s / 1.75 s |
-| **Reported (middle run)** | **91%** | **100%** | **0%** | **1.08 s / 1.75 s** |
+| Run 1 | 91% (32/35) | 100% (32/32) | 0% (0/15) | 1.05 s / 1.32 s |
+| Run 2 | 91% (32/35) | 100% (32/32) | 0% (0/15) | 1.00 s / 1.29 s |
+| Run 3 | 94% (33/35) | 100% (33/33) | 0% (0/15) | 1.02 s / 1.43 s |
+| **Reported (middle run, run 1)** | **91%** | **100%** | **0%** | **1.05 s / 1.32 s** |
 
-- **By type (run 3):** agreement 8/8, word order 4/4, missing word 5/5, conjugation 7/8, word choice 5/6, extra word 3/4.
-- **Missed in every run:** *y jugué* (a14, conjugation) and *está el sábado* (a21, ser/estar for events).
-- **Missed in some runs:** *Lo tengo el libro* (a35, extra word; runs 1 and 3) and *niños dormieron* (a16, conjugation; run 2).
-- **Never a false alarm:** no flag on any of the 15 correct sentences, and every flag raised was a real planted error.
-- The eval doesn't change the demo user's words: `/correct` only credits words for sessions started through `/api/tutor/context` (checked: no `spoken_*` events after all 150 requests).
+- **Always missed:** *está el sábado* (a21, ser/estar for events). **Usually missed:** *niños dormieron* (a16, 3/3 runs). **Sometimes:** *y jugué* (a14), *Lo tengo el libro* (a35).
+- **Never a false alarm:** no flag on any of the 15 correct sentences, and every flag was a real planted error.
+- **Speed:** p90 dropped from 1.68–1.82 s (before PR #40) to 1.29–1.43 s. It's now under the 1.5 s target.
+- **Safe to run:** `/correct` only credits words for sessions started through `/api/tutor/context` (checked: no `spoken_*` events after 150 requests). The middle run's raw output is in `eval/accuracy/results.json`.
+- **Earlier official run** (main `31d8e85`, before #40): recall 91% ×3, precision 100%, false alarms 0%, serverMs 1.08 s / 1.75 s.
 
 **Preliminary (Nov 14 afternoon, the 20 STT-test sentences, one run, before turn flags):** recall 87% (13/15), precision 100%, false alarms 0/5, serverMs median 1.0 s / p90 2.0 s. Superseded by the official set above.
 
