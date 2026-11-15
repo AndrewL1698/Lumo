@@ -70,7 +70,7 @@ The tutor decides how to teach on every turn instead of following a script:
 
 You can watch it decide. The *Tonight's lesson* card lists each target word with its reason ("you hovered it this
 morning", "due for review"), and each word lights up as you use it. A small grey **why** line under every tutor reply
-says what it chose and why, e.g. *"Recast only: first time you've made this mistake"*. Neither adds an extra Claude
+says what it chose and why, e.g. *"Not correcting out loud yet: Luci waits until a mistake comes up in two turns"*. Neither adds an extra Claude
 call: both come from decisions the tutor already makes in code.
 
 ### Adaptive intelligence
