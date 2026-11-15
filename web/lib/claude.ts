@@ -57,22 +57,40 @@ export async function correctUtterance(args: {
 }): Promise<ModelCorrection> {
   const { signal, ...promptArgs } = args;
   const { system, user } = buildCorrectorPrompt(promptArgs);
-  const response = await getClaude().messages.parse(
-    {
-      model: MODELS.correction,
-      max_tokens: 1024,
-      thinking: { type: "disabled" },
-      output_config: { effort: "low", format: zodOutputFormat(ModelCorrectionSchema) },
-      system,
-      messages: [{ role: "user", content: user }],
-    },
-    { signal },
-  );
-  if (response.stop_reason === "refusal") throw new ClaudeRefusalError("corrector refused");
-  if (response.parsed_output === null) {
-    throw new Error(`corrector returned no parsable output (stop_reason: ${response.stop_reason})`);
+  const once = async (s: AbortSignal): Promise<ModelCorrection> => {
+    const response = await getClaude().messages.parse(
+      {
+        model: MODELS.correction,
+        max_tokens: 1024,
+        thinking: { type: "disabled" },
+        output_config: { effort: "low", format: zodOutputFormat(ModelCorrectionSchema) },
+        // The system prompt only varies by level (~900 tokens; Haiku 5.5 caches from 512), so cache it.
+        system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
+        messages: [{ role: "user", content: user }],
+      },
+      { signal: s },
+    );
+    if (response.stop_reason === "refusal") throw new ClaudeRefusalError("corrector refused");
+    if (response.parsed_output === null) {
+      throw new Error(`corrector returned no parsable output (stop_reason: ${response.stop_reason})`);
+    }
+    return response.parsed_output;
+  };
+
+  // HACK(latency): hedged request. Haiku's slow turns are random first-token and generation spikes, so two
+  // identical calls race and the first valid answer wins; the other is aborted. About $0.0002 extra per turn.
+  const racers = [new AbortController(), new AbortController()];
+  const stopAll = () => racers.forEach((c) => c.abort());
+  if (signal?.aborted) stopAll();
+  else signal?.addEventListener("abort", stopAll, { once: true });
+  try {
+    return await Promise.any(racers.map((c) => once(c.signal)));
+  } catch (err) {
+    throw err instanceof AggregateError ? err.errors[0] : err; // both failed: report the first reason
+  } finally {
+    stopAll();
+    signal?.removeEventListener("abort", stopAll);
   }
-  return response.parsed_output;
 }
 
 /** One tiny call so the structured-output schema is compiled before the first real turn. Never throws. */
@@ -121,7 +139,10 @@ export async function* streamTutorReply(args: {
     max_tokens: 300,
     thinking: { type: "between_tools" as const },
     output_config: { effort: "low" as const },
-    system: args.system,
+    // System prompt + <session> block is fixed for a session: cache it. The top-level marker also caches
+    // the conversation so far, so the next turn reads its history from the cache (Sonnet 5.5 caches from 512 tokens).
+    system: [{ type: "text" as const, text: args.system, cache_control: { type: "ephemeral" as const } }],
+    cache_control: { type: "ephemeral" as const },
     messages: args.messages,
   };
   const options = { signal: args.signal };
