@@ -7,7 +7,7 @@ import { CandidatesResponse } from "./candidates";
 import { EventsResponse } from "./events";
 import { Settings } from "./settings";
 import { SentenceTranslateResponse, TranslateResponse } from "./translate";
-import { CorrectResponse, Recap, SttTokenResponse, TutorContext, TutorTranslateResponse } from "./tutor";
+import { CorrectResponse, PlacementResponse, Recap, SttTokenResponse, TutorContext, TutorTranslateResponse } from "./tutor";
 
 const now = "2026-11-14T15:00:00.000Z";
 const tomorrow = "2026-11-15T15:00:00.000Z";
@@ -26,11 +26,12 @@ export const pairResponseFixture = PairResponse.parse({ token: "demo-extension-t
 export const candidatesResponseFixture = CandidatesResponse.parse({
   generatedAt: 1763132400000,
   candidates: [
-    { lemma: "casa", state: "learning", isDue: true, hoveredRecently: true, onWeakList: false, isNewInBand: false, isMastered: false },
+    { lemma: "casa", state: "learning", isDue: true, hoveredRecently: true, onWeakList: false, isNewInBand: false, isMastered: false, isKey: true },
     { lemma: "huelga", state: "new", isDue: false, hoveredRecently: false, onWeakList: false, isNewInBand: true, isMastered: false },
     { lemma: "aprovechar", state: "seen", isDue: false, hoveredRecently: true, onWeakList: true, isNewInBand: false, isMastered: false },
     { lemma: "tiempo", state: "mastered", isDue: false, hoveredRecently: false, onWeakList: false, isNewInBand: false, isMastered: true },
   ],
+  understanding: { points: 2, solid: 1, knewIt: 0 },
 });
 
 export const translateResponseFixture = TranslateResponse.parse({
@@ -152,6 +153,13 @@ export const replyTextFixture =
 /** /api/tutor/translate for `replyTextFixture`. */
 export const tutorTranslateResponseFixture = TutorTranslateResponse.parse({
   english: "Sure, I understand. The problem is that the strike goes on, right? How are you getting to work this week?",
+});
+
+/** POST /api/tutor/placement in mock mode. */
+export const placementResponseFixture = PlacementResponse.parse({
+  level: "intermediate",
+  reason_en: "You answered in full sentences and used the past tense, with a few agreement slips.",
+  evidence_en: ['You said "me llamo Ana y soy de Boston" without help.', 'You tried the past tense: "yo fui al parque".'],
 });
 
 export const recapFixture = Recap.parse({

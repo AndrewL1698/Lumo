@@ -56,4 +56,6 @@ export const TUTOR = {
   contextTimeoutMs: 3000,
   /** /api/tutor/correct: per-word learner-model write budget; a slow write gives no WordUpdate (task 12). */
   recordTimeoutMs: 1500,
+  /** /api/tutor/placement: the level-check assessment; on timeout the learner keeps their own pick (D-020). */
+  placementTimeoutMs: 8000,
 } as const;

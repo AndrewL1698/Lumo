@@ -73,6 +73,7 @@ Who owns what and how we work: see [`plan.md`](plan.md). Technical design: see [
 | Karthik (Sat evening, agreed with Naren + Shravan) | **Luci polish** (D-010): extension renamed Luci with the firefly icon; hover card in the Luci look (drawn speaker, hover outlines, click confirmation); What Luci knows grouped into Learning / Known / Mastered. |
 | Karthik (Sat evening, agreed with Naren, Andrew, Shravan) | **Click-to-open hover card + time-of-day greetings** (D-015): click a swap to open its card, click away to close; greeting line on the home page; the tutor's opener greets by time of day. |
 | Andrew (Sat night, designed by Karthik, heads-up to Naren) | **Immersion dial** (D-018): each reload of the demo page shows more Spanish, driven by hovers and verdicts; whole sentences and paragraphs in Spanish at the top steps (`/api/translate-sentences`). Separate branch; ship word steps first, sentences/paragraphs only if solid by 1am. **Done, verified on the laptop Sat night (PR #45); slider goes to 200.** Left to do: pre-warm the four steps on the demo laptop, rehearse with Karthik. |
+| Andrew (Sat night, designed by Karthik, heads-up to Naren and Shravan) | **One immersion number** (D-019, replaces the D-018 slider and click dial): the percent comes from proven understanding (known words ×2, Knew it ×1, so the tutor moves it), key words first, every known word always Spanish outside the budget. **Done, verified on the laptop Sun ~1am** (Demo speed: tutor flip on *mercado* took NPR from 57% to 92%). Demo beat at 1:40 in `docs/demo-script.md`. Left to do: pre-warm with one full rehearsal run; Shravan hides "Most swaps per page" on web Settings. |
 
 **Docs:** lock `demo-script.md` (Naren); start capturing screenshots into `docs/img/` (Shravan).
 
@@ -140,7 +141,7 @@ Required: working prototype, clear use case + target user, basic documentation, 
 - [ ] CLAUDE.md Commands filled + `.env.example` (Andrew)
 - [x] AWS decision closed: not required (`decisions.md` D-001)
 - [x] README skeleton committed (Shravan)
-- [x] STT decision in `decisions.md` (Andrew; Pass B still to add)
+- [x] STT decision in `decisions.md` (Andrew; Pass A + Pass B)
 - [ ] `scripts/README.md` word-list method (Karthik)
 - [ ] `docs/demo-script.md` locked (Naren)
 - [ ] Screenshots in `docs/img/` (Shravan)

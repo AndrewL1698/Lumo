@@ -12,7 +12,7 @@ Short entries. Newest at the bottom. Format: **ID · date · owner**, decision, 
 ### D-002 · Nov 14 · Andrew
 **Decision:** STT is ElevenLabs **Scribe v2 Realtime** (`scribe_v2_realtime`, manual commit on button release), with batch `scribe_v2` as the fallback when the realtime socket fails or takes longer than 1.5 s.
 **Why:** Pass A (the 20 eval sentences read by the TTS voice, `eval/stt-test/results.md`): planted errors survived in 73% (11/15) on v2 realtime, 80% (12/15) on batch v2 and 67% (10/15) on v3 realtime. Clean controls stayed clean on all three (5/5). Batch beats realtime by only one sentence, under the two-sentence switch rule in voice-plan §6. Realtime commits in about 70 ms (median) against about 270 ms for batch, and the browser measures about 190 ms from release to transcript. All three configurations "fix" the same three acoustically subtle errors (*Los noticias*, *Ellos piensa*, and one more). So the demo's planted error is one that survives every configuration, such as *la problema*.
-**Pending:** Pass B (a teammate reading the 15 sentences). It can change the pick only if batch wins by two or more sentences.
+**Pass B (Karthik reading, headset) confirms it:** v2 realtime 80% (12/15) with **zero** errors "fixed" (its 3 misses were garbled conjugations), batch 73% (11/15) with 4 fixed (3 of them agreement), v3 realtime 67% (10/15). Controls 5/5 on all three. Realtime now beats batch, so the pick stands. For the slide: on a real voice, the transcriber kept 80% of the planted mistakes and never corrected one.
 **Alternatives:** Batch as the main path (more verbatim on Pass A, but adds about 200 ms to every turn); v3 realtime (lowest survival).
 
 ### D-003 · _proposed_ · Karthik
@@ -88,11 +88,64 @@ Short entries. Newest at the bottom. Format: **ID · date · owner**, decision, 
 **Why:** The probe (`eval/latency/probe.ts`) showed where the time goes. The corrector is about 700 ms to first token plus about 450 ms writing about 120 tokens, and its slow turns are random spikes (one sample took 1.9 s to first token), which a hedge absorbs. Sonnet sends its first words at about 600–800 ms, then pauses about 300–700 ms before the rest arrives in a burst, on both the plain and fallback paths. That pause, not our code, sets the first-chunk time.
 **Measured** (20 turns each, wifi, from STT final; add about 190 ms for button release): correction median/p90 1194/1517 ms → 1128/~1330 ms. Audio ready 1528/1733 ms at baseline. Caching alone left correction unchanged, and fallbacks on vs off showed no difference beyond noise. Accuracy on the 20 sentences after the hedge: recall 10/15 and 12/15, false alarms 0/5. Over 40 hedged pairs the two answers never disagreed on the error count.
 **Not done:** splitting the first chunk at its first comma ("Sí," at about 650 ms instead of the full sentence at about 1.3 s). It would cut first audio by about half a second, but may leave an audible pause after the first word. Decide by ear.
+**Browser result (Karthik, headset, after tuning, from button release):** wifi (8 turns) correction 1349/1824 ms, audio start 1584/2184 ms; phone hotspot (11 turns) correction 1485/1823 ms, audio start 2197/2494 ms. Both correction medians pass; the voice median fails on the hotspot by about 200 ms, and every p90 is over. The comma split at 3 characters sounded natural by ear (no odd pause after "Sí,"), but 2 turns each could not show a speed-up, so it stays at 25 for now. By ear, the bigger problem is gaps between chunks in the middle of a reply.
 
 ### D-018 · Nov 14 · Andrew (designed by Karthik; heads-up to Naren)
+*Parts (1) and (5), and the slider in Update 2, are superseded by D-019.*
 **Decision:** An **immersion dial** in the extension: the demo page turns more Spanish with each reload, driven by what the learner did. (1) The service worker counts progress points from events it already sees (hover +0.5, Knew it +2, Didn't know +1), times a popup rate (1× default, 3×, 5× for the 2-minute demo). (2) The percent picks one of **four fixed steps** (`extension/src/swapBudget.ts`): under 20% is today's behaviour on today's code path; 20%+ is ~40 words, 2 per sentence, easier words included; 55%+ is ~90 words, 3 per sentence and 3 whole sentences in Spanish; 85%+ is dense words plus about 4 whole plain paragraphs in Spanish, the rest still mixed. (3) New `POST /api/translate-sentences` (Haiku, structured output, file cache like `/api/translate`) for the whole sentences and paragraphs; hovering one shows the English and sends no event. (4) **Knew it** words show **steady** (learning tint, no flicker), tracked locally in the extension; Didn't know words flicker; solid stays for proven-known words. Knew it still never changes word state (§6.1). (5) The popup shows the percent, the rate, Reset progress, and "jump to" 0/35/70/100 buttons (pre-warm and stage fallback). "Grow automatically" off = the 0–25 slider with today's rules.
 **Privacy:** at the top step nearly every body sentence of the page is sent to our server (each swapped word sends its sentence for context, plus whole paragraphs). It stays sentence-by-sentence, only on sites the learner enabled, with the never-list enforced and no URL. We say so if asked; `extension/CLAUDE.md` is reworded.
 **Why:** On stage the page didn't change visibly during a 2-minute demo (cap ~14 words, one per sentence). The growth is driven by real hovers and clicks; the rate only compresses time, and we say so.
 **Alternatives:** Smooth interpolation between steps (rejected: picks shift with every hover and miss the warm translate cache on stage). Raising the slider to 200 (rejected: `Settings.perPageCap` is capped at 25 in `/shared`). Showing Knew it words as solid (rejected: a self-report would look like proven knowledge).
 **Update (Sat ~10pm, after the first laptop test):** (1) Every step, step 0 included, now uses one score-first picker and the shared apply code. Before, the picker filled its budget with repeats of a few high-scoring words, then threw the repeats away: on the NPR article auto mode picked 9 of 15 and the slider at 25 picked 13, so the slider looked broken. The old step-0 code also dropped a second swap in the same text node. (2) Any dial button in the popup switches "Grow automatically" back on (in slider mode the page ignores the dial, which made the buttons look dead). (3) `/api/translate` cleans each swap when serving it (`cleanSwap` in `web/lib/claude.ts`, so cached entries are fixed too): no Spanish article without an English determiner ("a smear una campaña" → "a smear campaña"), no no-op swaps ("Popular" → "Popular"), and for non-verbs the Spanish must contain the lemma's stem ("still" → "todavía" filed under *quieto* is dropped).
 **Update 2 (Sat night, verified on Andrew's laptop):** The slider now goes 0–200, reversing the rejected alternative above. Testing and the demo needed more than 25, so `Settings.perPageCap` max went 25 → 200 in `/shared`; that only loosens the check, so nothing that worked before breaks. At 25 or below the slider keeps today's rules. Above 25 it borrows the spacing of the lowest dial step that covers the number (more words per sentence, easier words), with word swaps only and no Spanish blocks. On the NPR article: 21 words at 25, 59 at 60, 117 at 120. It tops out at about 117, because the page has only about 180 distinct swappable words. **Laptop test passed:** the slider and the dial both scale the page, words cluster as density rises, and "smear campaña" has no added article. Gotcha: an old `next dev` still holding :3000 makes a new one exit, so kill it before restarting (the stale server rejected the new settings).
+
+### D-019 · Nov 15 · Andrew (designed by Karthik; heads-up to Naren and Shravan)
+**Decision:** One immersion percent, driven by what the learner has proven, replaces D-018's two controls (the words-per-page slider with "Grow automatically", and the click-counting dial).
+- **Input: understanding points, computed on the server.** `/api/candidates` returns an optional `understanding: { points, solid, knewIt }`. Each known or mastered word is worth 2 points, and each distinct "Knew it" word that isn't solid yet is worth 1. Hovers and "Didn't know" score 0. `understanding` and `keyLemmas` in `web/lib/learner/queries.ts` only read. Knew it still never changes a word's state (§6.1). The tutor counts automatically: a word used correctly becomes known and adds +2. After `seed-demo` the demo user has 9 solid words, so 18 points, about 5%.
+- **Output: one percent, computed in the service worker.** `percent = base + (points − points0) × rate × 0.25`, stored as `dial` in `chrome.storage.local`.
+  - **Speeds:** 1×, 10× and **Demo (70×)**. A speed change or a "Jump to" (0/35/70/100) re-anchors the dial (`base` = current or target percent, `points0` = current points), so the number never jumps. Reset progress returns to the real level (points × 0.25).
+  - **Peak:** the percent never drops, and a dip in points is absorbed by re-anchoring on the peak. Hovering a known word sends it back to `learning` (−2 points); without the peak, that alone would cost about 35% at Demo speed.
+  - **Fresh read:** every page load and popup open refetches candidates, so the tutor's gain shows on the very next reload.
+- **What a page shows at a given percent:**
+  1. **Key words**, picked first and counted in the budget: the 10 latest hovers, due words and the last recap's weak words (`isKey`). They're a superset of the tutor's targets, so the page and the tutor practise the same words.
+  2. **Every known or mastered word on the page**, solid gold and outside the budget.
+  3. **The budget** `N = round(5 + 1.95 × percent)`, filled by the usual 70/30 picker. Spacing comes from the D-018 step that covers N; whole sentences and paragraphs from 55% and 85%, as before.
+  - Key and known words only need to be 2 words apart, with no per-sentence limit.
+  - The popup shows one line ("Immersion 40% · about 83 new Spanish words, plus the 10 words you know, always in Spanish."), plus Speed, Jump to and Reset.
+- **Unused but kept:** `Settings.perPageCap` and `SET_SWAP_AMOUNT` are now unused; they're kept so nothing breaks.
+
+**Why:**
+- Above 20% the dial silently overrode the word count while the popup still showed the old number.
+- The tutor never moved the dial.
+- Mastered words scored −5, so a proven word could go back to English.
+- The page's key words and the tutor's targets came from different rules.
+
+**Changes to Karthik's plan:**
+- Added the peak hold, and the re-anchoring when points dip.
+- Key and known words use relaxed spacing, so *mundo* and *mercado* can both show from one sentence.
+- `getTutorContextData` is left unchanged: `keyLemmas` reuses `recentHovers`, `dueLemmas` and `weakWords` instead. It's the tutor's only data path, and rewiring it wasn't needed for the two to match.
+
+**Review fixes:**
+- A hover on a known word no longer cancels the next gains.
+- No sweeps after Luci is switched off mid-page.
+- A popup click is applied to fresh points, and the dial is updated through a small lock so two updates can't overwrite each other.
+
+**Verified (Andrew's laptop, NPR):**
+- The start reads about 5%.
+- At Demo speed, 3 Knew it clicks give 57%. Hovering a gold word holds at 57%.
+- *empresa*, then *mercado*, used correctly in the tutor each turned gold on the next reload; with *mercado* the page went from 57% to 92%.
+- The jumps and Reset behave as described.
+
+**Gotchas:**
+- Run `seed-demo` first and **Reset progress** last. A reseed mid-test wipes the Knew-it points while the dial holds its peak, which hid a tutor gain in testing.
+- "Try on this page" lasts one visit, and every popup action reloads the tab. Use **Always on for this site** for NPR.
+
+### D-020 · Nov 15 · Andrew
+**Decision:** Onboarding has no account: pick a level, an optional one-minute voice check with Luci, pick reading sites (D-021), then pair the extension. The check asks three fixed questions of rising difficulty through the normal tutor loop; one Haiku call then suggests a level with a plain-English reason, and the learner accepts it or keeps their own pick.
+**Why:** Self-report alone is a weak signal, and the level drives both the tutor's speaking style (D-004) and which words get swapped. A voice check reuses the tutor pipeline, measures speaking, and shows its reasoning. No account is needed because every route already uses the one built-in profile, and the pairing code links the extension to it.
+**Alternatives:** The spec's word-tap test with fake words (specs §4 stretch; needs new data and UI). Accounts or per-device anonymous profiles (not built; the product design is an anonymous profile on first run, with an account only for syncing devices).
+
+### D-021 · Nov 15 · Andrew (extension half: Naren)
+**Decision:** Onboarding step 3 shows a **starter list of 16 reading sites** (news, reference, sports/tech/culture, food/travel; NPR first), all checked; the learner unchecks any and the choice saves to `settings.allowlist`. The extension then turns them all on from its popup with **one** Chrome permission prompt ("Turn on your sites"). On about 24 more good reading sites the extension's toolbar icon shows a **small dot**, matched by Chrome itself through `declarativeContent`, and the popup offers "Luci reads well on X. Turn it on here?". The list is `READING_SITES` in `shared/src/readingSites.ts` (plain data, no zod).
+**Why:** Enabling sites one at a time from the popup is slow, so new users never got to the good part. A web page can't grant the extension access, and an extension can't show anything inside a page it hasn't been granted, so the save-then-one-prompt flow and an icon dot are the closest Chrome allows.
+**Alternatives:** A dot on every site (needs the `tabs` permission; Chrome warns "Read your browsing history" at install, against the privacy pitch). System notifications (the popup-style interruption we wanted to avoid). An in-page banner on new sites (impossible before the site is granted). A 30–50 site onboarding list (too long on the page; the longer list drives the dot instead).

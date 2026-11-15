@@ -1,7 +1,17 @@
 /** Run: npx tsx web/lib/tutor/checks/prompts.check.ts — pure string checks, never calls the API. */
 import assert from "node:assert/strict";
 import { rawTextFixture, tutorContextFixture } from "@parrot/shared";
-import { buildCorrectorPrompt, buildTutorPrompt, CORRECTOR_SYSTEM, RECAP_SYSTEM } from "../prompts";
+import {
+  buildCorrectorPrompt,
+  buildPlacementAssessPrompt,
+  buildTutorPrompt,
+  CORRECTOR_SYSTEM,
+  PLACEMENT_ASSESS_SYSTEM,
+  PLACEMENT_QUESTIONS,
+  placementAnswered,
+  placementLine,
+  RECAP_SYSTEM,
+} from "../prompts";
 import type { ClaudeMessage, TurnDirective } from "../types";
 
 const ctx = tutorContextFixture;
@@ -158,5 +168,59 @@ function assertAlternates(messages: ClaudeMessage[]) {
 }
 
 assert.ok(RECAP_SYSTEM.includes("summary_en") && RECAP_SYSTEM.includes("tips"));
+
+// ---------- onboarding level check (D-020) ----------
+{
+  // The line for each step: question 1 with a greeting, then 2, then 3, then the closing.
+  assert.ok(placementLine(0).startsWith("¡Hola! Soy Luci. ¿Cómo te llamas"));
+  assert.ok(placementLine(1).startsWith(PLACEMENT_QUESTIONS[1].es) && placementLine(1).endsWith(PLACEMENT_QUESTIONS[1].en));
+  assert.ok(placementLine(2).includes("¿adónde irías y por qué?"));
+  assert.ok(placementLine(3).includes("Your result is on the screen") && placementLine(3) === placementLine(9));
+
+  // Answers are counted once, whether or not the caller already put the current one in history.
+  const h = [
+    { role: "tutor" as const, text: placementLine(0) },
+    { role: "learner" as const, text: "Me llamo Ana" },
+  ];
+  assert.equal(placementAnswered([], null), 0);
+  assert.equal(placementAnswered(h, "Me llamo Ana"), 1);
+  assert.equal(placementAnswered(h.slice(0, 1), "Me llamo Ana"), 1);
+  assert.equal(placementAnswered(h, "Fui al cine"), 2);
+
+  // Placement turns use their own system prompt: no session block, no directive, the line in <step>.
+  const { system, messages } = buildTutorPrompt({
+    context: { ...ctx, targetWords: [] },
+    history: h,
+    rawText: "Me llamo Ana",
+    directive: none,
+    placementLine: placementLine(1),
+  });
+  assertAlternates(messages);
+  assert.ok(system.includes("level check") && !system.includes("<session>"));
+  const last = messages[messages.length - 1].content;
+  assert.ok(last.includes("<learner_said>Me llamo Ana</learner_said>"));
+  assert.ok(last.includes(`<step>${placementLine(1)}</step>`) && !last.includes("<directive>"));
+
+  // The assessment sees each question with its answer (blank when missing) and the validated errors.
+  const user = buildPlacementAssessPrompt(
+    [...h, { role: "learner", text: "yo comprar comida" }],
+    [
+      {
+        span: "yo comprar",
+        type: "conjugation",
+        correction: "compré",
+        explanation_en: "Past tense.",
+        severity: 2,
+        confidence: 0.9,
+        lemma: "comprar",
+      },
+    ],
+  );
+  assert.ok(user.includes("<answer1>Me llamo Ana</answer1>") && user.includes("<answer2>yo comprar comida</answer2>"));
+  assert.ok(user.includes("<answer3></answer3>"));
+  assert.ok(user.includes('<errors_found>"yo comprar" should be "compré" (conjugation)</errors_found>'));
+  assert.ok(buildPlacementAssessPrompt([], []).includes("<errors_found>none</errors_found>"));
+  assert.ok(PLACEMENT_ASSESS_SYSTEM.includes("choose the lower one"));
+}
 
 console.log("ok");

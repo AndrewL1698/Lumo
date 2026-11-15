@@ -59,10 +59,13 @@ Targets (specs §7.6): the on-screen correction within **1.5 s** of the learner 
 |---|---|---|---|
 | Andrew, Sat afternoon (before tuning) | 8 | 1311 / 1999 ms | 1860 / 2306 ms |
 | Shravan, Sat evening (before tuning)* | 11 | 1461 / 2115 ms | 1344 / 1873 ms |
-| _After tuning, wifi_ | | _pending_ | _pending_ |
-| _After tuning, phone hotspot (the demo setup)_ | | _pending_ | _pending_ |
+| Karthik, Sat night (after tuning), wifi, headset | 8 | **1349** / 1824 ms | **1584** / 2184 ms |
+| Karthik, Sat night (after tuning), phone hotspot (the demo setup) | 11 | **1485** / 1823 ms | 2197 / 2494 ms† |
 
 \* His first chunk → audio gap was 8 ms, so his audio was cached or from the browser voice; his audio number is not comparable.
+† 9 of the 11 turns logged an audio start.
+
+**Against the targets:** the correction median passes on both networks; the hotspot passes by only 15 ms. The voice median passes on wifi but is about 200 ms over on the hotspot. Both p90s are over on both networks. On the hotspot, release → reply first token / first chunk was 1190 / 1737 ms (wifi 944 / 1272): the gap from the first token to the first chunk is Sonnet's pause after its first words (D-017).
 
 **Probe** (20 turns, wifi, from STT final; details in `docs/decisions.md` D-017):
 
@@ -80,4 +83,10 @@ Does the transcriber keep the learner's mistakes, or quietly fix them? Method: `
 | Scribe v2 batch (fallback) | 80% (12/15) | 5/5 | 272 ms |
 | Scribe v3 realtime | 67% (10/15) | 5/5 | 69 ms |
 
-Pass B (a teammate's voice) is pending.
+| Pass B (Karthik reads the 20 sentences, headset) | Errors survived | Clean controls kept | Commit → transcript |
+|---|---|---|---|
+| Scribe v2 realtime (**in use**) | **80% (12/15)**, 0 "fixed" | 5/5 | 74 ms |
+| Scribe v2 batch (fallback) | 73% (11/15), 4 "fixed" | 5/5 | 420 ms |
+| Scribe v3 realtime | 67% (10/15), 1 "fixed" | 5/5 | 76 ms |
+
+On a real voice, realtime v2 never rewrote a mistake into the correct form; its 3 misses were garbled conjugations.

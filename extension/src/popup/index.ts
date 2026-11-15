@@ -1,7 +1,7 @@
 // Parrot popup: worker health, enable current site (permission prompt), pairing stub.
 
 import { send } from "../messages";
-import { IMMERSION_JUMPS, IMMERSION_RATES, MAX_SWAPS, autoSwaps, solidCount, stepFor } from "../swapBudget";
+import { DEMO_RATE, IMMERSION_JUMPS, IMMERSION_RATES, budgetFor } from "../swapBudget";
 
 function el<T extends HTMLElement>(id: string): T {
   const node = document.getElementById(id);
@@ -12,15 +12,12 @@ function el<T extends HTMLElement>(id: string): T {
 const workerEl = el("worker");
 const pairedEl = el("paired");
 const originEl = el("origin");
+const tryBtn = el<HTMLButtonElement>("try");
 const enableBtn = el<HTMLButtonElement>("enable");
 const enableResult = el("enable-result");
 const codeInput = el<HTMLInputElement>("code");
 const pairBtn = el<HTMLButtonElement>("pair");
 const pairResult = el("pair-result");
-const amountInput = el<HTMLInputElement>("amount");
-const amountValue = el("amount-value");
-const autoBox = el<HTMLInputElement>("auto");
-const amountNote = el("amount-note");
 const immLine = el("imm-line");
 const immRates = el("imm-rates");
 const immJumps = el("imm-jumps");
@@ -28,6 +25,10 @@ const immReset = el<HTMLButtonElement>("imm-reset");
 const immNote = el("imm-note");
 
 let origin: string | null = null;
+/** Needed to inject into the right tab for "Try on this page". */
+let activeTabId: number | null = null;
+/** Full page URL, so the worker can apply the never-list's path rules. Stays inside the extension. */
+let activeUrl: string | null = null;
 
 async function init(): Promise<void> {
   const ping = await send({ type: "PING" }).catch(() => null);
@@ -37,20 +38,51 @@ async function init(): Promise<void> {
 
   // activeTab grants the tab URL while the popup is open.
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  activeTabId = tab?.id ?? null;
   try {
     const url = new URL(tab?.url ?? "");
-    if (url.protocol === "https:" || url.protocol === "http:") origin = url.origin;
+    if (url.protocol === "https:" || url.protocol === "http:") {
+      origin = url.origin;
+      activeUrl = url.href;
+    }
   } catch {
     origin = null;
+    activeUrl = null;
   }
 
   pairedEl.textContent = `paired: ${status ? (status.paired ? "yes" : "no") : "?"}`;
   originEl.textContent = origin ?? "(not a web page)";
   enableBtn.disabled = origin === null;
+  tryBtn.disabled = origin === null || activeTabId === null;
   if (origin && status?.enabledOrigins.includes(origin)) {
     enableResult.textContent = "already enabled";
+    tryBtn.hidden = true; // nothing to try: it already runs here on every visit
   }
 }
+
+// "Try on this page": no prompt, this visit only. Opening the popup already granted activeTab for
+// this tab, so the worker can inject once; the grant dies on navigation and so does the trial.
+tryBtn.addEventListener("click", () => {
+  if (!origin || activeTabId === null) return;
+  tryBtn.disabled = true;
+  enableResult.textContent = "starting…";
+  send({ type: "TRY_HERE", tabId: activeTabId, origin, url: activeUrl ?? origin })
+    .then((res) => {
+      if (res.ok) {
+        window.close(); // get out of the way so the swaps are visible
+        return;
+      }
+      enableResult.textContent =
+        res.reason === "never-list"
+          ? "Luci never runs on email, banking, school or login pages."
+          : (res.reason ?? "could not start Luci here");
+      tryBtn.disabled = false;
+    })
+    .catch((err: unknown) => {
+      enableResult.textContent = `error: ${err instanceof Error ? err.message : String(err)}`;
+      tryBtn.disabled = false;
+    });
+});
 
 enableBtn.addEventListener("click", () => {
   if (!origin) return;
@@ -94,79 +126,24 @@ pairBtn.addEventListener("click", () => {
     });
 });
 
-// ---------------------------------------------------------------- swap amount (Karthik, D-005/D-006)
-
-let manualCap = MAX_SWAPS;
-let autoValue = MAX_SWAPS;
-let solid = 0;
-
-function renderAmount(): void {
-  const auto = autoBox.checked;
-  const value = auto ? autoValue : manualCap;
-  amountInput.value = String(value);
-  amountInput.disabled = auto;
-  amountValue.textContent = String(value);
-  amountNote.textContent = auto
-    ? `${solid} word${solid === 1 ? "" : "s"} you know solidly → ${autoValue} swaps. Untick to set it yourself.`
-    : "Release the slider to apply. The page reloads.";
-}
-
-async function initAmount(): Promise<void> {
-  const [s, c] = await Promise.all([
-    send({ type: "GET_SETTINGS" }).catch(() => null),
-    send({ type: "GET_CANDIDATES" }).catch(() => null),
-  ]);
-  const candidates = c?.candidates ?? [];
-  solid = solidCount(candidates);
-  autoValue = autoSwaps(candidates);
-  manualCap = s?.settings.perPageCap ?? MAX_SWAPS;
-  autoBox.checked = s?.autoGrow ?? true;
-  if (s?.immersion) immersion = s.immersion;
-  renderAmount();
-  renderImmersion();
-}
+// ---------------------------------------------------------------- immersion (D-019: one number)
 
 async function reloadActiveTab(): Promise<void> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (tab?.id !== undefined) await chrome.tabs.reload(tab.id);
 }
 
-amountInput.addEventListener("input", () => {
-  amountValue.textContent = amountInput.value;
-});
+let immersion = { percent: 0, rate: 1, points: 0, solid: 0 };
 
-amountInput.addEventListener("change", () => {
-  manualCap = Number(amountInput.value);
-  amountNote.textContent = "saving…";
-  send({ type: "SET_SWAP_AMOUNT", perPageCap: manualCap })
-    .then(async (res) => {
-      if (!res.ok) {
-        amountNote.textContent = `not saved: ${res.error ?? "unknown error"}`;
-        return;
-      }
-      renderAmount();
-      await reloadActiveTab();
-    })
-    .catch(() => {
-      amountNote.textContent = "not saved: Luci isn't reachable";
-    });
-});
-
-autoBox.addEventListener("change", () => {
-  renderAmount();
+async function initImmersion(): Promise<void> {
+  const s = await send({ type: "GET_SETTINGS" }).catch(() => null);
+  if (s?.immersion) immersion = s.immersion;
   renderImmersion();
-  void send({ type: "SET_SWAP_AMOUNT", autoGrow: autoBox.checked })
-    .then(() => reloadActiveTab())
-    .catch(() => undefined);
-});
-
-// ---------------------------------------------------------------- immersion dial (D-018)
-
-let immersion = { points: 0, rate: 1, percent: 0 };
+}
 
 const rateButtons = IMMERSION_RATES.map((rate) => {
   const b = document.createElement("button");
-  b.textContent = `${rate}×`;
+  b.textContent = rate === DEMO_RATE ? "Demo" : `${rate}×`;
   b.addEventListener("click", () => void setImmersion({ rate }));
   immRates.append(b);
   return { rate, b };
@@ -182,21 +159,16 @@ for (const percent of IMMERSION_JUMPS) {
 immReset.addEventListener("click", () => void setImmersion({ reset: true }));
 
 function renderImmersion(): void {
-  immLine.textContent = `Immersion ${immersion.percent}% · step ${stepFor(immersion.percent).step}`;
+  const { percent, solid } = immersion;
+  immLine.textContent =
+    `Immersion ${percent}% · about ${budgetFor(percent)} new Spanish words, ` +
+    `plus the ${solid} word${solid === 1 ? "" : "s"} you know, always in Spanish.`;
   for (const { rate, b } of rateButtons) b.classList.toggle("active", rate === immersion.rate);
-  immNote.textContent = autoBox.checked
-    ? "Grows as you hover and answer on the page."
-    : "Slider mode: the dial is off. Tap a dial button to switch it back on.";
+  immNote.textContent = "Grows as you prove words: Knew it, and words you use correctly with Luci.";
 }
 
 async function setImmersion(change: { rate?: number; percent?: number; reset?: boolean }): Promise<void> {
   try {
-    // The page ignores the dial in slider mode, so any dial button switches "Grow automatically" back on.
-    if (!autoBox.checked) {
-      await send({ type: "SET_SWAP_AMOUNT", autoGrow: true });
-      autoBox.checked = true;
-      renderAmount();
-    }
     await send({ type: "SET_IMMERSION", ...change });
     const s = await send({ type: "GET_SETTINGS" });
     if (s?.immersion) immersion = s.immersion;
@@ -208,4 +180,4 @@ async function setImmersion(change: { rate?: number; percent?: number; reset?: b
 }
 
 void init();
-void initAmount();
+void initImmersion();

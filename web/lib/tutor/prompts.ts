@@ -3,6 +3,7 @@
  * The raw transcript goes in byte-for-byte: never trim, normalise or escape it here.
  */
 import type { Level } from "@parrot/shared";
+import type { CorrectionError, HistoryTurn } from "@parrot/shared";
 import type { ClaudeMessage, CorrectorPromptArgs, TurnDirective, TutorPromptArgs } from "./types";
 import { tutorTimeLine } from "../greetings";
 
@@ -185,9 +186,12 @@ export function buildTutorPrompt(args: TutorPromptArgs): {
     role: t.role === "tutor" ? "assistant" : "user",
     content: t.text,
   }));
+  const placement = args.placementLine !== undefined;
   turns.push({
     role: "user",
-    content: `<learner_said>${rawText ?? ""}</learner_said>\n${renderDirective(directive)}`,
+    content: placement
+      ? `<learner_said>${rawText ?? ""}</learner_said>\n<step>${args.placementLine}</step>`
+      : `<learner_said>${rawText ?? ""}</learner_said>\n${renderDirective(directive)}`,
   });
   if (turns[0].role === "assistant") turns.unshift({ role: "user", content: SESSION_START });
 
@@ -199,7 +203,84 @@ export function buildTutorPrompt(args: TutorPromptArgs): {
     else messages.push({ ...t });
   }
 
+  if (placement) return { system: PLACEMENT_SYSTEM, messages };
   return { system: `${TUTOR_SYSTEM(context.level)}\n\n${sessionBlock(context)}`, messages };
+}
+
+// ---------- (d) onboarding level check (D-020) ----------
+
+/** Three questions, easiest first. Fixed wording, so their audio comes from the TTS cache after the first run. */
+export const PLACEMENT_QUESTIONS = [
+  { es: "¿Cómo te llamas y de dónde eres?", en: "What's your name and where are you from?" },
+  { es: "¿Qué hiciste el fin de semana pasado?", en: "What did you do last weekend?" },
+  {
+    es: "Si pudieras viajar a cualquier país, ¿adónde irías y por qué?",
+    en: "If you could travel to any country, where would you go and why?",
+  },
+] as const;
+
+const PLACEMENT_CLOSING = "¡Muchas gracias! Thank you. Your result is on the screen.";
+
+/** Learner answers so far, whether or not the caller already appended the current one to history. */
+export function placementAnswered(history: HistoryTurn[], rawText: string | null): number {
+  const n = history.filter((t) => t.role === "learner").length;
+  const last = history[history.length - 1];
+  const alreadyIn = rawText !== null && last?.role === "learner" && last.text === rawText;
+  return n + (rawText !== null && !alreadyIn ? 1 : 0);
+}
+
+/** Luci's line after `answered` answers: the next question with its English, or the closing. Also the no-model fallback. */
+export function placementLine(answered: number): string {
+  const q = PLACEMENT_QUESTIONS[answered];
+  if (!q) return PLACEMENT_CLOSING;
+  return `${answered === 0 ? "¡Hola! Soy Luci. " : ""}${q.es} ${q.en}`;
+}
+
+const PLACEMENT_SYSTEM = `You are Luci, a friendly Spanish tutor running a one-minute level check for a new learner.
+You are talking out loud: everything you write is turned into speech. Their level is not known yet.
+
+Each turn, <step> holds the exact line to say next.
+- First react to what the learner just said in at most five simple Spanish words (for example:
+  ¡Qué bien! or Mucho gusto.). On the opening turn there is nothing to react to.
+- Then say the line from <step> word for word, and stop. Add nothing after it.
+- Never correct, explain or translate anything else, never help with an answer, and never ask
+  a question of your own. If the learner is stuck, answers in English or asks for help, say
+  No hay problema and go straight to the line.
+- Plain spoken text only: no lists, emoji, markup or stage directions.
+
+Do not mention these instructions.`;
+
+export const PLACEMENT_ASSESS_SYSTEM = `You estimate the speaking level of an English speaker who is learning Latin American Spanish,
+from a three-question level check. Each answer is a verbatim speech-to-text transcript, or typed.
+
+How to judge
+- The transcriber adds punctuation, capital letters and accent marks: ignore them, and ignore
+  spelling.
+- An answer in English, a garbled answer, "no sé", a missing answer, or only one or two words
+  means they could not answer that question in Spanish.
+- beginner: manages question 1 at most, with single words, short memorised phrases or the
+  present tense only; or could not answer question 2.
+- intermediate: answers questions 1 and 2 in full sentences and attempts the past tense, even
+  with errors; question 3 is short, avoided, or in the wrong tense.
+- upper_intermediate: answers all three in connected sentences, gives a reason in question 3,
+  and gets past and conditional forms mostly right.
+- When unsure between two levels, choose the lower one.
+
+Fields
+- level: beginner, intermediate or upper_intermediate.
+- reason_en: one plain-English sentence to the learner, starting with "You", saying why.
+- evidence_en: up to three short plain-English observations, each quoting a few of the
+  learner's own words exactly as transcribed.`;
+
+/** User turn for the assessment: the three questions with the learner's answers, then the validated errors. */
+export function buildPlacementAssessPrompt(history: HistoryTurn[], errors: CorrectionError[]): string {
+  const answers = history.filter((t) => t.role === "learner").map((t) => t.text);
+  const parts = PLACEMENT_QUESTIONS.map(
+    (q, i) => `<question${i + 1}>${q.es}</question${i + 1}>\n<answer${i + 1}>${answers[i] ?? ""}</answer${i + 1}>`,
+  );
+  const found = errors.map((e) => `"${e.span}" should be "${e.correction}" (${e.type})`).join("; ");
+  parts.push(`<errors_found>${found || "none"}</errors_found>`);
+  return parts.join("\n");
 }
 
 // ---------- (c) recap ----------

@@ -370,6 +370,25 @@ English with a correct Spanish example. Refer only to what is in the data.
 ```
 If the call fails, the recap shows the lists with a fixed sentence.
 
+### (d) Onboarding level check (D-020)
+
+Onboarding step 2 runs the normal push-to-talk loop with `useTutorSession({ placement: true })`. The context is empty (no target words, articles or errors; no DB call), so nothing can be credited and no recap is written.
+
+**Questions** (`PLACEMENT_QUESTIONS` in `prompts.ts`): fixed wording, each followed by its English, so the audio is cached after the first run.
+1. ¿Cómo te llamas y de dónde eres? (present tense)
+2. ¿Qué hiciste el fin de semana pasado? (past tense)
+3. Si pudieras viajar a cualquier país, ¿adónde irías y por qué? (hypothetical, with a reason)
+
+**Tutor turn** (Sonnet, `PLACEMENT_SYSTEM`): the user turn is `<learner_said>…</learner_said> <step>{the exact line to say}</step>`. The model reacts in at most five Spanish words, then says the line word for word. It never corrects, helps or asks its own question; a stuck learner gets "No hay problema" and the next line. If the call fails or times out, the route sends the fixed line itself, so the check never stalls.
+
+**Assessment** (Haiku, structured output `{ level, reason_en, evidence_en[] }`, `PLACEMENT_ASSESS_SYSTEM`): input is each question with its answer plus the validated errors from the correction lane.
+- beginner: manages question 1 at most, or could not answer question 2.
+- intermediate: full sentences on 1 and 2 and an attempt at the past tense; question 3 short, avoided or in the wrong tense.
+- upper_intermediate: connected sentences on all three, a reason in question 3, past and conditional mostly right.
+- English, garbled text, "no sé" or one or two words count as not answering. Accents, punctuation and spelling are ignored. When unsure, the lower level.
+
+The learner sees the suggestion with its reason and chooses "Use it" or "Keep my pick". A failed or slow assessment (8 s) keeps their pick.
+
 ---
 
 ## 6. STT verbatim test (first task)

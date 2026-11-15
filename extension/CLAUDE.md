@@ -27,8 +27,14 @@ Owner: **Naren**. Team rules: root `CLAUDE.md`. Design: `docs/architecture.md` �
 - **Never block page load.** Swaps appear only after the `/api/translate` batch returns.
 - **Only replace spans inside a single text node.** Skip matches that cross inline elements.
 - Skip `a, button, input, textarea, select, code, pre, script, style, [contenteditable]` and anything inside `form`.
-- Swap amount comes from the **immersion dial** (D-018, `src/swapBudget.ts`): below 20% it's today's rules (one swap per sentence, auto `5 + solid` up to 25); with "Grow automatically" off, the slider goes 0–200 and borrows the spacing of the lowest step that fits the number (words only, no blocks); higher steps allow more words per sentence (never adjacent), easier words, and whole Spanish sentences/paragraphs (`[data-parrot-block]`). All steps share one picker (`pickWords`, score-first, one swap per lemma) and one apply path (`applyOps`, several swaps per text node, right to left). A hover counts after 500 ms.
-- *In progress (Andrew, Sat night, branch `andrew/immersion`):* D-018 touches `content/index.ts`, `content/hovercard.ts`, `sw/index.ts`, `messages.ts`, `popup/`. Ping Andrew before editing those.
+- Swap amount comes from **one immersion percent** (D-019, `src/swapBudget.ts`).
+  - **Where the percent comes from:** the service worker computes it from the server's understanding points (`/api/candidates` `understanding`) and the local `dial` (speed, anchor, peak); it never drops.
+  - **Pick order:** `pickWords` takes key words (`isKey`) first, inside the budget. Then every known or mastered word on the page, outside the budget. Then the 70/30 picker for `N = round(5 + 1.95 × percent)` words.
+  - **Spacing:** follows the D-018 step that covers N, and nothing is ever adjacent. Whole Spanish sentences and paragraphs (`[data-parrot-block]`) appear from 55% and 85%.
+  - **Counting:** `budgetCount` counts budget swaps only; known swaps never use the budget.
+  - **Shared code:** one picker and one apply path (`applyOps`, several swaps per text node, right to left).
+  - Luci off (`intensity: "off"`) = no swaps. A hover counts after 500 ms.
+- *Ping Andrew before editing `content/index.ts`, `content/hovercard.ts`, `sw/index.ts`, `messages.ts`, `popup/` or `swapBudget.ts`. D-018 and D-019 live there.*
 - Event ids are client-made uuids (`crypto.randomUUID()`), so retries are safe.
 - Only promise behaviour on the 2–3 demo sites. Don't chase layout bugs elsewhere.
 

@@ -116,6 +116,18 @@ export type TutorTranslateRequest = z.infer<typeof TutorTranslateRequest>;
 export const TutorTranslateResponse = z.object({ english: z.string() });
 export type TutorTranslateResponse = z.infer<typeof TutorTranslateResponse>;
 
+/** POST /api/tutor/placement: the onboarding level check (D-020). `history` holds the check's turns. */
+export const PlacementRequest = z.object({ sessionId: z.string(), history: z.array(HistoryTurn) });
+export type PlacementRequest = z.infer<typeof PlacementRequest>;
+
+/** A suggested level with a plain-English reason. The learner accepts it or keeps their own pick. */
+export const PlacementResponse = z.object({
+  level: Level,
+  reason_en: z.string(),
+  evidence_en: z.array(z.string()),
+});
+export type PlacementResponse = z.infer<typeof PlacementResponse>;
+
 /** POST /api/tutor/end */
 export const EndRequest = z.object({ sessionId: z.string() });
 export type EndRequest = z.infer<typeof EndRequest>;

@@ -1,6 +1,29 @@
-import { redirect } from "next/navigation";
+"use client";
+import { Settings } from "@parrot/shared";
+import { useState } from "react";
+import { OnboardingForm } from "@/components/onboarding/OnboardingForm";
+import { saveSettings } from "@/components/settings/saveSettings";
+import { ErrorState, LoadingState, PageHeader } from "@/components/ui/PageHeader";
+import { useFetch } from "@/components/useFetch";
 
-// Setup now lives at the top of Settings ("Get set up"). Old links land there.
 export default function Page() {
-  redirect("/settings#setup");
+  const { data, error, loading, reload } = useFetch("/api/settings", Settings);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  async function save(patch: Partial<Settings>): Promise<boolean> {
+    setSaveError(null);
+    const r = await saveSettings(patch);
+    if (!r.ok) setSaveError(r.message);
+    return r.ok;
+  }
+
+  return (
+    <>
+      <PageHeader title="Welcome to Luci" subtitle="Four quick steps: tell us your level, let Luci check it, pick your reading sites, then pair the Chrome extension. No account needed." />
+      {loading && <LoadingState shape="form" />}
+      {error && !data && <ErrorState message={error} onRetry={() => void reload()} />}
+      {data && <OnboardingForm initial={data} onSave={save} />}
+      {saveError && <ErrorState message={saveError} />}
+    </>
+  );
 }

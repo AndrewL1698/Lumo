@@ -47,6 +47,7 @@ type Setters = {
   notice: (n: string | null) => void;
   lastTimeline: (t: TurnTimeline | null) => void;
   plan: (p: UseTutorSession["plan"]) => void;
+  sessionId: (id: string | null) => void;
 };
 
 /** One tutor reply (the opener or the answer to one utterance). */
@@ -83,7 +84,7 @@ function toHistory(turns: Turn[]): HistoryTurn[] {
 }
 
 /** All mutable machinery lives in this closure, so the functions it returns are stable for the hook's life. */
-function createController(set: Setters, forceBatch: () => boolean): Controller {
+function createController(set: Setters, forceBatch: () => boolean, placement: () => boolean): Controller {
   /** Bumped by end() and dispose(): anything async started under an older epoch is dropped. */
   let epoch = 0;
   let started = false;
@@ -514,7 +515,9 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
 
         let context: TutorContext | null = null;
         try {
-          const res = await fetch("/api/tutor/context", { cache: "no-store" });
+          // Onboarding level check (D-020): an empty context and fixed questions.
+          const url = placement() ? "/api/tutor/context?placement=1" : "/api/tutor/context";
+          const res = await fetch(url, { cache: "no-store" });
           if (!res.ok) throw new Error(`/api/tutor/context ${res.status}`);
           context = TutorContext.parse(await res.json());
         } catch {
@@ -530,6 +533,7 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
 
         sessionId = context.sessionId;
         level = context.level;
+        set.sessionId(sessionId);
         set.targetWords(context.targetWords);
         set.plan(context.plan ?? null);
         if (micOk) recorder = rec;
@@ -665,7 +669,7 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
   };
 }
 
-export function useTutorSession(opts?: { forceBatch?: boolean }): UseTutorSession {
+export function useTutorSession(opts?: { forceBatch?: boolean; placement?: boolean }): UseTutorSession {
   const [status, setStatus] = useState<TutorStatus>("idle");
   const [partial, setPartial] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -674,10 +678,13 @@ export function useTutorSession(opts?: { forceBatch?: boolean }): UseTutorSessio
   const [notice, setNotice] = useState<string | null>(null);
   const [lastTimeline, setLastTimeline] = useState<TurnTimeline | null>(null);
   const [plan, setPlan] = useState<UseTutorSession["plan"]>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   const forceBatchRef = useRef(false);
+  const placementRef = useRef(false);
   useEffect(() => {
     forceBatchRef.current = opts?.forceBatch === true;
+    placementRef.current = opts?.placement === true;
   });
 
   // Created once; it holds no resources until start(), so StrictMode's discarded second copy is harmless.
@@ -692,8 +699,10 @@ export function useTutorSession(opts?: { forceBatch?: boolean }): UseTutorSessio
         notice: setNotice,
         lastTimeline: setLastTimeline,
         plan: setPlan,
+        sessionId: setSessionId,
       },
       () => forceBatchRef.current,
+      () => placementRef.current,
     ),
   );
 
@@ -710,6 +719,7 @@ export function useTutorSession(opts?: { forceBatch?: boolean }): UseTutorSessio
     notice,
     lastTimeline,
     plan,
+    sessionId,
     start: ctl.start,
     pressTalk: ctl.pressTalk,
     releaseTalk: ctl.releaseTalk,

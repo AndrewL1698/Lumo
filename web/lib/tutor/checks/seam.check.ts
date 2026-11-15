@@ -17,5 +17,5 @@ export const turnFitsPage: TutorTurn = null as unknown as Turn;
 export const returnsSeamType: Equal<ReturnType<typeof useTutorSession>, UseTutorSession> = true;
 export const takesOptions: Equal<
   Parameters<typeof useTutorSession>,
-  [opts?: { forceBatch?: boolean }]
+  [opts?: { forceBatch?: boolean; placement?: boolean }]
 > = true;

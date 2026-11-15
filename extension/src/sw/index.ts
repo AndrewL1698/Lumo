@@ -14,7 +14,7 @@ import {
 } from "@parrot/shared";
 import type { Message, ResponseMap } from "../messages";
 import { neverListReason } from "../neverlist";
-import { IMMERSION_POINTS, IMMERSION_RATES, immersionPercent, pointsForPercent, SLIDER_MAX, type Immersion } from "../swapBudget";
+import { DEFAULT_DIAL, IMMERSION_RATES, dialPercent, dialRaw, type Dial } from "../swapBudget";
 
 // HACK(demo): the web app runs on localhost for the demo. manifest host_permissions matches.
 const API_BASE = "http://localhost:3000";
@@ -53,13 +53,14 @@ interface StoredState {
   eventQueue?: ExtensionEvent[];
   /** Popup "Grow automatically" switch (D-006). Local only; default on. */
   autoGrow?: boolean;
-  /** Immersion dial progress and popup rate (D-018). Local only. */
-  immersion?: Immersion;
+  /** Immersion percent state (D-019): speed, base, peak, last points. Local only. Replaces D-018's `immersion`. */
+  dial?: Dial;
   /** Lemmas whose latest verdict was "Knew it" (D-018): shown steady. Local only. */
   knewIt?: string[];
 }
 
-const DEFAULT_IMMERSION: Immersion = { points: 0, rate: 1 };
+/** Percent never above 100 or below 0, unrounded (stored in `dial.peak` / `dial.base`). */
+const clampPct = (p: number): number => Math.max(0, Math.min(100, p));
 
 /** Max sentences per /api/translate-sentences request (SentenceTranslateRequest). */
 const SENTENCES_PER_REQUEST = 40;
@@ -81,7 +82,7 @@ async function readState(): Promise<StoredState> {
     "settings",
     "eventQueue",
     "autoGrow",
-    "immersion",
+    "dial",
     "knewIt",
   ])) as StoredState;
 }
@@ -157,10 +158,67 @@ async function enableSite(rawOrigin: string): Promise<ResponseMap["ENABLE_SITE"]
   return { ok: true };
 }
 
+// ---------------------------------------------------------------- try on this page (activeTab)
+
+/**
+ * "Try on this page" runs Luci on one tab for one visit, with no permission prompt: the popup
+ * click grants `activeTab`, which is enough for a single executeScript and dies on navigation.
+ * Deliberately NOT registerContentScripts and NOT added to enabledOrigins — that is what
+ * "Always on for this site" is for, and it is the one that asks for host access.
+ *
+ * The map is only bookkeeping (so the popup and cleanup know which tabs are on trial). Nothing
+ * gates on it: the worker already serves any content script that talks to it, trial or not.
+ * In chrome.storage.session, so it dies with the browser and never touches disk.
+ */
+const TRIAL_KEY = "trialTabs";
+
+async function readTrialTabs(): Promise<Record<string, string>> {
+  const stored = await chrome.storage.session.get(TRIAL_KEY);
+  return (stored[TRIAL_KEY] as Record<string, string> | undefined) ?? {};
+}
+
+async function tryHere(tabId: number, rawOrigin: string, url: string): Promise<ResponseMap["TRY_HERE"]> {
+  const origin = normalizeOrigin(rawOrigin);
+  if (!origin) return { ok: false, reason: "that is not a web page" };
+
+  // Never-list first, before anything is injected (specs §5.1). Checked against the FULL URL, not
+  // the origin: an origin has no path, so checking it alone would let /login, /checkout and the
+  // rest of the path rules through. Enforced here as well as in the content script, so a blocked
+  // page is never even touched.
+  if (neverListReason(url) ?? neverListReason(origin)) return { ok: false, reason: "never-list" };
+
+  try {
+    await chrome.scripting.executeScript({ target: { tabId }, files: ["content.js"] });
+  } catch (err) {
+    return { ok: false, reason: err instanceof Error ? err.message : "could not start Luci here" };
+  }
+
+  const tabs = await readTrialTabs();
+  tabs[String(tabId)] = origin;
+  await chrome.storage.session.set({ [TRIAL_KEY]: tabs });
+  return { ok: true };
+}
+
+/** Forget a trial tab. activeTab access is already gone by now; this just keeps the map honest. */
+async function endTrial(tabId: number): Promise<void> {
+  const tabs = await readTrialTabs();
+  if (!(String(tabId) in tabs)) return;
+  delete tabs[String(tabId)];
+  await chrome.storage.session.set({ [TRIAL_KEY]: tabs });
+}
+
+chrome.tabs.onRemoved.addListener((tabId) => void endTrial(tabId));
+chrome.tabs.onUpdated.addListener((tabId, info) => {
+  // A navigation ends the activeTab grant, so the trial ends with it. `status` is available
+  // without the "tabs" permission (only url/title/favIconUrl are withheld).
+  if (info.status === "loading") void endTrial(tabId);
+});
+
 let candidatesCache: { at: number; data: CandidatesResponse } | null = null;
 
-async function getCandidates(): Promise<ResponseMap["GET_CANDIDATES"]> {
-  if (candidatesCache && Date.now() - candidatesCache.at < CANDIDATES_TTL_MS) {
+/** `fresh` skips the 60 s cache (GET_SETTINGS: a tutor word that just became known must show on the next reload). */
+async function getCandidates(fresh = false): Promise<ResponseMap["GET_CANDIDATES"]> {
+  if (!fresh && candidatesCache && Date.now() - candidatesCache.at < CANDIDATES_TTL_MS) {
     return candidatesCache.data;
   }
   try {
@@ -209,37 +267,81 @@ async function fetchSettings(): Promise<Settings | null> {
   }
 }
 
+/**
+ * Settings plus the immersion percent (D-019). Candidates are fetched fresh so the understanding points (and the
+ * known words the page shows) reflect the tutor right away. The peak only ever rises here; it falls only on a
+ * speed change, jump or reset (setImmersion).
+ */
 async function getSettings(): Promise<ResponseMap["GET_SETTINGS"]> {
-  const { settings: cached, autoGrow = true, immersion = DEFAULT_IMMERSION, knewIt = [] } = await readState();
-  const settings = (await fetchSettings()) ?? cached ?? DEFAULT_SETTINGS;
+  const [fetched, candidates] = await Promise.all([fetchSettings(), getCandidates(true)]);
+  const { settings: cached, knewIt = [] } = await readState();
+  const settings = fetched ?? cached ?? DEFAULT_SETTINGS;
+
+  const u = candidates?.understanding;
+  // Read-modify-write after the network calls and under the lock, so a popup click made meanwhile isn't overwritten.
+  const dial = await withDial(async () => {
+    const { dial: stored = DEFAULT_DIAL } = await readState();
+    const next = settle(stored, u?.points ?? stored.points);
+    // Only on change: the content script reloads its budget on storage changes.
+    if (JSON.stringify(next) !== JSON.stringify(stored)) await chrome.storage.local.set({ dial: next });
+    return next;
+  });
+  const points = dial.points;
+
+  const solid =
+    u?.solid ?? candidates?.candidates.filter((c) => c.state === "known" || c.state === "mastered").length ?? 0;
   return {
     settings,
-    autoGrow,
-    immersion: { points: immersion.points, rate: immersion.rate, percent: immersionPercent(immersion) },
+    immersion: { percent: dialPercent(dial, points), rate: dial.rate, points, solid },
     knewIt,
   };
 }
 
-/** Immersion dial (D-018): popup rate, "jump to" percent, or reset progress. */
+/** Immersion (D-019): speed change, "jump to" percent, or reset to the learner's real level. */
 async function setImmersion(rate?: number, percent?: number, reset?: boolean): Promise<ResponseMap["SET_IMMERSION"]> {
-  const { immersion = DEFAULT_IMMERSION } = await readState();
-  const next: Immersion = { ...immersion };
-  if (rate !== undefined && (IMMERSION_RATES as readonly number[]).includes(rate) && rate !== next.rate) {
-    // The rate only speeds up points earned from now on: keep the current percent (review A1).
-    next.points = (next.points * next.rate) / rate;
-    next.rate = rate;
-  }
-  if (percent !== undefined && Number.isFinite(percent)) {
-    next.points = pointsForPercent(Math.max(0, Math.min(100, percent)), next.rate);
-  }
-  const patch: Partial<StoredState> = { immersion: next };
-  if (reset) {
-    next.points = 0;
-    patch.knewIt = [];
-  }
-  await chrome.storage.local.set(patch);
+  // Fresh points first (review: a click right after a tutor session must not use stale points as points0).
+  const fresh = (await getCandidates(true))?.understanding?.points;
+  await withDial(async () => {
+    const { dial: stored = DEFAULT_DIAL } = await readState();
+    const points = fresh ?? stored.points;
+    let next = settle(stored, points);
+    const cur = next.peak;
+    if (rate !== undefined && (IMMERSION_RATES as readonly number[]).includes(rate) && rate !== next.rate) {
+      // Speed only scales gains made from now on: keep the current percent.
+      next = { ...next, rate, base: cur, peak: cur, points0: points };
+    }
+    if (percent !== undefined && Number.isFinite(percent)) {
+      const target = clampPct(percent);
+      next = { ...next, base: target, peak: target, points0: points };
+    }
+    const patch: Partial<StoredState> = { dial: next };
+    if (reset) {
+      // Back to the learner's real level: points × 1 × DIAL_K.
+      patch.dial = { rate: 1, base: 0, points0: 0, peak: 0, points };
+      patch.knewIt = [];
+    }
+    await chrome.storage.local.set(patch);
+  });
   candidatesCache = null;
   return { ok: true };
+}
+
+/**
+ * The dial with fresh points. The peak never drops; when points fall below it (a hover sends a known word back to
+ * learning, −2), rebase onto the peak so later gains count in full instead of first refilling the dip (review).
+ */
+function settle(stored: Dial, points: number): Dial {
+  const raw = dialRaw(stored, points);
+  if (raw >= stored.peak) return { ...stored, points, peak: clampPct(raw) };
+  return { ...stored, points, base: stored.peak, points0: points };
+}
+
+/** Serialises every read-modify-write of `dial` in this worker. */
+let dialLock: Promise<unknown> = Promise.resolve();
+function withDial<T>(fn: () => Promise<T>): Promise<T> {
+  const run = dialLock.then(fn, fn);
+  dialLock = run.catch(() => undefined);
+  return run;
 }
 
 /** Change only perPageCap on the server (fresh read first, so nothing else is overwritten). */
@@ -249,7 +351,8 @@ async function setSwapAmount(perPageCap?: number, autoGrow?: boolean): Promise<R
   if (perPageCap === undefined) return { ok: true };
   const fresh = await fetchSettings();
   if (!fresh) return { ok: false, error: "could not reach Luci" };
-  const next: Settings = { ...fresh, perPageCap: Math.max(0, Math.min(SLIDER_MAX, Math.round(perPageCap))) };
+  // HACK: unused since D-019 (no slider); 200 = Settings.perPageCap max.
+  const next: Settings = { ...fresh, perPageCap: Math.max(0, Math.min(200, Math.round(perPageCap))) };
   try {
     const res = await api("/api/settings", { method: "PUT", body: JSON.stringify(next) });
     if (!res.ok) return { ok: false, error: `server returned ${res.status}` };
@@ -333,31 +436,28 @@ async function tts(text: string, lemma: string): Promise<ResponseMap["TTS"]> {
 let flushTimer: ReturnType<typeof setTimeout> | undefined;
 
 async function queueEvents(events: ExtensionEvent[]): Promise<ResponseMap["QUEUE_EVENTS"]> {
-  const { eventQueue = [], immersion = DEFAULT_IMMERSION, knewIt = [] } = await readState();
+  const { eventQueue = [], knewIt = [] } = await readState();
   // Dedupe by id here too, so a content-script retry never double-queues.
   const byId = new Map(eventQueue.map((e) => [e.id, e]));
 
-  // Immersion dial (D-018): count only events not already queued, so retries never double-count.
-  let points = immersion.points;
+  // Knew it list for the steady glow (D-018). Immersion points now come from the server (D-019), not from here.
   const knew = new Set(knewIt);
-  let dialChanged = false;
+  let knewChanged = false;
   for (const e of events) {
-    if (byId.has(e.id)) continue;
-    if (e.type === "hover" || e.type === "knew_it" || e.type === "didnt_know") {
-      points += IMMERSION_POINTS[e.type];
-      dialChanged = true;
-      if (e.lemma && e.type === "knew_it") knew.add(e.lemma);
-      if (e.lemma && e.type === "didnt_know") knew.delete(e.lemma);
+    if (byId.has(e.id) || !e.lemma) continue;
+    if (e.type === "knew_it" && !knew.has(e.lemma)) {
+      knew.add(e.lemma);
+      knewChanged = true;
+    } else if (e.type === "didnt_know" && knew.has(e.lemma)) {
+      knew.delete(e.lemma);
+      knewChanged = true;
     }
   }
 
   for (const e of events) byId.set(e.id, e);
   const merged = [...byId.values()];
   const patch: Partial<StoredState> = { eventQueue: merged };
-  if (dialChanged) {
-    patch.immersion = { ...immersion, points };
-    patch.knewIt = [...knew];
-  }
+  if (knewChanged) patch.knewIt = [...knew];
   await chrome.storage.local.set(patch);
 
   if (events.some((e) => FLUSH_NOW.has(e.type))) {
@@ -426,6 +526,8 @@ async function handle(message: Message): Promise<ResponseMap[Message["type"]]> {
       return setImmersion(message.rate, message.percent, message.reset);
     case "TRANSLATE_SENTENCES":
       return translateSentences(message.articleKey, message.sentences);
+    case "TRY_HERE":
+      return tryHere(message.tabId, message.origin, message.url);
   }
 }
 

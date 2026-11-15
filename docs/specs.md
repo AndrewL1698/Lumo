@@ -138,8 +138,8 @@ learning stats**. **False friends** (*embarazada*): save for later, flag as a "f
    - Sets the **starting band**.
    - Words in bands **below** the chosen level start as `known_assumed` (low confidence). They're
      shown rarely as spot checks, and demoted if hovered.
-3. **Pick reading sites** (allowlist): suggest a news site, Wikipedia, a recipe site. The user
-   accepts each one; Chrome shows its own permission prompt.
+3. **Pick reading sites** (allowlist): a starter list of 16 common reading sites, all checked; the
+   user unchecks any. The extension popup then turns them on with one Chrome permission prompt (D-021).
 4. **Pair the extension:** web app shows a 6-digit code; enter it in the extension popup.
 5. Toggle: **"Use my reading in tutor lessons"** (default ON, explained in one sentence).
 

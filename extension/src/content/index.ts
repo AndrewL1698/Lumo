@@ -1,6 +1,7 @@
-// Parrot content script. Injected only on origins the user enabled from the popup
-// (registered at runtime via chrome.scripting.registerContentScripts). No network calls here:
-// everything goes through the service worker, so the token never enters the page.
+// Parrot content script. Injected either on origins the user enabled from the popup (registered at
+// runtime via chrome.scripting.registerContentScripts) or, for one visit only, by "Try on this
+// page" via activeTab + executeScript. No network calls here: everything goes through the service
+// worker, so the token never enters the page.
 //
 // Pipeline (docs/architecture.md §6):
 //   walk visible text -> match English forms in wordindex -> score with the §5.2 weights and the
@@ -10,17 +11,32 @@ import type { Candidate, ExtensionEvent } from "@parrot/shared";
 import { send } from "../messages";
 import { neverListReason, neverListPageReason } from "../neverlist";
 import { installHoverCard, type HoverTarget } from "./hovercard";
+import { showAmbience, hideAmbience } from "./ambience";
 import { watchSeen } from "./seen";
 import wordindex from "../wordindex.json";
 import wordbands from "../wordbands.json";
 import { LEVEL_BAND, MAX_SWAPS, STEPS, pageRules, type StepRules } from "../swapBudget";
 
 /** Bump when changing this file, so a stale bundle in Chrome is obvious in the console. */
-const BUILD = "2.7-imm";
+const BUILD = "2.9-d019";
 
-/** Words that must sit between two swaps, so they are never adjacent (specs §5.2.7). Loosened when the
- * page budget is high, so the popup slider visibly matters (never below 4: still never adjacent). */
+/**
+ * Double-load guard. A tab can receive this script twice: registered for an enabled origin AND
+ * injected by "Try on this page". Injections into the same frame share one isolated world, so this
+ * flag survives between them and the second load does nothing. A real navigation builds a fresh
+ * world, so the flag is clear again and the never-list check below runs on every genuine load.
+ *
+ * (A bare top-level `return` is not legal in a module, so the flag gates the call to main().)
+ */
+const world = window as unknown as { __luciLoaded?: boolean };
+const alreadyLoaded = world.__luciLoaded === true;
+world.__luciLoaded = true;
+
+/** Words that must sit between two budget swaps at step-0 spacing (specs §5.2.7). Loosened as the budget grows
+ * (never below 4). */
 const MIN_WORD_GAP = 12;
+/** D-019: the gap between ANY two swaps, key and known words included. 2 = never adjacent. */
+const FREE_GAP = 2;
 const DEBOUNCE_MS = 300;
 /** Aim for this share of review/learning words; the rest are new (specs §5.2.6). */
 const REVIEW_SHARE = 0.7;
@@ -46,7 +62,7 @@ const BANDS: Record<string, number> = wordbands;
 let pageCap = MAX_SWAPS;
 let minGap = MIN_WORD_GAP;
 let userBand = 2;
-/** Immersion step rules for this page (D-018). Every step runs the same code path; step 0 = today's rules. */
+/** Page rules from the immersion percent (D-019, `pageRules`). One code path for every percent. */
 let rules: StepRules = STEPS[0]!;
 /** Lemmas whose latest verdict was "Knew it": shown steady (no flicker), never solid (D-018). Display only. */
 const knewIt = new Set<string>();
@@ -54,7 +70,13 @@ const knewIt = new Set<string>();
 let sentenceBlocksDone = 0;
 let paragraphBlocksDone = 0;
 
+/** Every word swap on the page. */
 let swapCount = 0;
+/** D-019: swaps that count against pageCap (key + new/learning words). Known/mastered swaps are free. */
+let budgetCount = 0;
+/** D-019: known/mastered lemmas swapped, and found in matches, so far on this page (console check). */
+const knownShown = new Set<string>();
+const knownFound = new Set<string>();
 let articleKey = "";
 const swappedLemmas = new Set<string>();
 /** Registers a new swap with the `seen` observer; set once main() starts (brief 3.2). */
@@ -166,6 +188,10 @@ interface Match {
   sentenceKey: string;
   isReview: boolean;
   score: number;
+  /** D-019: best lemma is known or mastered. Always swapped, outside the budget. */
+  solid: boolean;
+  /** D-019: a key word (candidate isKey, not solid). Picked first, inside the budget. */
+  key: boolean;
 }
 
 /** Never-met words easier than the learner's level are assumed known (specs §4): never swapped. */
@@ -181,13 +207,17 @@ function steadyRandom(lemma: string): number {
   return (h >>> 0) / 4294967296;
 }
 
-/** specs §5.2.5, plus a little per-article jitter so the same words don't win on every page. */
+/**
+ * specs §5.2.5, plus a little per-article jitter so the same words don't win on every page. D-019: proven words rank
+ * highest (so an ambiguous English word resolves to the lemma the learner knows), then key words. Mastered words are
+ * no longer pushed down: they sit outside the budget now.
+ */
 function scoreOf(c: Candidate | undefined, lemma: string): number {
   const jitter = steadyRandom(lemma) * 0.4;
   if (!c) {
     // Never met: match the learner's level (D-007). Easier = assumed known, harder = only if nothing better.
     const band = BANDS[lemma] ?? userBand;
-    // Immersion steps 1+ (D-018) include easier words too, below the learner's own band.
+    // Wider spacing steps (D-018) include easier words too, below the learner's own band.
     if (band < userBand) return rules.includeEasy ? 0.5 + jitter : SKIP;
     return band === userBand ? 1.0 + jitter : 0.2 + jitter * 0.25;
   }
@@ -197,7 +227,8 @@ function scoreOf(c: Candidate | undefined, lemma: string): number {
     (c.hoveredRecently ? 2.0 : 0) +
     (c.onWeakList ? 1.5 : 0) +
     (c.isNewInBand ? 1.0 : 0) +
-    (c.isMastered ? -5.0 : 0) +
+    (c.state === "known" || c.state === "mastered" ? 10.0 : 0) +
+    (c.isKey ? 4.0 : 0) +
     jitter
   );
 }
@@ -224,7 +255,11 @@ function findMatches(nodes: Text[], byLemma: Map<string, Candidate>): Match[] {
         .sort((a, b) => b.s - a.s)[0];
       if (!lemma || lemma.s === SKIP) continue;
 
-      const state = byLemma.get(lemma.l)?.state;
+      const cand = byLemma.get(lemma.l);
+      const state = cand?.state;
+      const solid = state === "known" || state === "mastered";
+      const key = Boolean(cand?.isKey) && !solid;
+      const glow = glowFor(lemma.l, state);
       found.push({
         node,
         offset: m.index,
@@ -236,7 +271,10 @@ function findMatches(nodes: Text[], byLemma: Map<string, Candidate>): Match[] {
         // known_assumed (only swapped at steps 1+) is a placement guess: fresh, so it never crowds the review slice.
         isReview: Boolean(state && state !== "new" && state !== "known_assumed"),
         score: lemma.s,
-        glow: glowFor(lemma.l, state),
+        // A key word is one the learner is working on: it flickers even if only "seen" so far (D-019).
+        glow: key && glow === "seen" ? "learning" : glow,
+        solid,
+        key,
       });
     }
     wordsWalked += wordInNode;
@@ -245,38 +283,57 @@ function findMatches(nodes: Text[], byLemma: Map<string, Candidate>): Match[] {
 }
 
 /**
- * Score-first greedy pick (every step, D-018): best review words until the 70/30 share is met, then every fresh word,
- * then review again to top up. A match is skipped if its lemma is already used on the page, its sentence already has
- * rules.perSentence picks, or it sits within minGap words of a pick. Word indices restart at 0 every sweep (each sweep
- * only sees new text nodes), so the gap starts fresh each sweep. Returned in priority order (best first), so the
- * caller can over-pick and keep the best ones that translate.
+ * Score-first greedy pick, one code path for every percent (D-019):
+ *   1. key words, best first, counted in the budget, relaxed spacing (FREE_GAP only, no per-sentence limit);
+ *   2. known/mastered words, NOT counted, same relaxed spacing;
+ *   3. the rest of the budget: best review words until the 70/30 share is met, then every fresh word, then review
+ *      again to top up. These keep the page rules: rules.perSentence (budget picks only) and minGap against budget
+ *      picks, FREE_GAP against free picks, so no two swaps are ever adjacent.
+ * One swap per lemma per page. Word indices restart at 0 every sweep (each sweep only sees new text nodes), so the
+ * gap starts fresh each sweep. Returned in priority order (key, known, rest), so the caller can over-pick and keep
+ * the best ones that translate.
  */
 function pickWords(matches: Match[], budget: number): Match[] {
-  const review = matches.filter((m) => m.isReview).sort((a, b) => b.score - a.score);
-  const fresh = matches.filter((m) => !m.isReview).sort((a, b) => b.score - a.score);
-  const want = Math.round(budget * REVIEW_SHARE);
+  const byScore = (a: Match, b: Match) => b.score - a.score;
+  const keys = matches.filter((m) => m.key).sort(byScore);
+  const solids = matches.filter((m) => m.solid).sort(byScore);
+  const rest = matches.filter((m) => !m.key && !m.solid);
+  const review = rest.filter((m) => m.isReview).sort(byScore);
+  const fresh = rest.filter((m) => !m.isReview).sort(byScore);
 
-  const chosen: Match[] = [];
+  const picks: { m: Match; counted: boolean }[] = [];
+  let used = 0;
   const usedLemmas = new Set<string>(swappedLemmas);
   const perSentence = new Map<string, number>();
-  const add = (m: Match): void => {
-    if (chosen.length >= budget) return;
+  const take = (m: Match, kind: "key" | "free" | "budget"): void => {
+    const counted = kind !== "free";
+    if (counted && used >= budget) return;
     if (usedLemmas.has(m.lemma)) return; // one swap per lemma per page
     const inSentence = perSentence.get(m.sentenceKey) ?? 0;
-    if (inSentence >= rules.perSentence) return;
-    if (chosen.some((c) => Math.abs(c.wordIndex - m.wordIndex) < minGap)) return;
-    chosen.push(m);
+    if (kind === "budget" && inSentence >= rules.perSentence) return;
+    for (const p of picks) {
+      const d = Math.abs(p.m.wordIndex - m.wordIndex);
+      if (d < FREE_GAP) return;
+      if (kind === "budget" && p.counted && d < minGap) return;
+    }
+    picks.push({ m, counted });
     usedLemmas.add(m.lemma);
-    perSentence.set(m.sentenceKey, inSentence + 1);
+    if (counted) {
+      used++;
+      perSentence.set(m.sentenceKey, inSentence + 1);
+    }
   };
 
+  for (const m of keys) take(m, "key");
+  for (const m of solids) take(m, "free");
+  const want = used + Math.round(Math.max(0, budget - used) * REVIEW_SHARE);
   for (const m of review) {
-    if (chosen.length >= want) break;
-    add(m);
+    if (used >= want) break;
+    take(m, "budget");
   }
-  for (const m of fresh) add(m);
-  for (const m of review) add(m); // top up if fresh ran out
-  return chosen;
+  for (const m of fresh) take(m, "budget");
+  for (const m of review) take(m, "budget"); // top up if fresh ran out
+  return picks.map((p) => p.m);
 }
 
 /**
@@ -358,6 +415,8 @@ function wordOp(m: Match, start: number, span: string, replacement: string): Swa
     rank: 0,
     onApplied() {
       swapCount++;
+      if (m.solid) knownShown.add(m.lemma);
+      else budgetCount++;
       swappedLemmas.add(m.lemma);
       observeForSeen?.(el);
     },
@@ -578,11 +637,15 @@ function blockOp(b: Block, spanish: string): SwapOp {
   };
 }
 
-/** Every immersion step (D-018): many swaps per text node, placed by offset. Step 0 is just its rules (no blocks). */
+/**
+ * Every percent (D-019): many swaps per text node, placed by offset. Runs even when the budget is full, because
+ * known words are free and late text may hold some.
+ */
 async function sweep(root: Node): Promise<void> {
+  // Luci switched off mid-page (watchLuciSwitch): no more swaps, not even known words, and nothing sent (review).
+  if (pageCap === 0) return;
   const blocksLeft =
     sentenceBlocksDone < rules.sentenceBlocks || paragraphBlocksDone < rules.paragraphBlocks;
-  if (swapCount >= pageCap && !blocksLeft) return;
 
   const nodes = collectTextNodes(root).filter((n) => !seenNodes.has(n));
   for (const n of nodes) seenNodes.add(n);
@@ -603,7 +666,8 @@ async function sweep(root: Node): Promise<void> {
     const r = sentenceRanges.get(m.node);
     return !r || m.offset + m.englishMatch.length <= r.start || m.offset >= r.end;
   });
-  const chosen = pickWords(matches, Math.ceil(Math.max(0, pageCap - swapCount) * OVERPICK));
+  for (const m of matches) if (m.solid) knownFound.add(m.lemma);
+  const chosen = pickWords(matches, Math.ceil(Math.max(0, pageCap - budgetCount) * OVERPICK));
   if (!chosen.length && !blocks.length) {
     console.log(`[parrot] step ${rules.step}: ${nodes.length} new text node(s), nothing worth swapping`);
     return;
@@ -624,6 +688,7 @@ async function sweep(root: Node): Promise<void> {
         .then((res) => {
           if (!res) return console.log("[parrot] translate unavailable, no word swaps this time");
           const ops: SwapOp[] = [];
+          const solidOps: SwapOp[] = [];
           res.items.forEach((item, i) => {
             const m = chosen[i];
             if (!item || !m) return; // null = sense mismatch, don't swap
@@ -633,15 +698,16 @@ async function sweep(root: Node): Promise<void> {
             // A span the server widened ("the ...") must not reach into a reserved sentence.
             const r = sentenceRanges.get(m.node);
             if (r && start < r.end && start + item.span.length > r.start) return;
-            ops.push(wordOp(m, start, item.span, item.replacement));
+            (m.solid ? solidOps : ops).push(wordOp(m, start, item.span, item.replacement));
           });
-          // Ops are in pick priority (best first): keep the best that translated, up to what's left of the budget
-          // (a parallel sweep may have used some).
-          ops.splice(Math.max(0, pageCap - swapCount));
-          const applied = applyOps(ops);
+          // Budget ops are in pick priority (key words first): keep the best that translated, up to what's left of
+          // the budget (a parallel sweep may have used some). Known words are free: keep them all.
+          ops.splice(Math.max(0, pageCap - budgetCount));
+          const applied = applyOps([...ops, ...solidOps]);
           console.log(
             `[parrot] step ${rules.step}: swapped ${applied} of ${chosen.length} chosen ` +
-              `(page total ${swapCount}), ≤${rules.perSentence} per sentence`,
+              `(budget ${budgetCount}/${pageCap}, page total ${swapCount}), ≤${rules.perSentence} per sentence; ` +
+              `known shown ${knownShown.size} of ${knownFound.size} found`,
           );
         })
     : null;
@@ -671,11 +737,9 @@ async function sweep(root: Node): Promise<void> {
 
 let timer: ReturnType<typeof setTimeout> | undefined;
 function watchForNewText(): void {
+  // D-019: no disconnect when the budget is full. Known words are free, so late text still gets them; a sweep with
+  // no new text nodes returns before any message is sent.
   const observer = new MutationObserver((records) => {
-    if (swapCount >= pageCap) {
-      observer.disconnect();
-      return;
-    }
     const roots = records
       .flatMap((r) => [...r.addedNodes])
       .filter((n) => n.nodeType === Node.ELEMENT_NODE || n.nodeType === Node.TEXT_NODE);
@@ -729,24 +793,43 @@ function wireHoverCard(): void {
   });
 }
 
-/** Swap amount (popup slider or "Grow automatically") and the learner's level, from Settings + progress. */
+/**
+ * Page rules from the one immersion percent (D-019) and the learner's level. The service worker computes the percent
+ * from fresh understanding points (and refreshes its candidates cache while it's at it).
+ */
 async function loadBudget(): Promise<void> {
-  const [s, c] = await Promise.all([
-    send({ type: "GET_SETTINGS" }).catch(() => null),
-    send({ type: "GET_CANDIDATES" }).catch(() => null),
-  ]);
+  const s = await send({ type: "GET_SETTINGS" }).catch(() => null);
   if (!s) return; // service worker unreachable: keep the defaults
-  // An older service worker sends no immersion: that's step 0, today's behaviour.
-  const immersion = s.immersion ?? { points: 0, rate: 1, percent: 0 };
-  rules = pageRules(s.settings, s.autoGrow, immersion, c?.candidates ?? []);
+  const percent = s.immersion.percent;
+  rules = pageRules(s.settings, percent);
   pageCap = rules.words;
   userBand = LEVEL_BAND[s.settings.level] ?? 2;
   minGap = rules.step === 0 ? Math.max(4, Math.round((MIN_WORD_GAP * 10) / Math.max(10, pageCap))) : rules.minGap;
   for (const lemma of s.knewIt ?? []) knewIt.add(lemma);
   console.log(
-    `[parrot] step ${rules.step}, immersion ${immersion.percent}%, budget ${pageCap} swaps ` +
-      `(${s.autoGrow ? "auto" : "slider"}), ≤${rules.perSentence} per sentence, gap ${minGap}, level ${s.settings.level}`,
+    `[parrot] immersion ${percent}% (${s.immersion.rate}×): budget ${pageCap} new/learning words + known words free; ` +
+      `spacing step ${rules.step}, ≤${rules.perSentence} per sentence, gap ${minGap}; ` +
+      `blocks ${rules.sentenceBlocks} sentences / ${rules.paragraphBlocks} paragraphs; level ${s.settings.level}`,
   );
+}
+
+/**
+ * Keep the ambience layer in step with the on/off switch while the page stays open: the popup and
+ * the web app both write Settings through chrome.storage.local, so a change there is the signal.
+ * Only the layer reacts — swaps already on the page stay put, and new swaps need a reload.
+ */
+function watchLuciSwitch(): void {
+  try {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      // Settings only: the worker rewrites `dial` on every GET_SETTINGS, so reacting to it would loop.
+      if (area !== "local" || !changes.settings) return;
+      void loadBudget()
+        .then(() => (pageCap === 0 ? hideAmbience() : showAmbience()))
+        .catch(() => {}); // worker gone: leave the layer as it is rather than flickering
+    });
+  } catch {
+    // Extension reloaded under an open tab: no listener, the page just keeps what it has.
+  }
 }
 
 async function main(): Promise<void> {
@@ -761,10 +844,13 @@ async function main(): Promise<void> {
 
   articleKey = await computeArticleKey();
   await loadBudget();
+  // Registered before the early return, so switching Luci ON mid-page lights the layer too.
+  watchLuciSwitch();
   if (pageCap === 0) {
     console.log("[parrot] swaps set to 0 for this page");
     return;
   }
+  showAmbience();
   injectStyle();
   wireHoverCard();
   observeForSeen = watchSeen((lemma) => queue(newEvent("seen", { lemma })));
@@ -782,4 +868,8 @@ async function main(): Promise<void> {
   }
 }
 
-void main().catch((err: unknown) => console.error("[parrot] startup failed:", err));
+if (alreadyLoaded) {
+  console.log("[parrot] already running in this tab, second injection ignored");
+} else {
+  void main().catch((err: unknown) => console.error("[parrot] startup failed:", err));
+}

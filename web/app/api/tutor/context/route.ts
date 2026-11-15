@@ -4,12 +4,29 @@ import { json } from "@/lib/http";
 import { DEMO_USER_ID, TUTOR, isTutorMock } from "@/lib/config";
 import { getTutorContextData } from "@/lib/learner/queries";
 import { fixtureContext, loadTutorContext, type LoadedContext } from "@/lib/tutor/context";
-import { setSessionContext } from "@/lib/tutor/session";
+import { getSession, setSessionContext } from "@/lib/tutor/session";
 
 export const dynamic = "force-dynamic";
 
 /** Real session context from the learner model; the fixture (fresh sessionId) when mocked, DB off, failing or slow. */
-export async function GET() {
+export async function GET(req?: Request) {
+  // Onboarding level check (D-020): an empty beginner context, no DB, so it works for a brand-new learner.
+  if (req && new URL(req.url).searchParams.get("placement") === "1") {
+    const context: TutorContext = {
+      ...fixtureContext(),
+      hoveredWords: [],
+      dueWords: [],
+      articleTitles: [],
+      topErrors: [],
+      targetWords: [],
+      level: "beginner",
+    };
+    setSessionContext(context.sessionId, context);
+    getSession(context.sessionId).placement = true;
+    console.log(`[tutor/context] ${context.sessionId} placement check`);
+    return json(context, TutorContext, { headers: { "X-Context-Source": "placement", "Cache-Control": "no-store" } });
+  }
+
   const { context, source, reason }: LoadedContext = isTutorMock()
     ? { context: fixtureContext(), source: "fixture", reason: "TUTOR_MOCK" }
     : await loadTutorContext(() => getTutorContextData(DEMO_USER_ID), TUTOR.contextTimeoutMs);

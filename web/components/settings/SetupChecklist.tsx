@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import type { Settings } from "@parrot/shared";
 import { DEMO_PAIRING_CODE } from "@/components/onboarding/OnboardingForm";
 import { LEVELS } from "@/components/onboarding/LevelPicker";
@@ -6,7 +7,7 @@ import { PairingCode } from "@/components/onboarding/PairingCode";
 import { ReadingSites } from "@/components/onboarding/ReadingSites";
 import type { SetupStatus } from "./useSetupStatus";
 
-// "Get set up" at the top of Settings (it replaced the separate onboarding page). Level and the reading toggle always
+// "Get set up" at the top of Settings: setup status, with the full setup flow on /onboarding (D-020). Level and the reading toggle always
 // have a value, so they show as set, with a link down to change them. Pairing and the first site come from what the
 // extension has sent. All four done: it folds to one line.
 function Item({
@@ -81,6 +82,13 @@ export function SetupChecklist({ settings, status }: { settings: Settings; statu
         </h2>
         <p className="text-muted">{doneCount} of 4 done</p>
       </div>
+      <p className="mt-2 text-muted">
+        New here?{" "}
+        <Link href="/onboarding" className={jump}>
+          Go through setup step by step
+        </Link>
+        .
+      </p>
       <ol className="mt-6 space-y-6">
         <Item
           done

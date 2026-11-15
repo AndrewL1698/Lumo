@@ -6,3 +6,4 @@ export * from "./tutor";
 export * from "./settings";
 export * from "./api";
 export * from "./fixtures";
+export * from "./readingSites";
