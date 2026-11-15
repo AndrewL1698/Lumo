@@ -25,6 +25,7 @@ export function getSession(sessionId: string): SessionState {
         usedLemmas: [],
       },
       creditedLemmas: [],
+      fromContext: false,
       allErrors: [],
     };
     sessions.set(sessionId, s);
@@ -36,6 +37,7 @@ export function getSession(sessionId: string): SessionState {
 export function setSessionContext(sessionId: string, context: TutorContext): void {
   const s = getSession(sessionId);
   s.context = context;
+  s.fromContext = true;
   s.policy.targetLemmas = context.targetWords.map((w) => w.lemma);
 }
 
