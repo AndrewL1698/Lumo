@@ -71,7 +71,7 @@ Who owns what and how we work: see [`plan.md`](plan.md). Technical design: see [
 | Naren | 🔊 in the hover card via `/api/tts` (cached). `seen` via IntersectionObserver (≥2s). Toolbar toggle + Alt+Shift+P. Pause on this site. Then switch to the eval set. |
 | Karthik (added Sat evening) | **Smarter swaps** (decisions D-005–D-008): the extension reads Settings, a popup "words per page" slider, "Grow automatically", level-matched never-met words (`wordbands.json`), and the tutor sees knew-it/didn't-know outcomes. Took over the settings part of Naren's task 3.3 (agreed with Naren). **Done, merged Sat evening**, plus faster swaps (thinking off, parallel translate, steady per-article choice). Hover card untouched. |
 | Karthik (Sat evening, agreed with Naren + Shravan) | **Luci polish** (D-010): extension renamed Luci with the firefly icon; hover card in the Luci look (drawn speaker, hover outlines, click confirmation); What Luci knows grouped into Learning / Known / Mastered. |
-| Karthik (Sat evening, agreed with Naren, Andrew, Shravan) | **Click-to-open hover card + time-of-day greetings** (D-011): click a swap to open its card, click away to close; greeting line on the home page; the tutor's opener greets by time of day. |
+| Karthik (Sat evening, agreed with Naren, Andrew, Shravan) | **Click-to-open hover card + time-of-day greetings** (D-015): click a swap to open its card, click away to close; greeting line on the home page; the tutor's opener greets by time of day. |
 
 **Docs:** lock `demo-script.md` (Naren); start capturing screenshots into `docs/img/` (Shravan).
 
