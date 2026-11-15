@@ -6,6 +6,13 @@ import { useEffect, useRef } from "react";
 // ~30fps, paused while the tab is hidden; reduced motion draws them once, static.
 type Fly = { x: number; y: number; core: number; halo: number; base: number; ax: number; ay: number; sp: number; tw: number; p1: number; p2: number; p3: number };
 
+// Dark: pale yellow light on the night. Light: deep amber, so the glow still shows on cream.
+const PALETTE = {
+  dark: { halo0: "255, 222, 120", halo1: "255, 205, 70", halo2: "255, 200, 60", core: "255, 244, 190", haloA: 0.42 },
+  light: { halo0: "235, 160, 20", halo1: "225, 145, 10", halo2: "220, 140, 0", core: "205, 125, 0", haloA: 0.32 },
+};
+const currentPalette = () => (document.documentElement.dataset.theme === "light" ? PALETTE.light : PALETTE.dark);
+
 function makeFlies(n: number): Fly[] {
   let seed = 20261114;
   const r = () => {
@@ -42,6 +49,7 @@ export function SkyFireflies() {
     let w = 0;
     let h = 0;
     let flies: Fly[] = [];
+    let pal = currentPalette();
 
     const draw = (ms: number) => {
       const t = ms / 1000;
@@ -51,14 +59,14 @@ export function SkyFireflies() {
         const y = f.y * h + (reduce ? 0 : Math.cos(t * f.sp * 5 + f.p2) * f.ay);
         const a = reduce ? f.base : f.base * (0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * f.tw + f.p3)));
         const halo = ctx.createRadialGradient(x, y, 0, x, y, f.halo);
-        halo.addColorStop(0, `rgba(255, 222, 120, ${(a * 0.42).toFixed(3)})`);
-        halo.addColorStop(0.45, `rgba(255, 205, 70, ${(a * 0.14).toFixed(3)})`);
-        halo.addColorStop(1, "rgba(255, 200, 60, 0)");
+        halo.addColorStop(0, `rgba(${pal.halo0}, ${(a * pal.haloA).toFixed(3)})`);
+        halo.addColorStop(0.45, `rgba(${pal.halo1}, ${(a * 0.14).toFixed(3)})`);
+        halo.addColorStop(1, `rgba(${pal.halo2}, 0)`);
         ctx.fillStyle = halo;
         ctx.beginPath();
         ctx.arc(x, y, f.halo, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = `rgba(255, 244, 190, ${a.toFixed(3)})`;
+        ctx.fillStyle = `rgba(${pal.core}, ${a.toFixed(3)})`;
         ctx.beginPath();
         ctx.arc(x, y, f.core, 0, Math.PI * 2);
         ctx.fill();
@@ -77,7 +85,17 @@ export function SkyFireflies() {
     };
     resize();
     window.addEventListener("resize", resize);
-    if (reduce) return () => window.removeEventListener("resize", resize);
+    // theme toggle (components/ThemeToggle.tsx) flips html[data-theme]: repaint in the new colours
+    const themeObserver = new MutationObserver(() => {
+      pal = currentPalette();
+      draw(performance.now());
+    });
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    if (reduce)
+      return () => {
+        window.removeEventListener("resize", resize);
+        themeObserver.disconnect();
+      };
 
     let raf = 0;
     let last = 0;
@@ -98,6 +116,7 @@ export function SkyFireflies() {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
       document.removeEventListener("visibilitychange", onVisibility);
+      themeObserver.disconnect();
     };
   }, []);
 

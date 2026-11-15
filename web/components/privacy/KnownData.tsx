@@ -33,7 +33,7 @@ const WORD_GROUPS: { title: string; blurb: string; states: string[]; optional?: 
 
 function GlowDot({ glow, size = "h-6 w-6" }: { glow: Glow; size?: string }) {
   return (
-    <span className={`jar-legend grid shrink-0 place-items-center rounded-full bg-[#1d2b44] ${size}`} data-level={glow} aria-hidden="true">
+    <span className={`jar-legend grid shrink-0 place-items-center rounded-full bg-jar ${size}`} data-level={glow} aria-hidden="true">
       <span className="jar-light" />
     </span>
   );

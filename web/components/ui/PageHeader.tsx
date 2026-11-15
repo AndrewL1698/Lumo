@@ -7,7 +7,7 @@ export const btn = {
   primary: `${base} bg-glow text-ink hover:bg-[#f2c400]`,
   secondary: `${base} border border-line bg-panel text-ink hover:border-muted`,
   danger: `${base} border border-stop/50 bg-panel text-stop hover:border-stop hover:bg-stop/5`,
-  dangerSolid: `${base} bg-stop text-[#1a1208] hover:bg-stop/85`,
+  dangerSolid: `${base} bg-stop text-on-stop hover:bg-stop/85`,
 };
 
 // Small uppercase label, Luci's eyebrow.

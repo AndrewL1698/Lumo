@@ -60,7 +60,7 @@ export function SettingsForm({ initial, onSave }: { initial: Settings; onSave: (
           max={25}
           value={s.perPageCap}
           onChange={(e) => set({ perPageCap: Number(e.target.value) })}
-          className="w-full max-w-md accent-[#ffd23a]"
+          className="w-full max-w-md accent-glow"
         />
         <p className="text-sm text-muted">Luci never swaps more than this many words on one page. 0 means none.</p>
       </div>

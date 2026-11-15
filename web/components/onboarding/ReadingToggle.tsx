@@ -8,7 +8,7 @@ export function ReadingToggle({ checked, onChange }: { checked: boolean; onChang
         role="switch"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="mt-1 h-5 w-5 accent-[#ffd23a]"
+        className="mt-1 h-5 w-5 accent-glow"
       />
       <span>
         <span className="block text-lg font-semibold text-ink">Use my reading in tutor lessons</span>

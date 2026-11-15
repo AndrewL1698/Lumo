@@ -89,7 +89,7 @@ export function Jar({ data, fresh }: { data: VocabResponse; fresh: Set<string> }
           {/* the night inside the glass */}
           <path
             d="M100 50 L100 70 C48 84 34 112 34 150 L34 300 C34 326 56 342 90 342 L210 342 C244 342 266 326 266 300 L266 150 C266 112 252 84 200 70 L200 50 Z"
-            fill="#1d2b44"
+            className="jar-glass"
           />
           {/* glass outline and a shine */}
           <path
@@ -99,8 +99,8 @@ export function Jar({ data, fresh }: { data: VocabResponse; fresh: Set<string> }
             strokeWidth="4"
             strokeLinejoin="round"
           />
-          <path d="M56 160 C56 132 66 112 88 100" fill="none" stroke="#fcfcf8" strokeOpacity=".35" strokeWidth="6" strokeLinecap="round" />
-          <path d="M56 186 L56 280" fill="none" stroke="#fcfcf8" strokeOpacity=".18" strokeWidth="6" strokeLinecap="round" />
+          <path className="jar-shine" d="M56 160 C56 132 66 112 88 100" fill="none" stroke="#fcfcf8" strokeOpacity=".35" strokeWidth="6" strokeLinecap="round" />
+          <path className="jar-shine" d="M56 186 L56 280" fill="none" stroke="#fcfcf8" strokeOpacity=".18" strokeWidth="6" strokeLinecap="round" />
           {/* lid with a tied string */}
           <rect x="88" y="26" width="124" height="26" rx="5" fill="#b98a4e" stroke="#8a6332" strokeWidth="3" />
           <path d="M92 40 L208 40" stroke="#8a6332" strokeWidth="2" />
@@ -156,7 +156,7 @@ export function Jar({ data, fresh }: { data: VocabResponse; fresh: Set<string> }
             ] as const
           ).map(([level, name, n]) => (
             <li key={level} className="flex items-center gap-4">
-              <span className="jar-legend grid h-8 w-8 place-items-center rounded-full bg-[#1d2b44]" data-level={level}>
+              <span className="jar-legend grid h-8 w-8 place-items-center rounded-full bg-jar" data-level={level}>
                 <span className="jar-light" />
               </span>
               <span className="text-lg">
