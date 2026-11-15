@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 const iso = (v: string) => new Date(v).toISOString();
 
-// Everything Parrot stores for the user ("What Parrot knows").
+// Everything Lumo stores for the user ("What Lumo knows").
 export async function GET() {
   try {
     const db = getDb();

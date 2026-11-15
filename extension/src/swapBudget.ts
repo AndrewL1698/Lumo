@@ -99,7 +99,7 @@ export function stepFor(percent: number): StepRules {
 }
 
 /**
- * The one path from percent to page rules. Luci off = no words. Otherwise the budget is N(percent); spacing comes from
+ * The one path from percent to page rules. Lumo off = no words. Otherwise the budget is N(percent); spacing comes from
  * the first step whose word count covers N; blocks come from the step for the percent.
  */
 export function pageRules(settings: Settings, percent: number): StepRules {

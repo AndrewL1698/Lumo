@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-11-14T22:00:00-05:00",
-  "title": "Design System: Parrot",
+  "title": "Design System: Lumo",
   "extensions": {
     "colorMeta": {
       "ink-ground": { "role": "neutral", "displayName": "Ink Ground" },
@@ -82,13 +82,13 @@
       "name": "Navigation",
       "kind": "nav",
       "description": "Wordmark plus text links; active link underlined.",
-      "html": "<nav class=\"ds-nav\"><b>Parrot</b><a class=\"is-active\">Tutor</a><a>Vocabulary</a><a>What Parrot knows</a></nav>",
+      "html": "<nav class=\"ds-nav\"><b>Lumo</b><a class=\"is-active\">Tutor</a><a>Vocabulary</a><a>What Lumo knows</a></nav>",
       "css": ".ds-nav { display: flex; gap: 24px; align-items: center; padding: 16px; border-bottom: 1px solid #23272d; background: #0e1013; color: #e8ebef; } .ds-nav a { color: #8a929d; transition: color 150ms; } .ds-nav a:hover { color: #e8ebef; } .ds-nav a.is-active { color: #e8ebef; text-decoration: underline; text-underline-offset: 10px; text-decoration-thickness: 1px; }"
     }
   ],
   "narrative": {
     "northStar": "The Corrected Proof",
-    "overview": "Parrot treats what a learner says the way an editor treats a manuscript: the words are kept exactly as spoken, and every judgement is written onto them, never in place of them. A slip is struck through in red and the correct form is set directly above it, the way a teacher marks a page. The ground is a dark, flat instrument surface; panels are separated by single hairlines, type does the structuring, and colour only appears when something has been judged.",
+    "overview": "Lumo treats what a learner says the way an editor treats a manuscript: the words are kept exactly as spoken, and every judgement is written onto them, never in place of them. A slip is struck through in red and the correct form is set directly above it, the way a teacher marks a page. The ground is a dark, flat instrument surface; panels are separated by single hairlines, type does the structuring, and colour only appears when something has been judged.",
     "keyCharacteristics": [
       "Verbatim transcript with interlinear corrections (red strike below, green fix above).",
       "Dark flat ground, 1px hairlines, no shadows, corners of 2 to 4px.",

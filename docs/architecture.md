@@ -1,4 +1,4 @@
-# Parrot: Architecture
+# Lumo: Architecture
 
 Technical design, revised from `specs.md` §2. Where this file and `specs.md` disagree, **this file wins**. Every change is listed in §11 with the reason.
 

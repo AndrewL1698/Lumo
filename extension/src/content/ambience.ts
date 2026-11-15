@@ -1,4 +1,4 @@
-// The "Luci is on" layer: one fixed, click-through sheet over the whole page — a very faint navy
+// The "Lumo is on" layer: one fixed, click-through sheet over the whole page — a very faint navy
 // wash with a soft amber glow pulled in from the edges, the same night-and-firefly look as the web
 // app (web/app/globals.css: --color-bg #0f1a2c, --color-glow #ffd23a).
 //
@@ -65,7 +65,7 @@ export function showAmbience(): void {
   document.documentElement.appendChild(el);
 }
 
-/** Remove it. Called when Luci is switched off, so the page goes back to exactly as it was. */
+/** Remove it. Called when Lumo is switched off, so the page goes back to exactly as it was. */
 export function hideAmbience(): void {
   document.getElementById(LAYER_ID)?.remove();
   document.getElementById(STYLE_ID)?.remove();

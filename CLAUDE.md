@@ -1,4 +1,7 @@
-# CLAUDE.md — Parrot (HackPrinceton Fall 2026)
+# CLAUDE.md — Lumo (HackPrinceton Fall 2026)
+
+The product is **Lumo** (working names: Parrot, then Luci). Code names `parrot` / `luci` in identifiers
+(`@parrot/shared`, `data-parrot`, `X-Parrot-Why`, `luci-ambience`, `LuciFirefly`) are historical: don't rename them.
 
 Shared guidance for every teammate's Claude. Planning docs live in `/docs`:
 - `docs/specs.md`: product source of truth (what we're building).

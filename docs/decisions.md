@@ -1,6 +1,9 @@
-# Parrot: Decision Log
+# Lumo: Decision Log
 
 Short entries. Newest at the bottom. Format: **ID · date · owner**, decision, why, alternatives.
+
+**Naming:** the product was called Parrot, then Luci (D-010), and is now **Lumo** (D-028). Older entries keep the
+name used at the time.
 
 ---
 
@@ -181,3 +184,8 @@ Short entries. Newest at the bottom. Format: **ID · date · owner**, decision, 
 **Decision:** In the Jar, a `learning` word whose newest verdict in the last 7 days is "Knew it" is listed under **Glowing steady** with "you said you know it" (`VocabItem.selfReported`, optional). A later "Didn't know" or a wrong use in a lesson sends it back to "Still faint" at once; otherwise it fades back after 7 days. It is computed when `/api/vocab` reads, with no timer. "Just lit up" still lists only words said correctly in a lesson.
 **Why:** Learners who clicked "Knew it" saw the word under "Still faint", which read as the app ignoring them.
 **Unchanged:** This is display only. The word stays `learning` (known needs proof, §6.1, CLAUDE.md #5), so lessons still test it, and the immersion points are the same. D-018 rejected showing "Knew it" words as solid; this shows them as steady for a week and labelled, never as known in the learner model.
+
+### D-028 · Nov 15 · Karthik (heads-up to everyone)
+**Decision:** The product is **Lumo**, everywhere a person sees or reads it: the tutor's own name (its system prompt said "You are Parrot", so it sometimes introduced itself as Parrot), the hands-free status lines, the settings error, the README and docs, and code comments. Code names in identifiers stay as they are (`@parrot/shared`, `data-parrot*`, `[parrot]` logs, `X-Parrot-Why`, `parrot-hover-card`, `luci-ambience`, `LuciFirefly`, storage keys, DB), noted in the root `CLAUDE.md`.
+**Why:** Mixed names on stage (the tutor calling itself Parrot) undercut the product. Renaming identifiers after the freeze could break imports, saved browser data and the running extension, with no visible gain.
+**Not changed:** this log's older entries (they keep the name used at the time), the Luci brand proposal in `docs/brand/` (it gets a note), and one roadmap line recording Saturday's rename to Luci.

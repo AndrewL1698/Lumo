@@ -22,12 +22,12 @@ export default function Page() {
   }, [data]);
   const freshWords = data ? data.known.filter((w) => fresh.has(w.lemma)) : [];
 
-  // Everything Luci stores about you lives under the jar (D-024): the same words, plus articles, activity and delete.
+  // Everything Lumo stores about you lives under the jar (D-024): the same words, plus articles, activity and delete.
   const stored = useFetch("/api/data", DataResponse, { refetchOnFocus: true });
   const [busy, setBusy] = useState(false);
   const [keepsOpen, setKeepsOpen] = useState(false);
   useEffect(() => {
-    if (window.location.hash === "#keeps") setKeepsOpen(true); // the old "What Luci knows" link lands here
+    if (window.location.hash === "#keeps") setKeepsOpen(true); // the old "What Lumo knows" link lands here
   }, []);
 
   // Only report success after the server confirms, then refetch both lists so the screen matches the database.

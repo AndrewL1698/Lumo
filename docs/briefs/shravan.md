@@ -3,7 +3,7 @@
 Paste this whole file into a fresh Claude Code session to start a task. Then name the one task you are doing.
 
 ## Role
-Shravan owns every page a person sees in the Parrot web app: onboarding, the voice tutor page, vocabulary, "What Parrot knows" (privacy) and settings. Shravan also owns the shared layout, the nav and the design tokens. The pages read and write data through API routes whose shapes are fixed in `@parrot/shared`. Those routes already return fixtures, so every page can be built today. Karthik replaces the data routes with real ones in Phase 3. Andrew provides the tutor's audio and speech logic as one React hook, `useTutorSession`; Shravan builds the tutor page against a mock of it. Judges mostly don't speak Spanish, so every Spanish word on screen needs English nearby.
+Shravan owns every page a person sees in the Lumo web app: onboarding, the voice tutor page, vocabulary, "What Lumo knows" (privacy) and settings. Shravan also owns the shared layout, the nav and the design tokens. The pages read and write data through API routes whose shapes are fixed in `@parrot/shared`. Those routes already return fixtures, so every page can be built today. Karthik replaces the data routes with real ones in Phase 3. Andrew provides the tutor's audio and speech logic as one React hook, `useTutorSession`; Shravan builds the tutor page against a mock of it. Judges mostly don't speak Spanish, so every Spanish word on screen needs English nearby.
 
 ## Start here
 - Rules: root `CLAUDE.md`, then `web/CLAUDE.md`.
@@ -18,7 +18,7 @@ Shravan owns every page a person sees in the Parrot web app: onboarding, the voi
 | `web/app/onboarding/page.tsx` | New |
 | `web/app/tutor/page.tsx` | New |
 | `web/app/vocabulary/page.tsx` | New |
-| `web/app/privacy/page.tsx` | New. Titled "What Parrot knows". |
+| `web/app/privacy/page.tsx` | New. Titled "What Lumo knows". |
 | `web/app/settings/page.tsx` | New |
 | `web/components/` | New. Your shared components. |
 
@@ -46,7 +46,7 @@ npm run build -w web                # must pass before you push
 
 ### 0.1 Page shells, nav, layout, design tokens
 - **Files:** `app/layout.tsx`, `app/globals.css`, `app/page.tsx`, and an empty `page.tsx` for each of `/onboarding`, `/tutor`, `/vocabulary`, `/privacy`, `/settings`.
-- Nav links: Tutor · Vocabulary · What Parrot knows · Settings. Onboarding is reachable from Home.
+- Nav links: Tutor · Vocabulary · What Lumo knows · Settings. Onboarding is reachable from Home.
 - Tokens: colours, type scale and spacing as CSS variables in `@theme`, so later pages stay consistent.
 - **Done when:** all five routes render inside the shared layout with working nav, and `npm run build -w web` passes.
 
@@ -60,7 +60,7 @@ npm run build -w web                # must pass before you push
   - Intermediate: "I can follow simple articles with help."
   - Upper-intermediate: "I can read most news but miss some words."
 - **"Use my reading in tutor lessons"** toggle (`useReadingInLessons`, default on), explained in one sentence.
-- **Reading sites:** the web app can't grant site access (architecture §11 #4). Show short steps instead: "Open the Parrot popup on the site and click Enable." Suggest a news site and Wikipedia.
+- **Reading sites:** the web app can't grant site access (architecture §11 #4). Show short steps instead: "Open the Lumo popup on the site and click Enable." Suggest a news site and Wikipedia.
 - **Pairing code:** show the 6-digit code to type into the extension popup. No endpoint gives the web app a code yet, so show the demo code Karthik picks, hard-coded with `// TODO(demo)`.
 - **Saving:** `GET /api/settings`, change the fields, then `PUT /api/settings` with the full object.
 - **Schemas:** `Settings`, `Level`.
@@ -113,11 +113,11 @@ Andrew sends the exact TypeScript type plus a mock in Phase 1. Until then, write
 - Daily cap, schedule and study mode are cut. Don't build them.
 - **Done when:** a settings change survives a page reload, and the vocabulary page shows the seeded demo words.
 
-### 3.2 "What Parrot knows": `app/privacy/page.tsx`
+### 3.2 "What Lumo knows": `app/privacy/page.tsx`
 - Show everything stored: words (`UserWord`: lemma, state, seen count), events (`StoredEvent`: type, lemma, time), and article titles (`StoredArticle`: title, domain, time). Each item has a delete button.
 - **"Delete everything"**, with a confirm step.
 - **Data:** `GET /api/data` → `DataResponse`. `DELETE /api/data` with a JSON body `DataDeleteRequest`: `{ kind: "word", lemma }`, `{ kind: "event", id }`, `{ kind: "article", id }`, or `{ kind: "all" }`. The response is `DataDeleteResponse`.
-- Add one plain sentence at the top: what Parrot stores, and that it never stores URLs, page text or anything typed.
+- Add one plain sentence at the top: what Lumo stores, and that it never stores URLs, page text or anything typed.
 - **Done when:** deleting an item removes it after a refetch, and "Delete everything" leaves all three lists empty (against Karthik's real route).
 
 ### 3.3 Tutor wiring support
@@ -142,7 +142,7 @@ Spec in `docs/roadmap.md` → "Judge-facing extras". Two small tutor-page additi
 ---
 
 ## Ship: Sun 3:00–7:30am
-- **README + screenshots** (root `README.md`): what Parrot is, how to run it, plus screenshots of each page.
+- **README + screenshots** (root `README.md`): what Lumo is, how to run it, plus screenshots of each page.
 - Rehearse the 2-minute demo with the team.
 
 ---

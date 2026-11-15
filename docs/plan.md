@@ -1,4 +1,4 @@
-# Parrot: Team Plan
+# Lumo: Team Plan
 
 How we split the work and how we operate this weekend. Schedule: [`roadmap.md`](roadmap.md). Design: [`architecture.md`](architecture.md). Product spec: [`specs.md`](specs.md).
 
@@ -8,7 +8,7 @@ How we split the work and how we operate this weekend. Schedule: [`roadmap.md`](
 |---|---|---|
 | **Andrew** | Hour-0 scaffold + `/shared` contracts. The whole **voice tutor**: STT token, `/api/tutor/correct`, `/api/tutor/reply`, TTS, `/api/tutor/context`, `/api/tutor/end` recap. Final integration. Amazon-track/Bedrock decision. | Highest risk, the most Claude usage, and touches every interface. |
 | **Karthik** | **Backend data + learner model**: word-list script, DB schema + seed, `ts-fsrs` state machine as pure functions, `/api/pair`, `/api/events`, `/api/candidates`, `/api/translate`, `/api/vocab`, `/api/data`, `/api/settings`, demo seed script, `/eval` accuracy script. | Pure functions and CRUD against a written spec, so it's easy to unit-test and cheap in tokens. |
-| **Shravan** | **Web app UI** (React): onboarding, tutor page UI (built on mock data; Andrew wires audio), vocabulary, "What Parrot knows", settings, pairing-code screen, README screenshots. | Frontend strength. Pages are independent, so short sessions work. |
+| **Shravan** | **Web app UI** (React): onboarding, tutor page UI (built on mock data; Andrew wires audio), vocabulary, "What Lumo knows", settings, pairing-code screen, README screenshots. | Frontend strength. Pages are independent, so short sessions work. |
 | **Naren** | **Chrome extension** (scoped; see architecture §6) + **eval/demo assets**: STT test sentences, eval sentence set, demo script, backup video, Devpost. | The extension core is bounded once the MV3 skeleton exists. Demo work is mostly non-Claude. |
 
 Andrew is the backstop. If anyone is blocked for more than 30 minutes, say so in the team chat and Andrew picks it up or pairs.
@@ -53,6 +53,6 @@ Andrew is the backstop. If anyone is blocked for more than 30 minutes, say so in
 1. `npm run build` passes in `/web` and `/extension`. The learner-model sanity script walks a word through new → seen → learning → known.
 2. Load the unpacked extension → pair → grant the demo site → swaps appear with articles. Hover and the Knew it / Didn't know buttons write `events` rows and update `user_words`.
 3. Open the tutor → the opener references the article just read → speak a scripted sentence with a planted agreement error → the correction shows in ≤1.5s and the voice starts in ≤2s (logged). A target word used correctly flips to "known" (toast + vocab page).
-4. "What Parrot knows" → delete everything → tables are empty for `DEMO_USER_ID` → reseed works.
+4. "What Lumo knows" → delete everything → tables are empty for `DEMO_USER_ID` → reseed works.
 5. `/eval` outputs precision / recall / false-alarm rate + median latencies for the pitch.
 6. Full 2-minute demo on a hotspot with a headset. Backup video recorded.

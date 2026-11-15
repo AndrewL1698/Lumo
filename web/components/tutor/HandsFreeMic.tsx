@@ -4,12 +4,12 @@ import type { TutorStatus } from "@/app/tutor/session";
 
 const STATUS: Record<TutorStatus, string> = {
   idle: "Listening. Just talk.",
-  listening: "You're talking. Pause and Luci answers, or tap to send now.",
-  checking: "Luci is thinking",
-  speaking: "Luci is talking. Speak up, or tap Interrupt.",
+  listening: "You're talking. Pause and Lumo answers, or tap to send now.",
+  checking: "Lumo is thinking",
+  speaking: "Lumo is talking. Speak up, or tap Interrupt.",
 };
 
-// Hands-free (D-023): the mic stays open and Luci listens for you. Controls: mute, send now, and interrupt Luci.
+// Hands-free (D-023): the mic stays open and Lumo listens for you. Controls: mute, send now, and interrupt Lumo.
 export function HandsFreeMic({
   status,
   muted,
@@ -26,7 +26,7 @@ export function HandsFreeMic({
   const listening = status === "listening" && !muted;
   const canInterrupt = status === "speaking" && !muted;
 
-  // Space interrupts Luci (never while typing in a box), so it always works even if the listener doesn't hear you.
+  // Space interrupts Lumo (never while typing in a box), so it always works even if the listener doesn't hear you.
   useEffect(() => {
     if (!canInterrupt) return;
     const down = (e: KeyboardEvent) => {
@@ -66,7 +66,7 @@ export function HandsFreeMic({
         </button>
       )}
       <p className={`sr-only text-sm sm:not-sr-only ${listening ? "text-accent" : "text-muted"}`} aria-live="polite">
-        {muted ? "Muted. Luci can't hear you." : STATUS[status]}
+        {muted ? "Muted. Lumo can't hear you." : STATUS[status]}
       </p>
     </div>
   );

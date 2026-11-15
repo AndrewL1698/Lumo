@@ -104,7 +104,7 @@ export async function POST(req: Request) {
   const fresh = unique.filter((e) => insertedIds.has(e.id));
 
   try {
-    // Only readings with a title become articles; a title-less reading would show as a blank row on "What Parrot knows".
+    // Only readings with a title become articles; a title-less reading would show as a blank row on "What Lumo knows".
     const reading = fresh.filter((e) => e.type === "reading" && e.meta?.title);
     if (reading.length) {
       const articles = [...new Map(reading.map((e) => [e.articleKey, e])).values()].map((e) => ({

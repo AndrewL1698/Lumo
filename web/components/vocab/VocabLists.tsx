@@ -23,7 +23,7 @@ export function StreakBadge({ days }: { days: number }) {
   );
 }
 
-// `onDelete` (the Jar page): a bin beside each word, shown on hover or focus, like everywhere else Luci lists data.
+// `onDelete` (the Jar page): a bin beside each word, shown on hover or focus, like everywhere else Lumo lists data.
 export function VocabLists({
   data,
   fresh = new Set<string>(),

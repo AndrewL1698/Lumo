@@ -1,4 +1,4 @@
-// Parrot content script. Injected either on origins the user enabled from the popup (registered at
+// Lumo content script. Injected either on origins the user enabled from the popup (registered at
 // runtime via chrome.scripting.registerContentScripts) or, for one visit only, by "Try on this
 // page" via activeTab + executeScript. No network calls here: everything goes through the service
 // worker, so the token never enters the page.
@@ -43,7 +43,7 @@ const REVIEW_SHARE = 0.7;
 /** Re-run for text that arrives after load. Each pass costs one translate batch, so keep it short. */
 const SWEEP_DELAYS_MS = [0, 1500, 4000];
 
-// Never swap inside these. That includes Luci's own UI: the hover card is added to the page, and without this a
+// Never swap inside these. That includes Lumo's own UI: the hover card is added to the page, and without this a
 // sweep could translate its text ("✓ You know this" became "✓ You conoces this").
 const SKIP_SELECTOR =
   `a, button, input, textarea, select, code, pre, script, style, [contenteditable], form, [data-parrot], [data-parrot-block], #${CARD_ID}`;
@@ -644,7 +644,7 @@ function blockOp(b: Block, spanish: string): SwapOp {
  * known words are free and late text may hold some.
  */
 async function sweep(root: Node): Promise<void> {
-  // Luci switched off mid-page (watchLuciSwitch): no more swaps, not even known words, and nothing sent (review).
+  // Lumo switched off mid-page (watchLuciSwitch): no more swaps, not even known words, and nothing sent (review).
   if (pageCap === 0) return;
   const blocksLeft =
     sentenceBlocksDone < rules.sentenceBlocks || paragraphBlocksDone < rules.paragraphBlocks;
@@ -854,7 +854,7 @@ async function main(): Promise<void> {
 
   articleKey = await computeArticleKey();
   await loadBudget();
-  // Registered before the early return, so switching Luci ON mid-page lights the layer too.
+  // Registered before the early return, so switching Lumo ON mid-page lights the layer too.
   watchLuciSwitch();
   if (pageCap === 0) {
     console.log("[parrot] swaps set to 0 for this page");

@@ -3,7 +3,7 @@
 Paste this whole file into a fresh Claude Code session to start a task. Then name the one task you are doing.
 
 ## Role
-Naren owns the Parrot Chrome extension (Manifest V3). On sites the user has enabled, it swaps some English words on the page into Spanish, with the right article ("the house" → "la casa"). It shows a hover card with the meaning and pronunciation, and sends learning events to the backend. The extension has no site access by default and refuses never-list sites even if they are enabled. Naren also owns the eval and demo assets: the STT test sentences Andrew needs first, the ~50-sentence correction-accuracy set, the demo script, the backup video and the Devpost write-up.
+Naren owns the Lumo Chrome extension (Manifest V3). On sites the user has enabled, it swaps some English words on the page into Spanish, with the right article ("the house" → "la casa"). It shows a hover card with the meaning and pronunciation, and sends learning events to the backend. The extension has no site access by default and refuses never-list sites even if they are enabled. Naren also owns the eval and demo assets: the STT test sentences Andrew needs first, the ~50-sentence correction-accuracy set, the demo script, the backup video and the Devpost write-up.
 
 ## Start here
 - Rules: root `CLAUDE.md`, then `extension/CLAUDE.md` and `eval/CLAUDE.md`.
@@ -174,7 +174,7 @@ Onboarding now saves a list of reading sites to `settings.allowlist` (16 starter
    - On `onInstalled`, `onStartup` and after each `ENABLE_SITE`: `chrome.declarativeContent.onPageChanged.removeRules(undefined, () => addRules([rule]))`, one rule whose `conditions` are a `new chrome.declarativeContent.PageStateMatcher({ pageUrl: { schemes: ["https"], hostEquals: host } })` per `READING_SITES` host not in `enabledOrigins`, and whose action is `new chrome.declarativeContent.SetIcon({ imageData })`.
    - Build `imageData` in the service worker: `fetch(chrome.runtime.getURL("icons/icon32.png"))` → `createImageBitmap` → draw on an `OffscreenCanvas` with a small amber dot in a corner → `getImageData` (do 16 and 32).
    - Test `SetIcon` first: if it misbehaves, skip the dot and ship only part 3.
-3. **Popup card on a suggested site.** The popup already reads the tab origin (`activeTab`). If that origin is in `READING_SITES` and not enabled, the "Always on for this site" area reads "Luci reads well on {name}. Turn it on here?"
+3. **Popup card on a suggested site.** The popup already reads the tab origin (`activeTab`). If that origin is in `READING_SITES` and not enabled, the "Always on for this site" area reads "Lumo reads well on {name}. Turn it on here?"
 4. Import `READING_SITES` from `@parrot/shared` (`readingSites.ts` has no zod).
 5. Privacy check (non-negotiable 4): no new permissions with a warning, no URLs read or sent, never-list still checked in `enableSite`.
 

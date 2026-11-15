@@ -1,4 +1,4 @@
-// Parrot service worker.
+// Lumo service worker.
 // The service worker does ALL network calls (content-script fetches would hit the host page's
 // CORS and expose the token) and holds the pairing token in chrome.storage.local.
 // TODO(naren): 3.1 /api/tts for the hover card's speaker button, cached by lemma.
@@ -242,7 +242,7 @@ async function enableSite(rawOrigin: string): Promise<ResponseMap["ENABLE_SITE"]
 // ---------------------------------------------------------------- try on this page (activeTab)
 
 /**
- * "Try on this page" runs Luci on one tab for one visit, with no permission prompt: the popup
+ * "Try on this page" runs Lumo on one tab for one visit, with no permission prompt: the popup
  * click grants `activeTab`, which is enough for a single executeScript and dies on navigation.
  * Deliberately NOT registerContentScripts and NOT added to enabledOrigins — that is what
  * "Always on for this site" is for, and it is the one that asks for host access.
@@ -298,7 +298,7 @@ chrome.tabs.onUpdated.addListener((tabId, info) => {
 // ---------------------------------------------------------------- new-site dot (D-017)
 
 /**
- * A red dot on the toolbar icon when you are on a site Luci reads well but is not turned on for.
+ * A red dot on the toolbar icon when you are on a site Lumo reads well but is not turned on for.
  *
  * Chrome does the matching, not us: declarativeContent rules are evaluated inside the browser, so
  * the worker never learns which tab is on which URL and we never need the "tabs" permission

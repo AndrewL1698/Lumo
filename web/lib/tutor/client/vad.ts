@@ -50,14 +50,14 @@ export type Vad = {
 export function createVad(cfg: VadConfig = TUTOR.handsFree): Vad {
   let smooth = 0;
   let last: number | null = null;
-  let floor = 0; // room noise: drops at once, rises slowly, never learns from speech or from Luci
+  let floor = 0; // room noise: drops at once, rises slowly, never learns from speech or from Lumo
   let calibUntil: number | null = null;
   let speaking = false;
   let loudMs = 0;
   let lastVoiceAt = 0;
   let speechStart = 0;
   let peak = 0; // how loud the learner was this turn (decays slowly)
-  let echo = 0; // Luci's own voice as the mic hears it
+  let echo = 0; // Lumo's own voice as the mic hears it
   let tutorWas = false;
   let tutorSince = 0;
   let seenPartial = "";
@@ -82,7 +82,7 @@ export function createVad(cfg: VadConfig = TUTOR.handsFree): Vad {
       }
       startLevel = Math.max(cfg.minStart, floor * cfg.startFactor);
 
-      // Luci's echo: learned fast for a moment after she starts (that is when it is safe to tell it from the
+      // Lumo's echo: learned fast for a moment after Lumo starts (that is when it is safe to tell it from the
       // learner), slowly after, and not while a possible interruption is under way.
       if (ctx.tutorSpeaking && !tutorWas) tutorSince = now;
       tutorWas = ctx.tutorSpeaking;

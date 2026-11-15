@@ -1,4 +1,4 @@
-# Parrot: Roadmap
+# Lumo: Roadmap
 
 Phased build order for HackPrinceton (Sat Nov 14 → **submit Sun 7:30am**). Each phase ends at a milestone from `specs.md` §13.
 Who owns what and how we work: see [`plan.md`](plan.md). Technical design: see [`architecture.md`](architecture.md).
@@ -67,7 +67,7 @@ Who owns what and how we work: see [`plan.md`](plan.md). Technical design: see [
 |---|---|
 | Andrew | `/api/tutor/context` (hovered words + sentences, due words, article titles, top errors). Wire Shravan's tutor UI to the real pipeline. `target_words_used` → `applyEvent`. "Word is now known" toast. |
 | Karthik | Scoring formula + 70/30 review/new mix in candidates. `/api/vocab` (Learning / Your vocabulary / Mastered + streak). **Demo seed script** that backdates FSRS history so due and mastered words exist. |
-| Shravan | Wire vocabulary + settings to real APIs. "What Parrot knows" page (list, per-item delete, delete everything). |
+| Shravan | Wire vocabulary + settings to real APIs. "What Lumo knows" page (list, per-item delete, delete everything). |
 | Naren | 🔊 in the hover card via `/api/tts` (cached). `seen` via IntersectionObserver (≥2s). Toolbar toggle + Alt+Shift+P. Pause on this site. Then switch to the eval set. |
 | Karthik (added Sat evening) | **Smarter swaps** (decisions D-005–D-008): the extension reads Settings, a popup "words per page" slider, "Grow automatically", level-matched never-met words (`wordbands.json`), and the tutor sees knew-it/didn't-know outcomes. Took over the settings part of Naren's task 3.3 (agreed with Naren). **Done, merged Sat evening**, plus faster swaps (thinking off, parallel translate, steady per-article choice). Hover card untouched. |
 | Karthik (Sat evening, agreed with Naren + Shravan) | **Luci polish** (D-010): extension renamed Luci with the firefly icon; hover card in the Luci look (drawn speaker, hover outlines, click confirmation); What Luci knows grouped into Learning / Known / Mastered. |
@@ -128,7 +128,7 @@ These are additions for the demo and the judges, not core product. They show dec
 7. Judge-facing extras: J2 lesson card first, then J1 why line
 8. Photon phone line
 
-**Never cut:** swaps + hover cards, the push-to-talk tutor with on-screen corrections, a word flipping to "known" after correct spoken use, the "What Parrot knows" page.
+**Never cut:** swaps + hover cards, the push-to-talk tutor with on-screen corrections, a word flipping to "known" after correct spoken use, the "What Lumo knows" page.
 
 ## Post-MVP (logged, not before the freeze)
 - Hint-first hover card: Knew it / Hint → clue → Got it / Show me, with scoring by how much help was needed (D-009).

@@ -29,7 +29,7 @@ export type Message =
   /** Whole sentences or paragraphs to natural Spanish (D-018). Same order as sent. */
   | { type: "TRANSLATE_SENTENCES"; articleKey: string; sentences: string[] }
   /**
-   * Run Luci on this tab for this visit only, via activeTab. No permission prompt, no host access.
+   * Run Lumo on this tab for this visit only, via activeTab. No permission prompt, no host access.
    * `url` is the full page URL and never leaves the extension — the never-list's path rules
    * (/login, /checkout, …) cannot be checked against an origin, which has no path.
    */

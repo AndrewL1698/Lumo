@@ -268,13 +268,13 @@ export type UseTutorSession = {
   /** The server session id once start() has loaded the context (the level check posts it). */
   sessionId: string | null;
   // --- hands-free (D-023); optional so the mock tutor and the level check compile unchanged ---
-  /** "ptt" (default, hold to talk) or "handsfree" (the mic stays open and Luci listens for you). */
+  /** "ptt" (default, hold to talk) or "handsfree" (the mic stays open and Lumo listens for you). */
   mode?: "ptt" | "handsfree";
   setMode?: (mode: "ptt" | "handsfree") => void;
   /** Hands-free only: the mic is muted. */
   muted?: boolean;
   setMuted?: (muted: boolean) => void;
-  /** Hands-free: stop Luci talking now. */
+  /** Hands-free: stop Lumo talking now. */
   interrupt?: () => void;
   /** Hands-free with ?debug=1: what the listener currently believes. */
   meter?: (VadInfo & { status: string }) | null;

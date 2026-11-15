@@ -20,13 +20,13 @@ in Spanish, and corrects you instantly. A word counts as known only after you us
 
 ## Positioning
 Reading decides what you practise speaking. Browse-to-learn extensions stop at vocabulary; AI speaking tutors
-don't know what you read. Parrot connects the two, and proof of learning is correct use in speech.
+don't know what you read. Lumo connects the two, and proof of learning is correct use in speech.
 
 ## Operating Context
 - The web app pages: Tutor (push to talk, live transcript with corrections, tutor replies, recap), Vocabulary
-  (Learning now, Your vocabulary, Mastered, streak), What Parrot knows (everything stored, delete one or all),
+  (Learning now, Your vocabulary, Mastered, streak), What Lumo knows (everything stored, delete one or all),
   Settings, Onboarding (level, reading toggle, pairing code).
-- Demo order on stage: What Parrot knows (a glance), Tutor (about 40 seconds), Vocabulary (about 15 seconds).
+- Demo order on stage: What Lumo knows (a glance), Tutor (about 40 seconds), Vocabulary (about 15 seconds).
 - One demo account; the extension pairs with a 6-digit code.
 
 ## Capabilities and Constraints

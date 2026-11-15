@@ -1,4 +1,4 @@
--- Delete everything Parrot knows about one user ("delete everything", plan.md DoD #4).
+-- Delete everything Lumo knows about one user ("delete everything", plan.md DoD #4).
 -- Leaves `words` and `pair_codes` intact. Replace the uuid with DEMO_USER_ID before running.
 -- /api/data should run the same deletes (parameterised) in this order.
 

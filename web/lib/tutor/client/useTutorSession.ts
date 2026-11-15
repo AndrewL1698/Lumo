@@ -70,7 +70,7 @@ type Controller = Pick<UseTutorSession, "start" | "pressTalk" | "releaseTalk" | 
   /** Hands-free (D-023). Off = push-to-talk exactly as before. */
   setHandsFree: (on: boolean) => void;
   setMuted: (muted: boolean) => void;
-  /** Stop Luci talking right now (D-025). */
+  /** Stop Lumo talking right now (D-025). */
   interrupt: () => void;
 };
 
@@ -541,7 +541,7 @@ function createController(rawSet: Setters, forceBatch: () => boolean, placement:
       set.meter({ ...vad.info(), level: rms, status: curStatus });
     }
     if (ev === "start") {
-      api.pressTalk(); // also stops Luci: a real barge-in
+      api.pressTalk(); // also stops Lumo: a real barge-in
       if (!listening) vad.reset(); // the press was refused (no mic, busy)
     } else if (ev === "end" && listening) {
       api.releaseTalk();

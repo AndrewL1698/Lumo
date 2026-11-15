@@ -1,7 +1,7 @@
-# Parrot — Project Spec (HackPrinceton Fall 2026)
+# Lumo — Project Spec (HackPrinceton Fall 2026)
 
 > **Pitch:** Your morning reading becomes tonight's conversation lesson.
-> Parrot quietly swaps English words on sites you choose into Spanish, learns which words you
+> Lumo quietly swaps English words on sites you choose into Spanish, learns which words you
 > don't know, and then a voice tutor talks with you about what you read, correcting you
 > instantly like a fluent friend. You prove you know a word by using it out loud.
 
@@ -10,7 +10,7 @@
 ## 0. Decisions locked in
 | Topic | Decision |
 |---|---|
-| Name | **Parrot** (may rename later) |
+| Name | **Lumo** (may rename later) |
 | Language | **Spanish only**, **Latin American** variety. English UI. |
 | Main track | **Education** |
 | Special tracks | Amazon Best Practical AI (primary). Optional: Photon (phone-line tutor / text nudges), Peri Forward Deployed (consult a campus language program/club), LangChain deepagents (if the lesson planner is built as a deepagent) |
@@ -29,7 +29,7 @@
 ## 1. Why we're different (say this to judges)
 - Browse-to-learn extensions already exist (Toucan, Taliri, Spritz, etc.). They stop at vocabulary.
 - AI speaking tutors exist (Praktika, Langua, Speak). They don't know what you read.
-- **Parrot connects them:** reading decides what you practice speaking, the tutor talks about the
+- **Lumo connects them:** reading decides what you practice speaking, the tutor talks about the
   article you actually read, and a word only counts as learned once you use it correctly out loud.
 - Privacy is visible: only runs on sites you allow, never on messages/homework, with a page that
   shows everything it knows about you.
@@ -203,7 +203,7 @@ learning stats**. **False friends** (*embarazada*): save for later, flag as a "f
 | Main toggle | Toolbar click + shortcut **Alt+Shift+P** |
 | Pause on this site | Per-site off switch |
 | Snooze | 1 hour / until tomorrow |
-| Study mode | List of homework/work sites where Parrot always stays off |
+| Study mode | List of homework/work sites where Lumo always stays off |
 | Schedule | e.g., only 7–9am and evenings |
 | Peek | Hold a key → whole page shows English; release → swaps return |
 | Intensity | Off / Light (~2 per 100 words) / Normal (~5) / Immersion (~15) / **Auto (default)**: rises only as words become solid |
@@ -349,7 +349,7 @@ Top 3 recurring errors, words you used correctly (now "known"), words to review 
 | Onboarding | Level pick, site allowlist suggestions, pairing code, reading-in-lessons toggle |
 | Tutor | Mic button, live transcript with inline corrections, tutor captions, recap |
 | Vocabulary | Learning now / Your vocabulary / Mastered |
-| **What Parrot knows** | Every stored word, event, and article title with delete buttons + "delete everything" |
+| **What Lumo knows** | Every stored word, event, and article title with delete buttons + "delete everything" |
 | Settings | Intensity, daily cap, schedule, study-mode sites, toggles |
 
 ---
@@ -375,7 +375,7 @@ Top 3 recurring errors, words you used correctly (now "known"), words to review 
 2. **Correction accuracy:** ~50 recorded sentences (planted errors + clean controls).
    Report precision, recall, and false-alarm rate on clean sentences.
 3. **Latency:** median time to on-screen correction and to tutor voice start.
-4. **Stretch, retention mini-test:** two people, 10 words, with vs. without Parrot; quiz Sunday morning.
+4. **Stretch, retention mini-test:** two people, 10 words, with vs. without Lumo; quiz Sunday morning.
 
 ---
 
@@ -383,7 +383,7 @@ Top 3 recurring errors, words you used correctly (now "known"), words to review 
 1. **0:00–0:15** Problem: learners can't practice with fluent speakers, and vocab apps don't connect
    to speaking.
 2. **0:15–0:45** Open a real news article. Words are swapped into Spanish (with articles). Hover two.
-   Briefly show Chrome's permission prompt + "What Parrot knows."
+   Briefly show Chrome's permission prompt + "What Lumo knows."
 3. **0:45–1:25** Open the tutor: "I saw you read about…". The speaker uses a hovered word **correctly**
    (it flips to "known" live) and makes a planted agreement error: correction appears instantly,
    tutor recasts it.

@@ -1,6 +1,6 @@
 # scripts
 
-Build and seed scripts for Parrot. Owner: Karthik.
+Build and seed scripts for Lumo. Owner: Karthik.
 
 ## Word list (`build-wordlist/`)
 

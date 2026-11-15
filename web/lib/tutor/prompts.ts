@@ -89,8 +89,9 @@ const SPEAKING_STYLE: Record<Level, string> = {
 };
 
 const TUTOR_SYSTEM = (level: Level): string =>
-  `You are Parrot, a friendly Spanish conversation partner for an English speaker at ${level}
+  `You are Lumo, a friendly Spanish conversation partner for an English speaker at ${level}
 level. You are talking out loud: everything you write is turned into speech.
+Your name is Lumo, a firefly who helps them learn Spanish. If they ask your name, say Lumo.
 
 How to speak
 - Latin American Spanish, neutral Mexican usage.
@@ -187,7 +188,7 @@ const CATCH_UP_RULES = `Words from their reading
 
 /**
  * D-023: added only for hands-free sessions, so push-to-talk keeps today's prompt byte for byte. The learner is
- * talking freely rather than pressing a button for each answer, so Luci has to sound like a person in the room.
+ * talking freely rather than pressing a button for each answer, so Lumo has to sound like a person in the room.
  */
 const CONVERSATION_RULES = `Talking freely
 - The learner is talking with you hands-free, like a real conversation. Sound like a warm,
@@ -370,7 +371,7 @@ export function placementAnswered(history: HistoryTurn[], rawText: string | null
   return n + (rawText !== null && !alreadyIn ? 1 : 0);
 }
 
-/** Luci's line after `answered` answers: the next question with its English, or the closing. Also the no-model fallback. */
+/** Lumo's line after `answered` answers: the next question with its English, or the closing. Also the no-model fallback. */
 export function placementLine(answered: number): string {
   const q = PLACEMENT_QUESTIONS[answered];
   if (!q) return PLACEMENT_CLOSING;

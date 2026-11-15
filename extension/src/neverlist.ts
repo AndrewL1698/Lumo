@@ -1,5 +1,5 @@
 // Hard never-list (specs §5.1, architecture §6). Enforced in code even when the user has
-// granted the origin, so a mistaken allowlist entry still cannot turn Parrot on here.
+// granted the origin, so a mistaken allowlist entry still cannot turn Lumo on here.
 // Checked in two places: the service worker before registering a content script, and the
 // content script before it touches the DOM.
 
@@ -80,7 +80,7 @@ const BLOCKED_SUBDOMAIN_PREFIXES = ["mail.", "webmail.", "login.", "signin.", "a
  * Substrings in the HOSTNAME that imply money or medical records. Hostname only — an article
  * about home insurance is fine to read, a domain with "insurance" in it is not.
  *
- * Over-blocking is the safe direction here (Parrot just declines to run), so loose matches like
+ * Over-blocking is the safe direction here (Lumo just declines to run), so loose matches like
  * "bank" catching bankrate.com are fine. Deliberately NOT in this list: "hospital", because it is
  * a prefix of "hospitality" and would block travel and restaurant reading; and "clinic", because
  * it would block clinicaltrials.gov. Patient portals are still caught by "mychart", "patient",

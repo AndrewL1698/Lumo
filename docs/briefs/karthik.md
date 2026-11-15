@@ -3,7 +3,7 @@
 Paste this whole file into a fresh Claude Code session to start a task. Then name the one task you are doing.
 
 ## Role
-Karthik owns Parrot's data layer. That is the Supabase schema, the Spanish word list, and the learner model (`applyEvent` with `ts-fsrs`). It also covers the API routes the extension and web pages call: `/api/pair`, `/api/candidates`, `/api/translate`, `/api/events`, `/api/vocab`, `/api/data` and `/api/settings`. Karthik also writes the demo seed script and the `/eval` correction-accuracy script. Andrew's voice tutor calls Karthik's learner model to flip a word to `known`. Karthik is also **the demo speaker**: Karthik talks to the tutor on stage and reads the STT test sentences.
+Karthik owns Lumo's data layer. That is the Supabase schema, the Spanish word list, and the learner model (`applyEvent` with `ts-fsrs`). It also covers the API routes the extension and web pages call: `/api/pair`, `/api/candidates`, `/api/translate`, `/api/events`, `/api/vocab`, `/api/data` and `/api/settings`. Karthik also writes the demo seed script and the `/eval` correction-accuracy script. Andrew's voice tutor calls Karthik's learner model to flip a word to `known`. Karthik is also **the demo speaker**: Karthik talks to the tutor on stage and reads the STT test sentences.
 
 ## Start here
 - Rules: root `CLAUDE.md`, then `web/CLAUDE.md`, `scripts/CLAUDE.md`, `eval/CLAUDE.md`.
@@ -130,7 +130,7 @@ See 1.1. Pick the frequency list and check its licence.
 - **Schemas:** `Settings`. PUT takes the full object.
 - **Done when:** GET after PUT returns the same object. Onboarding and the extension both read it.
 
-### 3.4 `GET/DELETE /api/data` ("What Parrot knows")
+### 3.4 `GET/DELETE /api/data` ("What Lumo knows")
 - **Schemas:** `DataResponse` (`StoredEvent`, `StoredArticle`, `UserWord`), `DataDeleteRequest` → `DataDeleteResponse`.
 - `kind: "all"` deletes every row for `DEMO_USER_ID` in `user_words`, `events`, `articles`, `tutor_sessions` and `utterances` (plan §5 item 4: "tables are empty"). Settings can stay.
 - **Done when:** after delete-all, those tables are empty for `DEMO_USER_ID`, and rerunning the seed restores the demo.

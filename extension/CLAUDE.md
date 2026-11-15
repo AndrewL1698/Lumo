@@ -33,7 +33,7 @@ Owner: **Naren**. Team rules: root `CLAUDE.md`. Design: `docs/architecture.md` Â
   - **Spacing:** follows the D-018 step that covers N, and nothing is ever adjacent. Whole Spanish sentences and paragraphs (`[data-parrot-block]`) appear from 55% and 85%.
   - **Counting:** `budgetCount` counts budget swaps only; known swaps never use the budget.
   - **Shared code:** one picker and one apply path (`applyOps`, several swaps per text node, right to left).
-  - Luci off (`intensity: "off"`) = no swaps. A hover counts after 500 ms.
+  - Lumo off (`intensity: "off"`) = no swaps. A hover counts after 500 ms.
 - *Ping Andrew before editing `content/index.ts`, `content/hovercard.ts`, `sw/index.ts`, `messages.ts`, `popup/` or `swapBudget.ts`. D-018 and D-019 live there.*
 - Event ids are client-made uuids (`crypto.randomUUID()`), so retries are safe.
 - Only promise behaviour on the 2â€“3 demo sites. Don't chase layout bugs elsewhere.

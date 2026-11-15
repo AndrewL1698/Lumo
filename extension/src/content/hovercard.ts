@@ -5,7 +5,7 @@
 // TODO(naren): false-friend fun fact once the flag is in wordindex.json (agree source with Karthik).
 
 const HOVER_DELAY_MS = 500;
-/** The card's element id. index.ts keeps sweeps out of it, so Luci never translates its own card. */
+/** The card's element id. index.ts keeps sweeps out of it, so Lumo never translates its own card. */
 export const CARD_ID = "parrot-hover-card";
 
 export interface HoverTarget {
