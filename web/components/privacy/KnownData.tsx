@@ -18,10 +18,15 @@ const EVENT_LABEL: Record<string, string> = {
   spoken_incorrect: "Used a word incorrectly in speech",
 };
 
-// Word state as a glow: dim (seen), medium (learning), bright (known / mastered). Same lights as the jar.
-type Glow = "seen" | "learning" | "known";
-const GLOW: Record<string, Glow> = { new: "seen", seen: "seen", learning: "learning", known: "known", known_assumed: "known", mastered: "known" };
-const GLOW_NAME: Record<Glow, string> = { seen: "Seen", learning: "Learning", known: "Known" };
+// Word state as a glow, four levels (styles: .kd-dot in globals.css). Each level differs in dot size and halo as
+// well as brightness, so it reads without colour: seen 6px no halo, learning 8px, known 10px, mastered 13px.
+type Glow = "seen" | "learning" | "known" | "mastered";
+const GLOW: Record<string, Glow> = { new: "seen", seen: "seen", learning: "learning", known: "known", known_assumed: "known", mastered: "mastered" };
+const GLOW_NAME: Record<Glow, string> = { seen: "Seen", learning: "Learning", known: "Known", mastered: "Mastered" };
+/** Each group shows this many words, then a "Show all" toggle. */
+const GROUP_LIMIT = 24;
+/** The mastered pulse is the only animation; above this many mastered words it stays static. */
+const PULSE_MAX = 30;
 
 // Words page sections (D-010). "Seen" only appears when the extension has shown words not yet looked up.
 const WORD_GROUPS: { title: string; blurb: string; states: string[]; optional?: boolean }[] = [
@@ -31,10 +36,10 @@ const WORD_GROUPS: { title: string; blurb: string; states: string[]; optional?: 
   { title: "Seen", blurb: "spotted on a page, not looked up yet", states: ["new", "seen"], optional: true },
 ];
 
-function GlowDot({ glow, size = "h-6 w-6" }: { glow: Glow; size?: string }) {
+function GlowDot({ glow, pulse = false }: { glow: Glow; pulse?: boolean }) {
   return (
-    <span className={`jar-legend grid shrink-0 place-items-center rounded-full bg-jar ${size}`} data-level={glow} aria-hidden="true">
-      <span className="jar-light" />
+    <span className="kd-dot-box" aria-hidden="true">
+      <span className={`kd-dot${pulse ? " kd-pulse" : ""}`} data-glow={glow} />
     </span>
   );
 }
@@ -77,6 +82,14 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const toggleGroup = (title: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(title)) next.delete(title);
+      else next.add(title);
+      return next;
+    });
 
   async function run(req: DataDeleteRequest) {
     setBusy(true);
@@ -107,13 +120,14 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
         </p>
       )}
 
-      <section>
+      {/* The word list sits in its own night panel so the page's fireflies don't compete with the word glows. */}
+      <section className="kd-panel">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <Heading count={data.words.length}>Words</Heading>
           <ul className="mb-5 flex flex-wrap gap-x-6 gap-y-2 text-muted" aria-label="What the glow means">
-            {(["seen", "learning", "known"] as const).map((g) => (
+            {(["seen", "learning", "known", "mastered"] as const).map((g) => (
               <li key={g} className="flex items-center gap-2">
-                <GlowDot glow={g} size="h-5 w-5" />
+                <GlowDot glow={g} />
                 {GLOW_NAME[g]}
               </li>
             ))}
@@ -127,6 +141,10 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
             {WORD_GROUPS.map((g) => {
               const words = data.words.filter((w) => g.states.includes(w.state)).sort((a, b) => a.lemma.localeCompare(b.lemma, "es"));
               if (g.optional && words.length === 0) return null;
+              const open = expanded.has(g.title);
+              const shown = open ? words : words.slice(0, GROUP_LIMIT);
+              const pulse = g.title === "Mastered" && words.length <= PULSE_MAX;
+              const listId = `words-${g.title.toLowerCase()}`;
               return (
                 <div key={g.title}>
                   <h3 className="mb-3 flex items-baseline gap-2 font-display text-lg font-bold">
@@ -136,23 +154,37 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
                   {words.length === 0 ? (
                     <p className="text-muted">None yet.</p>
                   ) : (
-                    <ul className="flex flex-wrap gap-x-2 gap-y-2">
-                      {words.map((w) => {
-                        const glow = GLOW[w.state] ?? "seen";
-                        return (
-                          <li
-                            key={w.lemma}
-                            className="group flex items-center gap-2 rounded-full py-1 pl-1.5 pr-1 transition-colors duration-150 hover:bg-line/60 focus-within:bg-line/60"
-                            title={w.lastHoverAt ? `Last looked up ${fmt(w.lastHoverAt)}` : undefined}
-                          >
-                            <GlowDot glow={glow} />
-                            <span className="text-lg font-bold">{w.lemma}</span>
-                            <span className="sr-only">, {g.title}</span>
-                            <DeleteButton label={w.lemma} busy={busy} onClick={() => void run({ kind: "word", lemma: w.lemma })} />
-                          </li>
-                        );
-                      })}
-                    </ul>
+                    <>
+                      {/* Even columns at any count or width; a long word is cut with "…" (full word on hover). */}
+                      <ul id={listId} className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-x-2 gap-y-1">
+                        {shown.map((w) => {
+                          const glow = GLOW[w.state] ?? "seen";
+                          return (
+                            <li
+                              key={w.lemma}
+                              className="group flex min-w-0 items-center gap-2 rounded-full py-1 pl-1.5 pr-1 transition-colors duration-150 hover:bg-line/60 focus-within:bg-line/60"
+                              title={w.lastHoverAt ? `${w.lemma}. Last looked up ${fmt(w.lastHoverAt)}` : w.lemma}
+                            >
+                              <GlowDot glow={glow} pulse={pulse && glow === "mastered"} />
+                              <span className="min-w-0 flex-1 truncate text-lg font-bold">{w.lemma}</span>
+                              <span className="sr-only">, {g.title}</span>
+                              <DeleteButton label={w.lemma} busy={busy} onClick={() => void run({ kind: "word", lemma: w.lemma })} />
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      {words.length > GROUP_LIMIT && (
+                        <button
+                          type="button"
+                          aria-expanded={open}
+                          aria-controls={listId}
+                          onClick={() => toggleGroup(g.title)}
+                          className="mt-3 rounded-sm text-base font-semibold text-accent underline decoration-1 underline-offset-4 hover:text-ink"
+                        >
+                          {open ? "Show fewer" : `Show all (${words.length})`}
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               );

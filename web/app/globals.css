@@ -669,3 +669,80 @@ html[data-theme="light"] .jar-fly[data-fresh] > .jar-light {
 html[data-theme="light"] .jar-legend {
   box-shadow: inset 0 0 0 1px rgb(60 48 24 / 0.2); /* the pale glass circle would vanish on cream */
 }
+
+/* ---------- What Luci knows: the word list (components/privacy/KnownData.tsx) ----------
+   A night panel in both themes, so the word glows always read and the page's fireflies don't compete.
+   Inside it the dark-theme text colours apply (ink 14:1, muted 8:1 on the panel), even in light mode. */
+.kd-panel {
+  --color-ink: #f4efe3;
+  --color-muted: #b8c3d4;
+  --color-line: rgb(214 225 240 / 0.14);
+  --color-stop: #ff958b;
+  --color-accent: #f5c94a;
+  position: relative;
+  isolation: isolate;
+  padding: 1.5rem;
+  border: 1px solid rgb(214 225 240 / 0.14);
+  border-radius: var(--radius-md);
+  background: rgb(10 18 33 / 0.88);
+  color: var(--color-ink);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.25);
+}
+html[data-theme] .kd-panel :focus-visible {
+  outline-color: #ffd23a; /* the light theme's dark-amber ring would vanish on navy */
+}
+.kd-dot-box {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+}
+.kd-dot {
+  display: block;
+  border-radius: 9999px;
+}
+/* seen: very dim, no halo */
+.kd-dot[data-glow="seen"] {
+  width: 6px;
+  height: 6px;
+  background: #8c7a45;
+}
+/* learning: soft amber, small faint halo */
+.kd-dot[data-glow="learning"] {
+  width: 8px;
+  height: 8px;
+  background: #d8a93a;
+  box-shadow: 0 0 6px 2px rgb(255 200 60 / 0.3);
+}
+/* known: bright amber, medium halo */
+.kd-dot[data-glow="known"] {
+  width: 10px;
+  height: 10px;
+  background: #ffd23a;
+  box-shadow: 0 0 10px 4px rgb(255 210 58 / 0.55);
+}
+/* mastered: the brightest, a gold-white core with a big strong halo */
+.kd-dot[data-glow="mastered"] {
+  width: 13px;
+  height: 13px;
+  background: #fff6cc;
+  box-shadow:
+    0 0 5px 2px rgb(255 246 204 / 0.95),
+    0 0 18px 8px rgb(255 210 58 / 0.7);
+}
+/* a very slow breath on mastered words only (KnownData turns it off above 30 of them) */
+.kd-pulse {
+  animation: kd-pulse 4.5s ease-in-out infinite;
+}
+@keyframes kd-pulse {
+  0%, 100% { box-shadow: 0 0 5px 2px rgb(255 246 204 / 0.95), 0 0 18px 8px rgb(255 210 58 / 0.7); }
+  50% { box-shadow: 0 0 6px 3px rgb(255 246 204 / 1), 0 0 24px 11px rgb(255 210 58 / 0.85); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kd-pulse {
+    animation: none !important;
+  }
+}
