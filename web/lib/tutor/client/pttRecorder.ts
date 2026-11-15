@@ -64,6 +64,25 @@ export function createPttRecorder(): PttRecorder {
   let resolveStop: ((t: Take) => void) | null = null;
   let stopTimer: ReturnType<typeof setTimeout> | null = null;
 
+  // Hands-free only (D-023): a level callback and a short pre-roll. Both are inert unless monitor() was called,
+  // so push-to-talk captures exactly as before.
+  let monitorCb: ((rms: number) => void) | null = null;
+  const preRollSamples = Math.round((TUTOR.sampleRate * TUTOR.handsFree.preRollMs) / 1000);
+  let pre: Int16Array | null = null;
+  let preLen = 0;
+  function pushPreRoll(block: Float32Array) {
+    const p = floatToInt16(block);
+    pre ??= new Int16Array(preRollSamples);
+    if (p.length >= preRollSamples) {
+      pre.set(p.subarray(p.length - preRollSamples));
+      preLen = preRollSamples;
+      return;
+    }
+    pre.copyWithin(0, p.length);
+    pre.set(p, preRollSamples - p.length);
+    preLen = Math.min(preRollSamples, preLen + p.length);
+  }
+
   function finish() {
     if (stopTimer) clearTimeout(stopTimer);
     stopTimer = null;
@@ -85,6 +104,12 @@ export function createPttRecorder(): PttRecorder {
   }
 
   function onBlock(block: Float32Array) {
+    if (monitorCb) {
+      let sum = 0;
+      for (let i = 0; i < block.length; i++) sum += block[i] * block[i];
+      monitorCb(Math.sqrt(sum / (block.length || 1)));
+      if (!buf) pushPreRoll(block);
+    }
     if (!buf) return;
     const room = buf.length - total;
     if (room > 0) {
@@ -160,6 +185,13 @@ export function createPttRecorder(): PttRecorder {
       emitted = 0;
       stopAt = null;
       onChunk = cb;
+      if (monitorCb && pre && preLen > 0) {
+        // Hands-free: begin the take with the audio from just before the detector fired.
+        const seg = pre.subarray(preRollSamples - preLen);
+        buf.set(seg, 0);
+        total = seg.length;
+        preLen = 0;
+      }
     },
 
     stop(tailMs) {
@@ -178,7 +210,22 @@ export function createPttRecorder(): PttRecorder {
       return p;
     },
 
+    monitor(cb) {
+      monitorCb = cb;
+      if (!cb) {
+        pre = null;
+        preLen = 0;
+      }
+    },
+
+    setMuted(muted) {
+      stream?.getAudioTracks().forEach((t) => {
+        t.enabled = !muted;
+      });
+    },
+
     dispose() {
+      monitorCb = null;
       if (buf) finish();
       teardown();
     },

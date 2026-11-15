@@ -126,6 +126,8 @@ export type CorrectorPromptArgs = {
   tutorPrevious?: string;
 };
 export type TutorPromptArgs = {
+  /** Hands-free (D-023): add the conversation-partner rules. Absent = today's prompt, byte for byte. */
+  conversational?: boolean;
   context: TutorContext;
   history: HistoryTurn[];
   rawText: string | null; // null = opener
@@ -188,6 +190,11 @@ export interface PttRecorder {
   /** Stop after `tailMs` more audio. `pcm` is the whole take; `tail` is the audio captured after stop() was called. */
   stop(tailMs: number): Promise<{ pcm: Int16Array; tail: Int16Array; durationMs: number }>;
   dispose(): void;
+  /** Hands-free (D-023): report the mic level of every block between takes, and keep a short pre-roll so a take
+   *  started by the detector includes the first syllable. `null` switches it off. Push-to-talk never calls this. */
+  monitor?(onLevel: ((rms: number) => void) | null): void;
+  /** Hands-free: mute or unmute the mic (the input track is disabled, so levels and takes are silent). */
+  setMuted?(muted: boolean): void;
 }
 
 // ---------- audio queue (client/audioQueue.ts, browser) ----------
@@ -259,6 +266,13 @@ export type UseTutorSession = {
   plan: TutorContext["plan"] | null;
   /** The server session id once start() has loaded the context (the level check posts it). */
   sessionId: string | null;
+  // --- hands-free (D-023); optional so the mock tutor and the level check compile unchanged ---
+  /** "ptt" (default, hold to talk) or "handsfree" (the mic stays open and Luci listens for you). */
+  mode?: "ptt" | "handsfree";
+  setMode?: (mode: "ptt" | "handsfree") => void;
+  /** Hands-free only: the mic is muted. */
+  muted?: boolean;
+  setMuted?: (muted: boolean) => void;
 };
 
 export type { CorrectResponse };

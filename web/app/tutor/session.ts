@@ -31,4 +31,9 @@ export interface TutorSession {
   releaseTalk: () => void;
   sendText: (text: string) => void;
   end: () => void | Promise<void>;
+  // Hands-free (D-023), all optional: the mock tutor and the level check have no hands-free mode.
+  mode?: "ptt" | "handsfree";
+  setMode?: (mode: "ptt" | "handsfree") => void;
+  muted?: boolean;
+  setMuted?: (muted: boolean) => void;
 }
