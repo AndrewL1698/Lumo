@@ -2,7 +2,6 @@
 // Shows the Spanish with its article, the English it replaced, and Knew it / Didn't know.
 // A hover only counts after 500 ms, so a mouse passing over the word sends nothing.
 //
-// TODO(naren): 3.1 speaker button -> SW -> POST /api/tts, cached by lemma.
 // TODO(naren): false-friend fun fact once the flag is in wordindex.json (agree source with Karthik).
 
 const HOVER_DELAY_MS = 500;
@@ -25,7 +24,23 @@ interface Handlers {
   onSpeak(t: HoverTarget): Promise<boolean>;
 }
 
+// Luci look (D-010): the web app's colours. Fonts stay system ones, since the host page can't load ours.
+const C = {
+  panel: "#fcfcf8",
+  ink: "#1a2028",
+  muted: "#5f6772",
+  line: "#e2e3da",
+  sunLine: "#f1e2a6",
+  glowSoft: "#ffe9a0",
+  accent: "#9a6a00",
+  go: "#1f7a45",
+};
+/** How long the "✓" confirmation stays before the card closes. The event is already sent on click. */
+const CONFIRM_MS = 550;
+
 let card: HTMLElement | null = null;
+/** Bumped on every render, so a delayed close never hides a card that has since been re-shown for another word. */
+let renderId = 0;
 let hoverTimer: ReturnType<typeof setTimeout> | undefined;
 let hideTimer: ReturnType<typeof setTimeout> | undefined;
 /** One hover event per word per page, so re-hovering does not inflate the count. */
@@ -43,11 +58,13 @@ function buildCard(): HTMLElement {
     zIndex: "2147483647",
     maxWidth: "260px",
     padding: "10px 12px",
-    borderRadius: "8px",
-    background: "#1c1c1e",
-    color: "#fff",
+    borderRadius: "10px",
+    background: C.panel,
+    color: C.ink,
+    border: `1px solid ${C.sunLine}`,
     font: "14px/1.4 system-ui, -apple-system, Segoe UI, sans-serif",
-    boxShadow: "0 6px 24px rgba(0,0,0,.28)",
+    // A firm shadow plus a faint amber halo, so the card reads on light and dark pages alike.
+    boxShadow: "0 8px 28px rgba(26,32,40,.28), 0 0 0 4px rgba(255,210,58,.14)",
     pointerEvents: "auto",
   } satisfies Partial<CSSStyleDeclaration>);
   document.body.appendChild(el);
@@ -65,33 +82,47 @@ function render(el: HTMLElement, t: HoverTarget, handlers: Handlers): void {
 
   const speak = document.createElement("button");
   speak.type = "button";
-  speak.textContent = "🔊";
+  speak.append(speakerIcon(true));
   speak.title = `Hear "${t.spanish}"`;
   speak.setAttribute("aria-label", `Hear ${t.spanish}`);
   Object.assign(speak.style, {
-    border: "none",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "28px",
+    height: "28px",
+    border: `1px solid ${C.sunLine}`,
+    borderRadius: "999px",
     background: "transparent",
-    color: "inherit",
-    font: "inherit",
-    fontSize: "15px",
-    lineHeight: "1",
-    padding: "2px 4px",
+    color: C.accent,
+    padding: "0",
     cursor: "pointer",
-    opacity: ".8",
+    transition: "background-color .15s, box-shadow .15s",
   } satisfies Partial<CSSStyleDeclaration>);
+  const speakGlow = (on: boolean) => {
+    speak.style.background = on ? C.glowSoft : "transparent";
+    speak.style.boxShadow = on ? "0 0 0 3px rgba(255,210,58,.35)" : "none";
+  };
+  speak.addEventListener("mouseenter", () => speakGlow(true));
+  speak.addEventListener("mouseleave", () => {
+    if (!speak.disabled) speakGlow(false);
+  });
   speak.addEventListener("click", () => {
     if (speak.disabled) return;
     speak.disabled = true;
-    speak.style.opacity = ".4";
+    speakGlow(true); // glows while the word plays
     void handlers
       .onSpeak(t)
       .then((played) => {
         // No audio available: say so once rather than leaving a dead button.
-        if (!played) speak.textContent = "🔇";
+        if (!played) {
+          speak.replaceChildren(speakerIcon(false));
+          speak.style.color = C.muted;
+        }
       })
       .finally(() => {
         speak.disabled = false;
-        speak.style.opacity = ".8";
+        speakGlow(false);
       });
   });
 
@@ -99,14 +130,16 @@ function render(el: HTMLElement, t: HoverTarget, handlers: Handlers): void {
 
   const en = document.createElement("div");
   en.textContent = t.english;
-  Object.assign(en.style, { opacity: ".75", marginTop: "2px" });
+  Object.assign(en.style, { color: C.muted, marginTop: "2px" });
 
   const row = document.createElement("div");
   Object.assign(row.style, { display: "flex", gap: "6px", marginTop: "10px" });
 
-  for (const [label, verdict] of [
-    ["Knew it", "knew_it"],
-    ["Didn't know", "didnt_know"],
+  const myRender = ++renderId;
+  const buttons: HTMLButtonElement[] = [];
+  for (const [label, done, verdict, tone, halo] of [
+    ["Knew it", "✓ Knew it", "knew_it", C.go, "rgba(31,122,69,.22)"],
+    ["Didn't know", "✓ Still learning", "didnt_know", C.accent, "rgba(255,210,58,.4)"],
   ] as const) {
     const btn = document.createElement("button");
     btn.type = "button";
@@ -115,21 +148,68 @@ function render(el: HTMLElement, t: HoverTarget, handlers: Handlers): void {
       flex: "1",
       padding: "6px 8px",
       borderRadius: "6px",
-      border: "1px solid rgba(255,255,255,.25)",
+      border: `1px solid ${C.line}`,
       background: "transparent",
-      color: "inherit",
+      color: C.ink,
       font: "inherit",
       fontSize: "13px",
+      fontWeight: "500",
       cursor: "pointer",
+      transition: "border-color .12s, box-shadow .12s, background-color .12s, color .12s, transform .08s",
     } satisfies Partial<CSSStyleDeclaration>);
+    // Outline on hover and on keyboard focus.
+    const outline = (on: boolean) => {
+      if (btn.disabled) return;
+      btn.style.borderColor = on ? tone : C.line;
+      btn.style.boxShadow = on ? `0 0 0 3px ${halo}` : "none";
+    };
+    btn.addEventListener("mouseenter", () => outline(true));
+    btn.addEventListener("mouseleave", () => outline(false));
+    btn.addEventListener("focus", () => outline(true));
+    btn.addEventListener("blur", () => outline(false));
+    btn.addEventListener("mousedown", () => (btn.style.transform = "scale(.97)"));
+    btn.addEventListener("mouseup", () => (btn.style.transform = ""));
     btn.addEventListener("click", () => {
-      handlers.onVerdict(t, verdict);
-      hide();
+      if (btn.disabled) return;
+      handlers.onVerdict(t, verdict); // sent right away, as before
+      // Confirm on screen, then close.
+      for (const b of buttons) b.disabled = true;
+      Object.assign(btn.style, { background: tone, borderColor: tone, color: "#fff", boxShadow: `0 0 0 3px ${halo}`, transform: "" });
+      btn.textContent = done;
+      for (const b of buttons) if (b !== btn) b.style.opacity = ".45";
+      setTimeout(() => {
+        if (renderId === myRender) hide();
+      }, CONFIRM_MS);
     });
+    buttons.push(btn);
     row.appendChild(btn);
   }
 
   el.append(es, en, row);
+}
+
+/** A drawn speaker (sound waves when audio works, a cross when it doesn't), in the button's colour. */
+function speakerIcon(sound: boolean): SVGSVGElement {
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("width", "16");
+  svg.setAttribute("height", "16");
+  svg.setAttribute("aria-hidden", "true");
+  const paths = sound
+    ? ["M4 9h4l5-4v14l-5-4H4z", "M16.5 8.5a5 5 0 0 1 0 7", "M19 6a8.5 8.5 0 0 1 0 12"]
+    : ["M4 9h4l5-4v14l-5-4H4z", "M17 9l5 6", "M22 9l-5 6"];
+  for (const d of paths) {
+    const path = document.createElementNS(NS, "path");
+    path.setAttribute("d", d);
+    path.setAttribute("fill", d.startsWith("M4") ? "currentColor" : "none");
+    path.setAttribute("stroke", "currentColor");
+    path.setAttribute("stroke-width", "2");
+    path.setAttribute("stroke-linecap", "round");
+    path.setAttribute("stroke-linejoin", "round");
+    svg.appendChild(path);
+  }
+  return svg;
 }
 
 function place(el: HTMLElement, anchor: HTMLElement): void {
@@ -150,8 +230,12 @@ function place(el: HTMLElement, anchor: HTMLElement): void {
   el.style.top = `${top}px`;
 }
 
+/** Opened by a click: stays open when the mouse leaves the word, until a click elsewhere, Esc or a verdict (D-015). */
+let pinned = false;
+
 function hide(): void {
   clearTimeout(hoverTimer);
+  pinned = false;
   if (card) card.hidden = true;
 }
 
@@ -177,22 +261,48 @@ export function installHoverCard(markAttr: string, handlers: Handlers): void {
 
     clearTimeout(hideTimer);
     clearTimeout(hoverTimer);
-    hoverTimer = setTimeout(() => {
-      card ??= buildCard();
-      render(card, t, handlers);
-      place(card, el);
-      // The 500 ms rule has been met: this is a real hover.
-      if (!counted.has(t.lemma)) {
-        counted.add(t.lemma);
-        handlers.onHover(t);
-      }
-    }, HOVER_DELAY_MS);
+    if (pinned && card && !card.hidden) return; // a clicked-open card stays put until dismissed
+    // The 500 ms rule: only a deliberate hover opens the card and counts.
+    hoverTimer = setTimeout(() => show(el, t), HOVER_DELAY_MS);
   });
+
+  /** Open the card for `el` now, and count the look-up once per word (hover or click alike). */
+  function show(el: HTMLElement, t: HoverTarget): void {
+    card ??= buildCard();
+    render(card, t, handlers);
+    place(card, el);
+    if (!counted.has(t.lemma)) {
+      counted.add(t.lemma);
+      handlers.onHover(t);
+    }
+  }
+
+  // Click a swapped word: open its card right away (D-015). Click anywhere else: close it.
+  document.addEventListener(
+    "click",
+    (ev) => {
+      const target = ev.target as Element | null;
+      if (target?.closest(`#${CARD_ID}`)) return; // clicks inside the card are the card's own
+      const el = target?.closest<HTMLElement>(`[${markAttr}]`);
+      const t = el ? targetOf(el) : null;
+      if (el && t) {
+        ev.preventDefault(); // never follow a link the word might sit in
+        clearTimeout(hoverTimer);
+        clearTimeout(hideTimer);
+        show(el, t);
+        pinned = true;
+        return;
+      }
+      if (card && !card.hidden) hide();
+    },
+    true,
+  );
 
   document.addEventListener("mouseout", (ev) => {
     const el = (ev.target as Element | null)?.closest<HTMLElement>(`[${markAttr}]`);
     if (!el) return;
     clearTimeout(hoverTimer);
+    if (pinned) return;
     // Grace period so moving the pointer into the card itself does not dismiss it.
     hideTimer = setTimeout(hide, 220);
   });

@@ -4,6 +4,7 @@
  */
 import type { Level } from "@parrot/shared";
 import type { ClaudeMessage, CorrectorPromptArgs, TurnDirective, TutorPromptArgs } from "./types";
+import { tutorTimeLine } from "../greetings";
 
 // ---------- (a) corrector ----------
 
@@ -133,6 +134,9 @@ About their reading
   <directive> says this is the opening turn, greet them, mention one article by topic, say
   you saw they read it, and ask what they think. If no articles are listed, open with an
   everyday question.
+- Make that opening greeting fit the time of day in <session>, in one short warm phrase
+  (for example, call them a night owl late at night or an early bird early in the morning).
+  Mention the time of day only in the opening turn.
 - If the learner asks you not to use their reading, apologise in a few words, change the
   subject, and do not mention their articles again.
 
@@ -148,6 +152,7 @@ function sessionBlock(context: TutorPromptArgs["context"]): string {
     .join("; ");
   return `<session>
 level: ${context.level}
+time of day: ${tutorTimeLine(new Date())}
 articles read today: ${context.articleTitles.join("; ") || "none"}
 words they are learning: ${words || "none"}
 recurring mistakes from earlier sessions: ${context.topErrors.join("; ") || "none"}

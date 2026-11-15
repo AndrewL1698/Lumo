@@ -1,23 +1,45 @@
 {
   "manifest_version": 3,
-  "name": "Parrot",
+  "name": "Luci",
   "version": "0.0.1",
-  "description": "Swaps English words into Spanish on sites you choose.",
-  "permissions": ["storage", "scripting", "activeTab"],
-  "host_permissions": ["http://localhost:3000/*"],
-  "optional_host_permissions": ["https://*/*", "http://*/*"],
+  "description": "Lights up English words in Spanish on sites you choose, so you learn while you read.",
+  "permissions": [
+    "storage",
+    "scripting",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "http://localhost:3000/*"
+  ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://*/*"
+  ],
   "background": {
     "service_worker": "sw.js",
     "type": "module"
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Parrot"
+    "default_title": "Luci",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png"
+    }
   },
   "commands": {
     "toggle-parrot": {
-      "suggested_key": { "default": "Alt+Shift+P" },
-      "description": "Toggle Parrot"
+      "suggested_key": {
+        "default": "Alt+Shift+P"
+      },
+      "description": "Toggle Luci"
     }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
   }
 }

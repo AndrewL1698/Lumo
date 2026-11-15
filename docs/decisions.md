@@ -72,3 +72,8 @@ Short entries. Newest at the bottom. Format: **ID · date · owner**, decision, 
 **Decision:** The tutor's voice is slower for beginners: ElevenLabs `voice_settings.speed` 0.8, which measured about 25% longer on Flash v2.5. Intermediate and upper-intermediate stay at the normal pace. The client sends the learner's level with each `/api/tts` call (`TtsRequest.level`, optional); the speeds are `ELEVENLABS.ttsSpeed` in `web/lib/config.ts`. Hover-card words send no level and are unchanged.
 **Why:** In testing the tutor spoke too fast for a beginner, though the pace suits upper-intermediate.
 **Measured:** Averages over four sentences: speed 0.9 changes nothing, 0.85 is about 19% longer, 0.8 about 25%, 0.75 about 36%. Single clips vary a lot.
+
+### D-015 · Nov 14 · Karthik (agreed with Naren, Andrew, Shravan)
+**Decision:** (1) **Clicking** a swapped word opens the hover card instantly and counts as a look-up (once per word, same as a hover). Clicking anywhere outside the card closes it. Hover still opens after 500 ms. (2) **Time-of-day greetings** from one shared list (`web/lib/greetings.ts`): a line on the home page using the learner's clock and streak ("¡Hola, night owl! 🌙 · day 3 in a row"), and the tutor's opening sentence fits the time of day via one line of session info plus the opener rule.
+**Why:** Clicking is what people try first on stage. The greetings make Luci feel like it knows you.
+**Note:** The tutor uses the server's clock, which is the learner's on the localhost demo. A hosted version would send the browser's time.

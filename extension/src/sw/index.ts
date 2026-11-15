@@ -112,7 +112,7 @@ async function pair(code: string): Promise<ResponseMap["PAIR"]> {
     await chrome.storage.local.set({ pairingToken: parsed.data.token });
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "could not reach Parrot" };
+    return { ok: false, error: err instanceof Error ? err.message : "could not reach Luci" };
   }
 }
 
@@ -122,7 +122,7 @@ async function enableSite(rawOrigin: string): Promise<ResponseMap["ENABLE_SITE"]
 
   // Hard never-list, enforced even though the user just granted the permission (specs §5.1).
   const blocked = neverListReason(origin);
-  if (blocked) return { ok: false, error: `Parrot never runs here (${blocked})` };
+  if (blocked) return { ok: false, error: `Luci never runs here (${blocked})` };
 
   const pattern = origin + "/*";
   const granted = await chrome.permissions.contains({ origins: [pattern] });
@@ -208,7 +208,7 @@ async function setSwapAmount(perPageCap?: number, autoGrow?: boolean): Promise<R
   candidatesCache = null; // the next page load re-reads progress
   if (perPageCap === undefined) return { ok: true };
   const fresh = await fetchSettings();
-  if (!fresh) return { ok: false, error: "could not reach Parrot" };
+  if (!fresh) return { ok: false, error: "could not reach Luci" };
   const next: Settings = { ...fresh, perPageCap: Math.max(0, Math.min(25, Math.round(perPageCap))) };
   try {
     const res = await api("/api/settings", { method: "PUT", body: JSON.stringify(next) });
@@ -216,7 +216,7 @@ async function setSwapAmount(perPageCap?: number, autoGrow?: boolean): Promise<R
     await chrome.storage.local.set({ settings: next });
     return { ok: true };
   } catch (err) {
-    return { ok: false, error: err instanceof Error ? err.message : "could not reach Parrot" };
+    return { ok: false, error: err instanceof Error ? err.message : "could not reach Luci" };
   }
 }
 
