@@ -46,6 +46,7 @@ type Setters = {
   recap: (r: Recap | null) => void;
   notice: (n: string | null) => void;
   lastTimeline: (t: TurnTimeline | null) => void;
+  plan: (p: UseTutorSession["plan"]) => void;
 };
 
 /** One tutor reply (the opener or the answer to one utterance). */
@@ -91,6 +92,8 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
   /** The learner's level from the session context; sets the tutor's speaking speed. */
   let level: Level | undefined;
   let turns: Turn[] = [];
+  /** Correction requests still in flight; end() waits for them so the recap includes the last turn. */
+  const pendingCorrections = new Set<Promise<void>>();
 
   let queue: AudioQueue | null = null;
   let recorder: PttRecorder | null = null; // null = no mic (denied or not started)
@@ -106,11 +109,25 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
   /** The take being recorded / transcribed. */
   let take: { id: string; timeline: TimelineRecorder } | null = null;
 
+  /** TTS chunks that failed in a row; a chunk that starts playing resets it (voice-plan §1.7). */
+  let ttsFailuresInARow = 0;
+  let browserVoice = false;
+  const onTtsFailed = () => {
+    if (browserVoice) return;
+    ttsFailuresInARow += 1;
+    if (ttsFailuresInARow < 2) {
+      set.notice("Audio unavailable for part of the reply; showing captions.");
+      return;
+    }
+    // HACK: ElevenLabs looks down: the browser's built-in voice for the rest of the session (from the next
+    // reply; this one keeps its captions). Stop the old queue so a late ElevenLabs chunk can't overlap.
+    browserVoice = true;
+    queue?.stopAll();
+    queue = createAudioQueue({ mode: "browser", level: () => level });
+    set.notice("Luci's voice is unavailable, so your browser's voice will read her replies.");
+  };
   const getQueue = (): AudioQueue => {
-    queue ??= createAudioQueue({
-      level: () => level,
-      onChunkFailed: () => set.notice("Audio unavailable for part of the reply; showing captions."),
-    });
+    queue ??= createAudioQueue({ level: () => level, onChunkFailed: onTtsFailed });
     return queue;
   };
 
@@ -291,6 +308,7 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
     const speak = (chunk: string) => {
       args.timeline?.mark("tFirstChunk");
       q.enqueue(myTurn, index++, chunk, () => {
+        ttsFailuresInARow = 0;
         if (!live()) return;
         reply.started.push(chunk);
         // HACK: the queue has no separate "TTS bytes arrived" signal, so both marks are set at audio start.
@@ -318,6 +336,14 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
       });
       if (!res.ok || !res.body) throw new Error(`/api/tutor/reply ${res.status}`);
       // X-Reply-Fallback: 1 means the body is the canned line; it is handled like any reply.
+      // J1: X-Parrot-Why is URI-encoded (header values can't carry accents); a bad value just leaves `why` unset.
+      try {
+        const rawWhy = res.headers.get("X-Parrot-Why");
+        const why = rawWhy ? decodeURIComponent(rawWhy) : "";
+        if (why && live()) updateTurn(args.turnId, (t) => ({ ...t, why }));
+      } catch {
+        // malformed header: no why line for this turn
+      }
       const reader = res.body.getReader();
       const decoder = new TextDecoder("utf-8");
       for (;;) {
@@ -338,8 +364,9 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
     } catch {
       if (!live()) return; // aborted by a barge-in, end() or unmount
       if (!gotText) {
-        caption(TUTOR.cannedRepeat);
-        chunker.push(TUTOR.cannedRepeat);
+        const canned = args.rawText === null ? TUTOR.cannedOpener : TUTOR.cannedRepeat;
+        caption(canned);
+        chunker.push(canned);
       }
       // A stream that broke midway keeps what it has.
     }
@@ -368,6 +395,8 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
     setTurns([...turns, { id, rawText, sttPath }]); // rawText is verbatim: never trimmed or edited
     set.status("checking");
     const correctionDone = correctLane(id, rawText, sttPath, tutorPrevious, timeline);
+    pendingCorrections.add(correctionDone);
+    void correctionDone.finally(() => pendingCorrections.delete(correctionDone));
     void replyLane({ turnId: id, utteranceId: id, rawText, history, timeline, correctionDone });
   }
 
@@ -502,6 +531,7 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
         sessionId = context.sessionId;
         level = context.level;
         set.targetWords(context.targetWords);
+        set.plan(context.plan ?? null);
         if (micOk) recorder = rec;
         else {
           rec.dispose();
@@ -606,10 +636,19 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
     async end() {
       if (!started) return;
       const id = sessionId;
+      // Grab the in-flight corrections before teardown; the server must record the last turn before it
+      // builds the recap, or a word credited a moment later would show under "Review tomorrow".
+      const pending = [...pendingCorrections];
       teardown();
       set.partial("");
       set.status("idle");
       try {
+        if (pending.length)
+          await Promise.race([
+            Promise.all(pending),
+            // The server's cap: model timeout + one learner-model write + network.
+            new Promise((r) => setTimeout(r, TUTOR.correctTimeoutMs + TUTOR.recordTimeoutMs + 500)),
+          ]);
         const res = await fetch("/api/tutor/end", {
           method: "POST",
           headers: JSON_HEADERS,
@@ -634,6 +673,7 @@ export function useTutorSession(opts?: { forceBatch?: boolean }): UseTutorSessio
   const [recap, setRecap] = useState<Recap | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [lastTimeline, setLastTimeline] = useState<TurnTimeline | null>(null);
+  const [plan, setPlan] = useState<UseTutorSession["plan"]>(null);
 
   const forceBatchRef = useRef(false);
   useEffect(() => {
@@ -651,6 +691,7 @@ export function useTutorSession(opts?: { forceBatch?: boolean }): UseTutorSessio
         recap: setRecap,
         notice: setNotice,
         lastTimeline: setLastTimeline,
+        plan: setPlan,
       },
       () => forceBatchRef.current,
     ),
@@ -668,6 +709,7 @@ export function useTutorSession(opts?: { forceBatch?: boolean }): UseTutorSessio
     recap,
     notice,
     lastTimeline,
+    plan,
     start: ctl.start,
     pressTalk: ctl.pressTalk,
     releaseTalk: ctl.releaseTalk,

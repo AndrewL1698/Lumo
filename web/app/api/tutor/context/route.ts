@@ -15,7 +15,8 @@ export async function GET() {
     : await loadTutorContext(() => getTutorContextData(DEMO_USER_ID), TUTOR.contextTimeoutMs);
 
   // /api/tutor/correct and /reply read this exact context by sessionId.
-  setSessionContext(context.sessionId, context);
+  // Only a real (DB) context may credit target words: fixture targets must never change the demo user's words.
+  setSessionContext(context.sessionId, context, { credit: source === "db" });
 
   // Not awaited: compiles the corrector's output schema now, so the first spoken turn does not pay for it.
   if (!isTutorMock()) void warmUpCorrector();

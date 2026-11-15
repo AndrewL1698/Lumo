@@ -5,19 +5,20 @@
 import assert from "node:assert/strict";
 import { TutorContext, tutorContextFixture } from "@parrot/shared";
 import type { TutorContextData } from "../../learner/queries";
-import { buildTutorContext, loadTutorContext, pickTargetWords } from "../context";
+import { buildTutorContext, loadTutorContext, pickTargetWords, shortSentence } from "../context";
 import { getSession, resetSessions } from "../session";
 
 const NPR_TITLE = "Nvidia CEO Jensen Huang resigns amid spy scandal : NPR";
 const at = "2026-11-14T12:00:00.000Z";
+const now = new Date("2026-11-14T14:00:00.000Z"); // 2h after the hovers
 
 // Mirrors scripts/seed-demo: NPR hovers newest-first (empresa = flip word), plus a cognate and an unlisted word.
 const seeded: TutorContextData = {
   level: "intermediate",
   hoveredWords: [
-    { lemma: "empresa", sentence: "…la empresa took the extraordinary step…", hoveredAt: at, articleTitle: NPR_TITLE, article: "la", english: "company; business", cognate: false },
+    { lemma: "empresa", sentence: "…la empresa took the extraordinary step…", hoveredAt: at, articleTitle: NPR_TITLE, outcome: "didnt_know", article: "la", english: "company; business", cognate: false },
     { lemma: "investigación", sentence: "…launching an investigation…", hoveredAt: at, article: "la", english: "investigation", cognate: true },
-    { lemma: "mercado", sentence: "…it dominates el mercado for GPUs.", hoveredAt: at, article: "el", english: "market", cognate: false },
+    { lemma: "mercado", sentence: "…it dominates el mercado for GPUs.", hoveredAt: at, outcome: "knew_it", article: "el", english: "market", cognate: false },
     { lemma: "chisme", hoveredAt: at, article: null, english: "", cognate: false },
     { lemma: "mundo", sentence: "…most valuable in el mundo…", hoveredAt: at, article: "el", english: "world", cognate: false },
     { lemma: "negocio", sentence: "…negocio…", hoveredAt: at, article: "el", english: "business; deal", cognate: false },
@@ -25,7 +26,7 @@ const seeded: TutorContextData = {
   dueWords: [
     { lemma: "mercado", dueAt: at, article: "el", english: "market", cognate: false },
     { lemma: "casa", dueAt: at, article: "la", english: "house; home", cognate: false },
-    { lemma: "aprovechar", dueAt: at, article: null, english: " to make the most of ; to take advantage of", cognate: false },
+    { lemma: "aprovechar", dueAt: "2026-11-11T12:00:00.000Z", article: null, english: " to make the most of ; to take advantage of", cognate: false },
     { lemma: "perro", dueAt: at, article: "el", english: "dog", cognate: false },
   ],
   articleTitles: [NPR_TITLE],
@@ -55,13 +56,91 @@ async function main() {
   assert.equal(targets[3]!.english, "house");
   assert.equal(targets[4]!.english, "to make the most of");
   assert.equal("article" in targets[4]!, false, "null article is omitted");
-  const ctx = buildTutorContext(seeded, "sess_check");
+  const ctx = buildTutorContext(seeded, "sess_check", now);
   TutorContext.parse(ctx);
   assert.deepEqual(ctx.articleTitles, [NPR_TITLE]);
   assert.deepEqual(ctx.dueWords, ["mercado", "casa", "aprovechar", "perro"]);
   assert.equal(ctx.hoveredWords.length, 6);
   assert.deepEqual(ctx.hoveredWords[3], { lemma: "chisme" }, "undefined sentence is omitted");
   assert.deepEqual(ctx.targetWords, targets);
+
+  // 1a. J2 plan: newest article, one reason per target (same order), first recurring error
+  assert.deepEqual(ctx.plan, {
+    article: { title: NPR_TITLE, why: "You read it today and hovered 1 word in it" },
+    words: [
+      { lemma: "empresa", english: "company", reason: 'Hovered 2h ago (you clicked "Didn\'t know") in: "…la empresa took the extraordinary step…"' },
+      { lemma: "mercado", english: "market", reason: 'Hovered 2h ago (you clicked "Knew it") in: "…it dominates el mercado for GPUs."' },
+      { lemma: "mundo", english: "world", reason: 'Hovered 2h ago in: "…most valuable in el mundo…"' },
+      { lemma: "casa", english: "house", reason: "Due for review" },
+      { lemma: "aprovechar", english: "to make the most of", reason: "Due for review (3 days overdue)" },
+    ],
+    watchError: "la problema → el problema (agreement, 3× last session)",
+  });
+
+  // newest article with hovers beats a newer article without any; none with hovers → the newest
+  const twoArticles = buildTutorContext({ ...seeded, articleTitles: ["Inflation - Wikipedia", NPR_TITLE] }, "sess_two", now);
+  assert.equal(twoArticles.plan?.article?.title, NPR_TITLE);
+  const noHoverArticle = buildTutorContext({ ...seeded, articleTitles: ["Inflation - Wikipedia", "Other"] }, "sess_two_b", now);
+  assert.deepEqual(noHoverArticle.plan?.article, { title: "Inflation - Wikipedia", why: "You read it today" });
+
+  // 1a'. sparse / odd data: blank title, no errors, unparseable times, title-only hover → still a plan
+  const sparse = buildTutorContext(
+    {
+      ...seeded,
+      articleTitles: ["   "],
+      topErrors: [],
+      hoveredWords: [
+        { lemma: "empresa", hoveredAt: "garbage", article: "la", english: "company", cognate: false },
+        { lemma: "mercado", hoveredAt: "garbage", articleTitle: NPR_TITLE, article: "el", english: "market", cognate: false },
+        { lemma: "mundo", hoveredAt: "2026-11-14T13:55:00.000Z", article: "el", english: "world", cognate: false },
+        { lemma: "negocio", hoveredAt: "2026-11-14T13:59:30.000Z", article: "el", english: "business", cognate: false },
+      ],
+      dueWords: [{ lemma: "casa", dueAt: "garbage", article: "la", english: "house", cognate: false }],
+    },
+    "sess_sparse",
+    now,
+  );
+  assert.deepEqual(sparse.plan, {
+    article: null,
+    words: [
+      { lemma: "empresa", english: "company", reason: "Hovered while reading" },
+      { lemma: "mercado", english: "market", reason: `Hovered while reading in "${NPR_TITLE}"` },
+      { lemma: "mundo", english: "world", reason: "Hovered 5m ago" },
+      { lemma: "casa", english: "house", reason: "Due for review" },
+    ],
+    watchError: null,
+  });
+  const empty = buildTutorContext({ level: "beginner", hoveredWords: [], dueWords: [], articleTitles: [], topErrors: [] }, "sess_empty", now);
+  assert.deepEqual(empty.plan, { article: null, words: [], watchError: null });
+  // an error string in another format passes through as is
+  const otherErr = buildTutorContext({ ...seeded, topErrors: ["agreement: la problema → el problema"] }, "sess_err", now);
+  assert.equal(otherErr.plan?.watchError, "agreement: la problema → el problema");
+
+  // 1a''. building the plan throws → context without plan (no crash), and the loader still reports db
+  const boom = { ...seeded.hoveredWords[0]! };
+  Object.defineProperty(boom, "articleTitle", {
+    enumerable: true,
+    get: () => {
+      throw new Error("boom");
+    },
+  });
+  const throwing: TutorContextData = { ...seeded, hoveredWords: [boom, ...seeded.hoveredWords.slice(1)] };
+  const noPlan = buildTutorContext(throwing, "sess_boom", now);
+  assert.equal("plan" in noPlan, false, "plan omitted when building it throws");
+  assert.deepEqual(noPlan.targetWords, targets);
+  const noPlanLoaded = await loadTutorContext(async () => throwing, 1000);
+  assert.equal(noPlanLoaded.source, "db");
+  assert.equal(noPlanLoaded.context.plan, undefined);
+
+  // 1a'''. hover sentences are cut to ~60 chars around the word, at word boundaries
+  const long = "The government said on Tuesday that la empresa would have to pay a record fine after the long investigation ended.";
+  const cut = shortSentence(long, "empresa");
+  assert.ok(cut.length <= 62 && cut.startsWith("…") && cut.endsWith("…") && cut.includes("la empresa"), cut);
+  const head = shortSentence(long, "nada");
+  assert.ok(head.startsWith("The government") && head.endsWith("…") && head.length <= 61, head);
+  const stem = shortSentence("Commuters on the long walk home said they aprovechan the quiet streets while the strike goes on", "aprovechar");
+  assert.ok(stem.includes("aprovechan") && stem.length <= 62, stem);
+  assert.equal(shortSentence("  short   one ", "x"), "short one");
 
   // 1b. loader success → source db
   const ok = await loadTutorContext(async () => seeded, 1000);
@@ -80,6 +159,8 @@ async function main() {
   assert.equal(a.reason, "db down");
   assert.equal(b.source, "fixture");
   assert.deepEqual(a.context.articleTitles, tutorContextFixture.articleTitles);
+  assert.ok(tutorContextFixture.plan, "fixture has a plan");
+  assert.equal(a.context.plan, undefined, "fixture fallback shows no lesson card (its reasons never happened)");
   assert.notEqual(a.context.sessionId, "sess_demo_1");
   assert.notEqual(a.context.sessionId, b.context.sessionId);
 
@@ -110,6 +191,7 @@ async function main() {
   let body = TutorContext.parse(await res.json());
   assert.notEqual(body.sessionId, "sess_demo_1");
   assert.deepEqual(body.articleTitles, tutorContextFixture.articleTitles);
+  assert.equal(body.plan, undefined);
   assert.deepEqual(getSession(body.sessionId).context, body);
   assert.deepEqual(getSession(body.sessionId).policy.targetLemmas, body.targetWords.map((w) => w.lemma));
   const firstId = body.sessionId;
@@ -126,7 +208,7 @@ async function main() {
   delete process.env.TUTOR_MOCK;
 
   assert.equal(fetchCalls, 0, "fetch must never be called");
-  console.log(`ok (targets ${targets.map((t) => t.lemma).join(",")}, timeout fallback ${slowMs}ms, route ${routeMs}ms, fetch calls ${fetchCalls})`);
+  console.log(`ok (targets ${targets.map((t) => t.lemma).join(",")}, plan reasons ${ctx.plan?.words.length}, timeout fallback ${slowMs}ms, route ${routeMs}ms, fetch calls ${fetchCalls})`);
 }
 
 main().catch((err) => {

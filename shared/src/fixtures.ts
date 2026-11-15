@@ -57,6 +57,15 @@ export const tutorContextFixture = TutorContext.parse({
     { lemma: "aprovechar", english: "to make the most of", source: "hovered" },
     { lemma: "casa", article: "la", english: "house", source: "due" },
   ],
+  plan: {
+    article: { title: "Transit strike enters third day", why: "You read it today and hovered 2 words in it" },
+    words: [
+      { lemma: "huelga", english: "strike", reason: 'Hovered 2h ago (you clicked "Didn\'t know") in: "The transit strike entered its third day on Friday."' },
+      { lemma: "aprovechar", english: "to make the most of", reason: 'Hovered 2h ago in: "Commuters tried to make the most of the quiet streets."' },
+      { lemma: "casa", english: "house", reason: "Due for review" },
+    ],
+    watchError: "la problema → el problema (agreement)",
+  },
 });
 
 /** Raw transcript the correction fixtures refer to. */

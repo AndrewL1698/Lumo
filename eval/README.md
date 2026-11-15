@@ -43,3 +43,41 @@ It prints the numbers and writes `eval/accuracy/results.json`, with every respon
 - The eval doesn't change the demo user's words: `/correct` only credits words for sessions started through `/api/tutor/context` (checked: no `spoken_*` events after all 150 requests).
 
 **Preliminary (Nov 14 afternoon, the 20 STT-test sentences, one run, before turn flags):** recall 87% (13/15), precision 100%, false alarms 0/5, serverMs median 1.0 s / p90 2.0 s. Superseded by the official set above.
+
+## Latency (Andrew)
+
+Targets (specs §7.6): the on-screen correction within **1.5 s** of the learner releasing the talk button, and the tutor's voice within **2 s**.
+
+### Method
+- **Pitch numbers come from the browser.** Every tutor turn posts its timestamps to `/api/tutor/metrics`, which appends one line to `eval/latency/turns.jsonl` (gitignored). `npx tsx eval/latency/summarize.ts` prints median and p90 from button release to: STT final, correction shown, reply first token, first chunk, and audio start. It reports voiced and typed turns separately.
+- **Tuning numbers come from the probe.** `npx tsx eval/latency/probe.ts --n 20` replays turns without a mic, the way the browser does: `/correct` and `/reply` in parallel, the real chunker, then `/api/tts` for the first chunk. Times start at STT final, so add the STT time (about 190 ms in the browser) to compare. It runs a little optimistic: no history, fixture context, later chunks and decoding not timed. Each run is saved in `eval/latency/probe-results/`.
+
+### Results
+**Browser, voiced turns** (from button release; laptop on wifi unless noted):
+
+| Who / when | n | Correction median / p90 | Audio start median / p90 |
+|---|---|---|---|
+| Andrew, Sat afternoon (before tuning) | 8 | 1311 / 1999 ms | 1860 / 2306 ms |
+| Shravan, Sat evening (before tuning)* | 11 | 1461 / 2115 ms | 1344 / 1873 ms |
+| _After tuning, wifi_ | | _pending_ | _pending_ |
+| _After tuning, phone hotspot (the demo setup)_ | | _pending_ | _pending_ |
+
+\* His first chunk → audio gap was 8 ms, so his audio was cached or from the browser voice; his audio number is not comparable.
+
+**Probe** (20 turns, wifi, from STT final; details in `docs/decisions.md` D-017):
+
+| | Correction median / p90 | Reply first token | Audio ready median / p90 |
+|---|---|---|---|
+| Baseline | 1194 / 1517 ms | 759 ms | 1528 / 1733 ms |
+| Caching + hedged corrector | 1128 / ~1330 ms | 748 ms | 1664 / 1884 ms (n=9) |
+
+## STT verbatim test (Andrew)
+Does the transcriber keep the learner's mistakes, or quietly fix them? Method: `docs/voice-plan.md` §6. Results: `eval/stt-test/results.md`. Decision: `docs/decisions.md` D-002.
+
+| Pass A (TTS voice reads the 20 sentences) | Errors survived | Clean controls kept | Commit → transcript |
+|---|---|---|---|
+| Scribe v2 realtime (**in use**) | 73% (11/15) | 5/5 | 67 ms |
+| Scribe v2 batch (fallback) | 80% (12/15) | 5/5 | 272 ms |
+| Scribe v3 realtime | 67% (10/15) | 5/5 | 69 ms |
+
+Pass B (a teammate's voice) is pending.

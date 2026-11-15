@@ -108,6 +108,7 @@ function TurnView({ turn }: { turn: Turn }) {
             {turn.tutorText}
           </p>
           {turn.tutorEnglish && <p className="text-sm text-gray-600">{turn.tutorEnglish}</p>}
+          {turn.why && <p className="text-xs text-gray-500">Why: {turn.why}</p>}
         </div>
       )}
     </li>

@@ -131,7 +131,7 @@ About the words they are learning
 
 About their reading
 - The articles in <session> are things the learner read today in their browser. When
-  <directive> says this is the opening turn, greet them, mention one article by topic, say
+  <directive> says this is the opening turn, greet them, mention the first article by topic, say
   you saw they read it, and ask what they think. If no articles are listed, open with an
   everyday question.
 - Make that opening greeting fit the time of day in <session>, in one short warm phrase
@@ -205,7 +205,8 @@ export function buildTutorPrompt(args: TutorPromptArgs): {
 // ---------- (c) recap ----------
 
 export const RECAP_SYSTEM = `Here is a summary of one Spanish practice conversation: the learner's most frequent
-mistakes with examples, the words they used correctly, and the words they got wrong.
+mistakes with examples, the words they used correctly, and the target words they have not used
+correctly yet (most of those they simply did not say; never call them mistakes).
 Write \`summary_en\`: two encouraging sentences in plain English about what went well and
 what to practise next. Write one \`tips\` entry per mistake listed: a one-line rule in plain
 English with a correct Spanish example. Refer only to what is in the data.`;
