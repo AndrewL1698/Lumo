@@ -776,6 +776,14 @@ function wireHoverCard(): void {
         el.dataset.parrotGlow = verdict === "knew_it" ? "steady" : "learning";
       }
     },
+    /** Knew it on any page (kept by the service worker across reloads and sites), or proven known. */
+    alreadyKnown(t: HoverTarget) {
+      if (knewIt.has(t.lemma)) return true;
+      for (const el of document.querySelectorAll<HTMLElement>(`[${MARK_ATTR}]`)) {
+        if (el.dataset.parrotLemma === t.lemma && el.dataset.parrotGlow === "known") return true;
+      }
+      return false;
+    },
     /** The service worker fetches and caches the audio; we only play it. */
     async onSpeak(t: HoverTarget) {
       const res = await send({ type: "TTS", text: t.spanish, lemma: t.lemma }).catch(() => null);

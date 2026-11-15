@@ -27,6 +27,8 @@ interface Handlers {
   onVerdict(t: HoverTarget, verdict: Verdict): void;
   /** Resolves once the word has been spoken, or false if audio was unavailable. */
   onSpeak(t: HoverTarget): Promise<boolean>;
+  /** The learner already said they know this word (Knew it, on any page) or proved it: hide "Knew it". */
+  alreadyKnown?(t: HoverTarget): boolean;
 }
 
 // Lumo look (D-010): the web app's night panel, straight from web/app/globals.css
@@ -198,10 +200,19 @@ function render(el: HTMLElement, t: HoverTarget, handlers: Handlers): void {
 
   const myRender = ++renderId;
   const buttons: HTMLButtonElement[] = [];
-  for (const [label, done, verdict, tone, halo] of [
+  // Once they've said they know it, only "Didn't know" is left: the way back if it slips.
+  const known = handlers.alreadyKnown?.(t) ?? false;
+  if (known) {
+    const note = document.createElement("span");
+    note.textContent = "✓ You know this";
+    Object.assign(note.style, { flex: "1", alignSelf: "center", color: C.go, fontSize: "13px", fontWeight: "600" });
+    row.appendChild(note);
+  }
+  const choices = [
     ["Knew it", "✓ Knew it", "knew_it", C.go, "rgba(127,220,163,.26)"],
     ["Didn't know", "✓ Still learning", "didnt_know", C.accent, "rgba(245,201,74,.3)"],
-  ] as const) {
+  ] as const;
+  for (const [label, done, verdict, tone, halo] of choices.filter(([, , v]) => !(known && v === "knew_it"))) {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.textContent = label;
