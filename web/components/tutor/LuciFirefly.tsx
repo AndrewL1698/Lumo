@@ -203,6 +203,97 @@ function useLipSync(
   }, [active, els, speechText, onTextDone]);
 }
 
+// Eyes follow the real mouse (the firefly cursor is drawn on top of it; we read the pointer itself).
+// Only the eye ovals move, inside a small radius, eased every frame through an SVG transform on a ref (no React
+// state). After ~3 s without movement, or when the mouse leaves the window, they drift back to centre. While Luci
+// talks she mostly looks at you, with a short glance at the cursor now and then. Off on touch screens, with
+// reduced motion, and on still (older) Lucis. The blink scales the outer eye group, so the eyes still vanish in it.
+const LOOK_RANGE = { x: 1.6, y: 1.2 }; // in viewBox units; the eye oval is 6 x 7.8
+const LOOK_FULL_PX = 320; // cursor this far away (screen px) = full glance
+const EYE_LINE = { x: 60, y: 51 }; // eye midpoint in the 120 x 120 viewBox
+const IDLE_MS = 3000;
+
+function useEyeTracking(
+  svgRef: React.RefObject<SVGSVGElement | null>,
+  lookRef: React.RefObject<SVGGElement | null>,
+  still: boolean,
+  talkingRef: React.RefObject<boolean>,
+) {
+  useEffect(() => {
+    if (still) return;
+    const fine = window.matchMedia("(pointer: fine)").matches;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!fine || reduce) return; // pupils stay centred
+    let mx = 0;
+    let my = 0;
+    let lastMove = -Infinity; // no cursor yet: look ahead
+    let cx = 0;
+    let cy = 0;
+    let shownX = NaN;
+    let shownY = NaN;
+    let nextGlance = performance.now() + 2500;
+    let glanceUntil = 0;
+    let last = performance.now();
+    let raf = 0;
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse" && e.pointerType !== "pen") return;
+      mx = e.clientX;
+      my = e.clientY;
+      lastMove = performance.now();
+    };
+    const onOut = (e: MouseEvent) => {
+      if (!e.relatedTarget) lastMove = -Infinity; // left the window
+    };
+    const frame = (now: number) => {
+      raf = requestAnimationFrame(frame);
+      const dt = Math.min(64, now - last);
+      last = now;
+      let tx = 0;
+      let ty = 0;
+      const active = now - lastMove < IDLE_MS;
+      let look = active;
+      if (active && talkingRef.current) {
+        // talking: eyes on the learner, with a brief glance at the cursor every few seconds
+        if (now >= nextGlance) {
+          glanceUntil = now + 700;
+          nextGlance = now + 2600 + Math.random() * 2400;
+        }
+        look = now < glanceUntil;
+      }
+      const svg = svgRef.current;
+      if (look && svg) {
+        const r = svg.getBoundingClientRect();
+        const ex = r.left + (r.width * EYE_LINE.x) / 120;
+        const ey = r.top + (r.height * EYE_LINE.y) / 120;
+        const dx = mx - ex;
+        const dy = my - ey;
+        const dist = Math.hypot(dx, dy) || 1;
+        const m = Math.min(1, dist / LOOK_FULL_PX);
+        tx = (dx / dist) * m * LOOK_RANGE.x;
+        ty = (dy / dist) * m * LOOK_RANGE.y;
+      }
+      // ease toward the target (quicker when following, gentler drifting home)
+      const k = 1 - Math.exp(-dt / (look ? 110 : 380));
+      cx += (tx - cx) * k;
+      cy += (ty - cy) * k;
+      if (Math.abs(cx - shownX) > 0.01 || Math.abs(cy - shownY) > 0.01 || Number.isNaN(shownX)) {
+        shownX = cx;
+        shownY = cy;
+        lookRef.current?.setAttribute("transform", `translate(${cx.toFixed(2)} ${cy.toFixed(2)})`);
+      }
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    document.addEventListener("mouseout", onOut);
+    raf = requestAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("pointermove", onMove);
+      document.removeEventListener("mouseout", onOut);
+      lookRef.current?.removeAttribute("transform");
+    };
+  }, [still, svgRef, lookRef, talkingRef]);
+}
+
 // Luci the firefly, the tutor's face: an original soft chibi character (round head, plump body, small oval eyes,
 // rosy cheeks, translucent veined wings, a glowing tail). Pure SVG + CSS animations (globals.css, "Luci firefly").
 // Decorative only: status text elsewhere carries the meaning for screen readers.
@@ -270,6 +361,13 @@ export function LuciFirefly({
   const textDone = useRef(() => setTextTalk(false));
   const talking = !still && (mood === "speaking" || voiceOn || textTalk);
   useLipSync(talking, els, textRef, textDone);
+  const svgRef = useRef<SVGSVGElement>(null);
+  const lookRef = useRef<SVGGElement>(null);
+  const talkingRef = useRef(talking);
+  useEffect(() => {
+    talkingRef.current = talking;
+  }, [talking]);
+  useEyeTracking(svgRef, lookRef, still, talkingRef);
   // Reaction faces when Luci isn't talking: a grin (correct / word learned) or a gentle "hmm" (mistake).
   useEffect(() => {
     if (still || talking) return;
@@ -289,7 +387,7 @@ export function LuciFirefly({
        <div className="h-full w-full">
         <div ref={els.bob} className="h-full w-full">
          <div ref={reactRef} className="luci-react relative h-full w-full" data-react={reaction ?? undefined}>
-        <svg viewBox="0 0 120 120" width="100%" height="100%" overflow="visible">
+        <svg ref={svgRef} viewBox="0 0 120 120" width="100%" height="100%" overflow="visible">
               <defs>
                 {/* gentle gradients for depth: lighter on top, a little darker below */}
                 <radialGradient id={`${gid}-halo`}>
@@ -346,10 +444,13 @@ export function LuciFirefly({
               <ellipse cx="51" cy="37" rx="8" ry="4.2" fill="#ffffff" fillOpacity=".12" transform="rotate(-18 51 37)" />
               {/* small, simple eyes: dark ovals with a tiny shine (they glance together when listening) */}
               <g className="luci-eyes">
-                <ellipse className="luci-pupil" cx="51" cy="51" rx="3" ry="3.9" fill="#121a24" />
-                <ellipse className="luci-pupil" cx="69" cy="51" rx="3" ry="3.9" fill="#121a24" />
-                <circle className="luci-pupil" cx="52" cy="49.4" r="1.05" fill="#ffffff" />
-                <circle className="luci-pupil" cx="70" cy="49.4" r="1.05" fill="#ffffff" />
+                {/* moved by useEyeTracking (SVG transform attribute), inside the blinking group */}
+                <g ref={lookRef}>
+                  <ellipse className="luci-pupil" cx="51" cy="51" rx="3" ry="3.9" fill="#121a24" />
+                  <ellipse className="luci-pupil" cx="69" cy="51" rx="3" ry="3.9" fill="#121a24" />
+                  <circle className="luci-pupil" cx="52" cy="49.4" r="1.05" fill="#ffffff" />
+                  <circle className="luci-pupil" cx="70" cy="49.4" r="1.05" fill="#ffffff" />
+                </g>
               </g>
               {/* happy eyes for reactions (soft arcs), shown instead of the ovals */}
               <g className="luci-eyes-happy" fill="none" stroke="#121a24" strokeWidth="2.2" strokeLinecap="round">
