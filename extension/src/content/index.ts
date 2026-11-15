@@ -16,7 +16,7 @@ import wordbands from "../wordbands.json";
 import { LEVEL_BAND, MAX_SWAPS, swapBudget } from "../swapBudget";
 
 /** Bump when changing this file, so a stale bundle in Chrome is obvious in the console. */
-const BUILD = "2.4-k";
+const BUILD = "2.5-k";
 
 /** Words that must sit between two swaps, so they are never adjacent (specs §5.2.7). Loosened when the
  * page budget is high, so the popup slider visibly matters (never below 4: still never adjacent). */
@@ -127,7 +127,16 @@ function sentenceAround(node: Text, offset: number): string {
 
 // ---------------------------------------------------------------- matching and scoring
 
+/** How brightly a swap glows = how well the learner knows it (same three lights as the web app, D-016). */
+type Glow = "seen" | "learning" | "known";
+function glowOf(state: string | undefined): Glow {
+  if (state === "learning") return "learning";
+  if (state === "known" || state === "mastered" || state === "known_assumed") return "known";
+  return "seen"; // never met, or only seen on a page
+}
+
 interface Match {
+  glow: Glow;
   node: Text;
   englishMatch: string;
   lemma: string;
@@ -203,6 +212,7 @@ function findMatches(nodes: Text[], byLemma: Map<string, Candidate>): Match[] {
         sentenceKey: `${nodeStart}:${sentenceIndexAt(text, m.index)}`,
         isReview: Boolean(state && state !== "new"),
         score: lemma.s,
+        glow: glowOf(state),
       });
     }
     wordsWalked += wordInNode;
@@ -249,13 +259,20 @@ function injectStyle(): void {
   // A dotted underline was invisible in body text, which made working swaps look like a broken
   // extension. Translucent amber reads on both light and dark pages, and the solid underline
   // survives where the tint washes out. Text keeps the page's own colour.
+  // Glow = word state (D-016), matching the web app: faint when you've only come across it, flickering while
+  // you're learning it, solid and bright once you've said it right. The underline keeps every swap findable
+  // on light pages, where the faint tint alone washes out. Flicker is off for reduced motion.
+  const sel = `[${MARK_ATTR}]`;
   style.textContent =
-    `[${MARK_ATTR}]{` +
-    `background:rgba(255,193,7,.28);` +
-    `border-bottom:2px solid rgba(214,146,0,.95);` +
-    `border-radius:3px;padding:0 .12em;cursor:help;` +
-    `}` +
-    `[${MARK_ATTR}]:hover{background:rgba(255,193,7,.55)}`;
+    `${sel}{border-radius:3px;padding:0 .12em;cursor:pointer;transition:background-color .2s,filter .2s;}` +
+    `${sel}[data-parrot-glow=seen]{background:rgba(255,210,58,.18);border-bottom:1px solid rgba(214,146,0,.55);}` +
+    `${sel}[data-parrot-glow=learning]{background:rgba(255,210,58,.42);border-bottom:2px solid rgba(214,146,0,.9);` +
+    `animation:parrot-flicker 2.4s ease-in-out infinite;}` +
+    `${sel}[data-parrot-glow=known]{background:#ffd23a;color:#1a2028;border-bottom:2px solid #d69200;` +
+    `box-shadow:0 0 10px 1px rgba(255,210,58,.45);}` +
+    `${sel}:hover{filter:brightness(1.08) saturate(1.2);}` +
+    `@keyframes parrot-flicker{0%,100%{opacity:1}45%{opacity:.6}55%{opacity:.9}}` +
+    `@media (prefers-reduced-motion:reduce){${sel}{animation:none!important}}`;
   document.head.appendChild(style);
 }
 
@@ -273,6 +290,7 @@ function applySwap(m: Match, span: string, replacement: string): boolean {
   el.setAttribute(MARK_ATTR, "");
   el.dataset.parrotEn = span;
   el.dataset.parrotLemma = m.lemma;
+  el.dataset.parrotGlow = m.glow;
   el.dataset.parrotSentence = m.sentence;
   el.textContent = replacement;
   m.node.parentNode?.insertBefore(el, tail);
@@ -357,6 +375,10 @@ function wireHoverCard(): void {
   installHoverCard(MARK_ATTR, {
     onHover(t: HoverTarget) {
       queue(newEvent("hover", { lemma: t.lemma, meta: { sentence: t.sentence } }));
+      // A look-up makes the word "learning" (learner model), so it starts to flicker right away.
+      for (const el of document.querySelectorAll<HTMLElement>(`[${MARK_ATTR}]`)) {
+        if (el.dataset.parrotLemma === t.lemma && el.dataset.parrotGlow === "seen") el.dataset.parrotGlow = "learning";
+      }
     },
     onVerdict(t: HoverTarget, verdict) {
       queue(newEvent(verdict, { lemma: t.lemma, meta: { sentence: t.sentence } }));
