@@ -5,6 +5,9 @@
 import type { Candidate, Level, Settings } from "@parrot/shared";
 
 export const MAX_SWAPS = 25;
+/** The manual slider goes higher than the auto amount, for testing and the demo. Above 25 it borrows a higher
+ *  step's spacing rules (words only, no Spanish blocks) so the number is actually reachable. */
+export const SLIDER_MAX = 200;
 /** "Grow automatically": a starting amount plus one per solid word (known + mastered), up to MAX_SWAPS. */
 export const AUTO_BASE = 5;
 
@@ -20,7 +23,7 @@ export function autoSwaps(candidates: Candidate[]): number {
 export function swapBudget(settings: Settings, autoGrow: boolean, candidates: Candidate[]): number {
   if (settings.intensity === "off") return 0;
   const n = autoGrow ? autoSwaps(candidates) : settings.perPageCap;
-  return Math.max(0, Math.min(MAX_SWAPS, n));
+  return Math.max(0, Math.min(autoGrow ? MAX_SWAPS : SLIDER_MAX, n));
 }
 
 export const LEVEL_BAND: Record<Level, number> = { beginner: 1, intermediate: 2, upper_intermediate: 3 };
@@ -92,12 +95,18 @@ export function stepFor(percent: number): StepRules {
 }
 
 /**
- * The rules a page uses. Parrot off = step 0 with no words. "Grow automatically" off = the manual slider with
- * today's rules (step 0). Otherwise the immersion dial picks the step.
+ * The rules a page uses. Parrot off = step 0 with no words. "Grow automatically" off = the manual slider (0–200,
+ * spacing from the lowest step that fits the number, no blocks). Otherwise the immersion dial picks the step.
  */
 export function pageRules(settings: Settings, autoGrow: boolean, immersion: Immersion, candidates: Candidate[]): StepRules {
   if (settings.intensity === "off") return { ...STEPS[0]!, words: 0 };
-  const rules = autoGrow ? stepFor(immersionPercent(immersion)) : STEPS[0]!;
+  if (!autoGrow) {
+    // Slider: the lowest step whose word count covers the number, words only.
+    const words = swapBudget(settings, autoGrow, candidates);
+    const base = STEPS.find((s) => s.words >= words) ?? STEPS[STEPS.length - 1]!;
+    return { ...base, words, sentenceBlocks: 0, paragraphBlocks: 0 };
+  }
+  const rules = stepFor(immersionPercent(immersion));
   if (rules.step === 0) return { ...rules, words: swapBudget(settings, autoGrow, candidates) };
   return rules;
 }

@@ -9,7 +9,7 @@ export type Intensity = z.infer<typeof Intensity>;
 export const Settings = z.object({
   level: Level,
   intensity: Intensity,
-  perPageCap: z.number().int().min(0).max(25),
+  perPageCap: z.number().int().min(0).max(200), // extension slider goes to 200 for testing/demo (was 25)
   allowlist: z.array(z.string()), // origins, e.g. "https://www.bbc.com"
   pausedSites: z.array(z.string()),
   useReadingInLessons: z.boolean(),

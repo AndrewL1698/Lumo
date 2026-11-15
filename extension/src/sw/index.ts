@@ -14,7 +14,7 @@ import {
 } from "@parrot/shared";
 import type { Message, ResponseMap } from "../messages";
 import { neverListReason } from "../neverlist";
-import { IMMERSION_POINTS, IMMERSION_RATES, immersionPercent, pointsForPercent, type Immersion } from "../swapBudget";
+import { IMMERSION_POINTS, IMMERSION_RATES, immersionPercent, pointsForPercent, SLIDER_MAX, type Immersion } from "../swapBudget";
 
 // HACK(demo): the web app runs on localhost for the demo. manifest host_permissions matches.
 const API_BASE = "http://localhost:3000";
@@ -249,7 +249,7 @@ async function setSwapAmount(perPageCap?: number, autoGrow?: boolean): Promise<R
   if (perPageCap === undefined) return { ok: true };
   const fresh = await fetchSettings();
   if (!fresh) return { ok: false, error: "could not reach Luci" };
-  const next: Settings = { ...fresh, perPageCap: Math.max(0, Math.min(25, Math.round(perPageCap))) };
+  const next: Settings = { ...fresh, perPageCap: Math.max(0, Math.min(SLIDER_MAX, Math.round(perPageCap))) };
   try {
     const res = await api("/api/settings", { method: "PUT", body: JSON.stringify(next) });
     if (!res.ok) return { ok: false, error: `server returned ${res.status}` };
