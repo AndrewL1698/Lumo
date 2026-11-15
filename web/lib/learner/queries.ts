@@ -144,12 +144,15 @@ export async function keyLemmas(userId: string, now: Date = new Date()): Promise
   return new Set([...hovers.map((h) => h.lemma), ...due, ...weak]);
 }
 
+const LEVEL_POINTS: Partial<Record<Settings["level"], number>> = { upper_intermediate: 120 };
+
 /**
  * D-019 understanding points, which drive the immersion %: 2 per known/mastered word (needs active proof, §6.1),
  * 1 per distinct "Knew it" lemma that isn't solid yet. Read-only: never changes a word's state. Throws on DB error.
  */
 export async function understanding(userId: string): Promise<Understanding> {
   const db = getDb();
+  const level = (await getSettings(userId)).level;
   const [solidRows, knewRows] = await Promise.all([
     db.from("user_words").select("lemma").eq("user_id", userId).in("state", ["known", "mastered"]),
     db.from("events").select("lemma").eq("user_id", userId).eq("type", "knew_it").not("lemma", "is", null),
@@ -158,7 +161,10 @@ export async function understanding(userId: string): Promise<Understanding> {
   if (knewRows.error) throw knewRows.error;
   const solidSet = new Set(solidRows.data.map((r) => r.lemma as string));
   const knew = new Set(knewRows.data.map((r) => r.lemma as string).filter((l) => !solidSet.has(l)));
-  return { points: 2 * solidSet.size + knew.size, solid: solidSet.size, knewIt: knew.size };
+  // D-022: a placement credit so an Advanced learner doesn't start from zero. Intermediate stays 0 on purpose: the
+  // demo user's ~5% -> ~40% beat is rehearsed on those exact points.
+  const levelPoints = LEVEL_POINTS[level] ?? 0;
+  return { points: 2 * solidSet.size + knew.size + levelPoints, solid: solidSet.size, knewIt: knew.size, levelPoints };
 }
 
 /** Everything Andrew's /api/tutor/context needs from the DB, in one call. Throws on DB error. */

@@ -23,6 +23,8 @@ export const Understanding = z.object({
   points: z.number().int().min(0),
   solid: z.number().int().min(0),
   knewIt: z.number().int().min(0),
+  /** D-022: placement credit by level (Advanced starts further in). Already included in `points`. */
+  levelPoints: z.number().int().min(0).optional(),
 });
 export type Understanding = z.infer<typeof Understanding>;
 
