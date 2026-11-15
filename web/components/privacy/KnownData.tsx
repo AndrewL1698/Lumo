@@ -57,7 +57,7 @@ function TrashIcon() {
 }
 
 // Shows on hover or keyboard focus of its row; always visible on touch screens (no hover there).
-function DeleteButton({ label, busy, onClick }: { label: string; busy: boolean; onClick: () => void }) {
+export function DeleteButton({ label, busy, onClick }: { label: string; busy: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
@@ -81,7 +81,19 @@ function Heading({ children, count }: { children: ReactNode; count: number }) {
 }
 
 // `onDelete` resolves true when the server accepted the delete; the page then refetches.
-export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (req: DataDeleteRequest) => Promise<boolean> }) {
+// `hideWords` (the Jar page): the jar already shows learning, known and mastered words, each with its own delete
+// button, so only the words it doesn't show (seen, not looked up) appear here.
+export function KnownData({
+  data,
+  onDelete,
+  hideWords = false,
+}: {
+  data: DataResponse;
+  onDelete: (req: DataDeleteRequest) => Promise<boolean>;
+  hideWords?: boolean;
+}) {
+  const groups = hideWords ? WORD_GROUPS.filter((g) => g.title === "Seen") : WORD_GROUPS;
+  const seenCount = data.words.filter((w) => w.state === "new" || w.state === "seen").length;
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -126,9 +138,11 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
       )}
 
       {/* The word list sits in its own night panel so the page's fireflies don't compete with the word glows. */}
+      {(!hideWords || seenCount > 0) && (
       <section className="kd-panel">
         <div className="flex flex-wrap items-end justify-between gap-4">
-          <Heading count={data.words.length}>Words</Heading>
+          <Heading count={hideWords ? seenCount : data.words.length}>{hideWords ? "Seen, not looked up" : "Words"}</Heading>
+          {!hideWords && (
           <ul className="mb-5 flex flex-wrap gap-x-6 gap-y-2 text-muted" aria-label="What the glow means">
             {(["seen", "learning", "known", "mastered"] as const).map((g) => (
               <li key={g} className="flex items-center gap-2">
@@ -137,13 +151,14 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
               </li>
             ))}
           </ul>
+          )}
         </div>
         {data.words.length === 0 ? (
           <p className="text-muted">No words stored yet.</p>
         ) : (
           // Grouped by how well the learner knows them (D-010): the path a word takes, learning → known → mastered.
           <div className="space-y-8">
-            {WORD_GROUPS.map((g) => {
+            {groups.map((g) => {
               const words = data.words.filter((w) => g.states.includes(w.state)).sort((a, b) => a.lemma.localeCompare(b.lemma, "es"));
               if (g.optional && words.length === 0) return null;
               const open = expanded.has(g.title);
@@ -198,6 +213,7 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
           </div>
         )}
       </section>
+      )}
 
       <div className="grid gap-16 lg:grid-cols-[3fr_2fr]">
         <section>

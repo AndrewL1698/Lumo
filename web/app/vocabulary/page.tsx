@@ -1,6 +1,7 @@
 "use client";
-import { VocabResponse } from "@parrot/shared";
+import { DataDeleteResponse, DataResponse, VocabResponse, type DataDeleteRequest } from "@parrot/shared";
 import { useEffect, useState } from "react";
+import { KnownData } from "@/components/privacy/KnownData";
 import { Jar } from "@/components/vocab/Jar";
 import { StreakBadge, VocabLists } from "@/components/vocab/VocabLists";
 import { justLearned, saveKnownSnapshot } from "@/components/vocab/justLearned";
@@ -21,10 +22,34 @@ export default function Page() {
   }, [data]);
   const freshWords = data ? data.known.filter((w) => fresh.has(w.lemma)) : [];
 
+  // Everything Luci stores about you lives under the jar (D-024): the same words, plus articles, activity and delete.
+  const stored = useFetch("/api/data", DataResponse, { refetchOnFocus: true });
+  const [busy, setBusy] = useState(false);
+  const [keepsOpen, setKeepsOpen] = useState(false);
+  useEffect(() => {
+    if (window.location.hash === "#keeps") setKeepsOpen(true); // the old "What Luci knows" link lands here
+  }, []);
+
+  // Only report success after the server confirms, then refetch both lists so the screen matches the database.
+  async function onDelete(req: DataDeleteRequest): Promise<boolean> {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/data", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify(req) });
+      if (!res.ok) return false;
+      DataDeleteResponse.parse(await res.json());
+    } catch {
+      return false;
+    } finally {
+      setBusy(false);
+    }
+    await Promise.all([reload(), stored.reload()]);
+    return true;
+  }
+
   const total = data ? data.counts.learning + data.counts.known + data.counts.mastered : 0;
   return (
     <>
-      <PageHeader kicker="Vocabulary" title="Your jar" subtitle="Every word you catch is a firefly. It only glows steady once you've said it correctly out loud." />
+      <PageHeader kicker="Vocabulary" title="Your jar" subtitle="Every word you catch is a firefly. It only glows steady once you've said it correctly out loud. Point at a word to remove it." />
 
       {loading && (
         <div role="status" aria-label="Loading" className="grid gap-12 md:grid-cols-[26rem_1fr]">
@@ -61,8 +86,28 @@ export default function Page() {
             </p>
           )}
           <Jar data={data} fresh={fresh} />
-          <VocabLists data={data} fresh={fresh} />
+          <VocabLists data={data} fresh={fresh} onDelete={(lemma) => void onDelete({ kind: "word", lemma })} busy={busy} />
         </div>
+      )}
+
+      {data && (
+        <details
+          id="keeps"
+          open={keepsOpen}
+          onToggle={(e) => setKeepsOpen(e.currentTarget.open)}
+          className="mt-16 border-t border-line pt-8"
+        >
+          <summary className="cursor-pointer list-none font-display text-2xl font-extrabold transition-colors duration-150 hover:text-accent [&::-webkit-details-marker]:hidden">
+            What Luci keeps about you
+            <span className="ml-3 font-sans text-base font-normal text-muted">
+              {keepsOpen ? "Hide" : "Articles, activity, and delete everything"}
+            </span>
+          </summary>
+          <div className="mt-8">
+            {stored.error && !stored.data && <ErrorState message={stored.error} onRetry={() => void stored.reload()} />}
+            {stored.data && <KnownData data={stored.data} onDelete={onDelete} hideWords />}
+          </div>
+        </details>
       )}
     </>
   );

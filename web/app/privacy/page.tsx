@@ -1,32 +1,6 @@
-"use client";
-import { DataDeleteResponse, DataResponse, type DataDeleteRequest } from "@parrot/shared";
-import { KnownData } from "@/components/privacy/KnownData";
-import { ErrorState, LoadingState, PageHeader } from "@/components/ui/PageHeader";
-import { useFetch } from "@/components/useFetch";
+import { redirect } from "next/navigation";
 
+// "What Luci knows" now lives under the jar (D-024). Old links and bookmarks land on its section.
 export default function Page() {
-  const { data, error, loading, reload } = useFetch("/api/data", DataResponse, { refetchOnFocus: true });
-
-  // Only report success after the server confirms, then refetch so the screen matches the database.
-  async function onDelete(req: DataDeleteRequest): Promise<boolean> {
-    try {
-      const res = await fetch("/api/data", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify(req) });
-      if (!res.ok) return false;
-      DataDeleteResponse.parse(await res.json());
-    } catch {
-      return false;
-    }
-    // The route is real now: refetch so the list shows exactly what the database holds.
-    await reload();
-    return true;
-  }
-
-  return (
-    <>
-      <PageHeader title="What Lumo knows" subtitle="Everything stored about you. Delete any item, or all of it." />
-      {loading && <LoadingState shape="chips" />}
-      {error && <ErrorState message={error} onRetry={() => void reload()} />}
-      {data && <KnownData data={data} onDelete={onDelete} />}
-    </>
-  );
+  redirect("/vocabulary#keeps");
 }
