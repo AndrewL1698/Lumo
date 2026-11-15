@@ -1,6 +1,7 @@
-// Parrot popup: worker health, enable current site (permission prompt), pairing stub.
+// Luci popup: worker health, try / enable on this site, pairing, immersion. Look: popup.html.
 
 import { send } from "../messages";
+import "./firefly"; // visual only: the wandering firefly
 import { READING_SITES } from "@parrot/shared";
 import { DEMO_RATE, IMMERSION_JUMPS, IMMERSION_RATES, budgetFor } from "../swapBudget";
 
@@ -27,6 +28,22 @@ const immRates = el("imm-rates");
 const immJumps = el("imm-jumps");
 const immReset = el<HTMLButtonElement>("imm-reset");
 const immNote = el("imm-note");
+const pairingSection = el("pairing");
+
+// ---------------------------------------------------------------- display only (Luci look)
+
+/** Paired chip; the pairing card only shows while unpaired (or when the worker can't say). */
+function showPaired(paired: boolean | null): void {
+  pairedEl.textContent = paired === null ? "Status unknown" : paired ? "✓ Paired" : "Not paired yet";
+  pairedEl.className = `chip ${paired === null ? "" : paired ? "ok" : "warn"}`;
+  pairingSection.hidden = paired === true;
+}
+
+/** The "always on" button's label once the site is on. It stays clickable, exactly as before. */
+function showSiteOn(): void {
+  enableBtn.textContent = "Always on here ✓";
+  enableBtn.classList.add("is-on");
+}
 
 let origin: string | null = null;
 /** Needed to inject into the right tab for "Try on this page". */
@@ -36,7 +53,8 @@ let activeUrl: string | null = null;
 
 async function init(): Promise<void> {
   const ping = await send({ type: "PING" }).catch(() => null);
-  workerEl.textContent = ping?.ok ? "worker: ok" : "worker: no reply";
+  workerEl.hidden = Boolean(ping?.ok);
+  workerEl.textContent = "Luci isn't responding";
 
   const status = await send({ type: "GET_STATUS" }).catch(() => null);
 
@@ -54,13 +72,14 @@ async function init(): Promise<void> {
     activeUrl = null;
   }
 
-  pairedEl.textContent = `paired: ${status ? (status.paired ? "yes" : "no") : "?"}`;
-  originEl.textContent = origin ?? "(not a web page)";
+  showPaired(status ? status.paired : null);
+  originEl.textContent = origin ? new URL(origin).host : "Not a web page";
   enableBtn.disabled = origin === null;
   tryBtn.disabled = origin === null || activeTabId === null;
   const enabled = Boolean(origin && status?.enabledOrigins.includes(origin));
   if (enabled) {
-    enableResult.textContent = "already enabled";
+    enableResult.textContent = "Luci is on here on every visit.";
+    showSiteOn();
     tryBtn.hidden = true; // nothing to try: it already runs here on every visit
   }
 
@@ -106,7 +125,7 @@ turnOnBtn.addEventListener("click", () => turnOnHere(turnOnBtn, "On. Reload the 
 tryBtn.addEventListener("click", () => {
   if (!origin || activeTabId === null) return;
   tryBtn.disabled = true;
-  enableResult.textContent = "starting…";
+  enableResult.textContent = "Starting…";
   send({ type: "TRY_HERE", tabId: activeTabId, origin, url: activeUrl ?? origin })
     .then((res) => {
       if (res.ok) {
@@ -116,11 +135,11 @@ tryBtn.addEventListener("click", () => {
       enableResult.textContent =
         res.reason === "never-list"
           ? "Luci never runs on email, banking, school or login pages."
-          : (res.reason ?? "could not start Luci here");
+          : (res.reason ?? "Couldn't start Luci here.");
       tryBtn.disabled = false;
     })
     .catch((err: unknown) => {
-      enableResult.textContent = `error: ${err instanceof Error ? err.message : String(err)}`;
+      enableResult.textContent = `Couldn't start Luci: ${err instanceof Error ? err.message : String(err)}`;
       tryBtn.disabled = false;
     });
 });
@@ -133,34 +152,35 @@ enableBtn.addEventListener("click", () => {
     .request({ origins: [target + "/*"] })
     .then(async (granted) => {
       if (!granted) {
-        enableResult.textContent = "permission denied";
+        enableResult.textContent = "Chrome didn't allow it, so Luci stays off here.";
         return;
       }
       const res = await send({ type: "ENABLE_SITE", origin: target });
       enableResult.textContent = res.ok
-        ? "enabled. Reload the page to start."
-        : `failed: ${res.error ?? "unknown error"}`;
+        ? "Turned on. Reload the page to see Spanish words."
+        : `Couldn't turn on: ${res.error ?? "unknown error"}`;
+      if (res.ok) showSiteOn();
     })
     .catch((err: unknown) => {
-      enableResult.textContent = `error: ${err instanceof Error ? err.message : String(err)}`;
+      enableResult.textContent = `Couldn't turn on: ${err instanceof Error ? err.message : String(err)}`;
     });
 });
 
 pairBtn.addEventListener("click", () => {
   const code = codeInput.value.trim();
   if (!/^\d{6}$/.test(code)) {
-    pairResult.textContent = "enter the 6-digit code from the web app";
+    pairResult.textContent = "Enter the 6-digit code from Luci's setup page.";
     return;
   }
   pairBtn.disabled = true;
-  pairResult.textContent = "pairing…";
+  pairResult.textContent = "Pairing…";
   send({ type: "PAIR", code })
     .then((res) => {
-      pairResult.textContent = res.ok ? "paired" : (res.error ?? "pairing failed");
-      if (res.ok) pairedEl.textContent = "paired: yes";
+      pairResult.textContent = res.ok ? "Paired" : (res.error ?? "Pairing failed");
+      if (res.ok) showPaired(true);
     })
     .catch((err: unknown) => {
-      pairResult.textContent = err instanceof Error ? err.message : "pairing failed";
+      pairResult.textContent = err instanceof Error ? err.message : "Pairing failed";
     })
     .finally(() => {
       pairBtn.disabled = false;
@@ -204,7 +224,10 @@ function renderImmersion(): void {
   immLine.textContent =
     `Immersion ${percent}% · about ${budgetFor(percent)} new Spanish words, ` +
     `plus the ${solid} word${solid === 1 ? "" : "s"} you know, always in Spanish.`;
-  for (const { rate, b } of rateButtons) b.classList.toggle("active", rate === immersion.rate);
+  for (const { rate, b } of rateButtons) {
+    b.classList.toggle("active", rate === immersion.rate);
+    b.setAttribute("aria-pressed", String(rate === immersion.rate)); // screen readers hear which speed is on
+  }
   immNote.textContent = "Grows as you prove words: Knew it, and words you use correctly with Luci.";
 }
 
