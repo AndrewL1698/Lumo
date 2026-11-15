@@ -343,7 +343,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
                 </span>
               ))}
             </span>
-            <span className="ml-auto text-sm text-muted underline decoration-line underline-offset-4">
+            <span className="ml-auto text-sm text-muted underline decoration-line underline-offset-4 transition-colors duration-150 group-hover/lesson:text-ink">
               <span className="group-open/lesson:hidden">Show plan</span>
               <span className="hidden group-open/lesson:inline">Hide plan</span>
             </span>

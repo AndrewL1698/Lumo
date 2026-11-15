@@ -18,10 +18,18 @@ const EVENT_LABEL: Record<string, string> = {
   spoken_incorrect: "Used a word incorrectly in speech",
 };
 
-// Word state as a glow: dim (seen), medium (learning), bright (known / mastered). Same lights as the jar.
-type Glow = "seen" | "learning" | "known";
-const GLOW: Record<string, Glow> = { new: "seen", seen: "seen", learning: "learning", known: "known", known_assumed: "known", mastered: "known" };
-const GLOW_NAME: Record<Glow, string> = { seen: "Seen", learning: "Learning", known: "Known" };
+// Word state as a glow, four levels (styles: .kd-dot in globals.css). Each level differs in dot size and halo as
+// well as brightness, so it reads without colour: seen 6px no halo, learning 8px, known 10px, mastered 13px.
+type Glow = "seen" | "learning" | "known" | "mastered";
+const GLOW: Record<string, Glow> = { new: "seen", seen: "seen", learning: "learning", known: "known", known_assumed: "known", mastered: "mastered" };
+const GLOW_NAME: Record<Glow, string> = { seen: "Seen", learning: "Learning", known: "Known", mastered: "Mastered" };
+/** Each group shows this many words, then a "Show all" toggle. Seen is the least interesting, so it shows fewer. */
+const GROUP_LIMIT = 24;
+const SEEN_LIMIT = 20;
+/** Activity, once opened, shows the newest this many entries, then "Show more". */
+const ACTIVITY_LIMIT = 20;
+/** The mastered pulse is the only animation; above this many mastered words it stays static. */
+const PULSE_MAX = 30;
 
 // Words page sections (D-010). "Seen" only appears when the extension has shown words not yet looked up.
 const WORD_GROUPS: { title: string; blurb: string; states: string[]; optional?: boolean }[] = [
@@ -31,10 +39,10 @@ const WORD_GROUPS: { title: string; blurb: string; states: string[]; optional?: 
   { title: "Seen", blurb: "spotted on a page, not looked up yet", states: ["new", "seen"], optional: true },
 ];
 
-function GlowDot({ glow, size = "h-6 w-6" }: { glow: Glow; size?: string }) {
+function GlowDot({ glow, pulse = false }: { glow: Glow; pulse?: boolean }) {
   return (
-    <span className={`jar-legend grid shrink-0 place-items-center rounded-full bg-jar ${size}`} data-level={glow} aria-hidden="true">
-      <span className="jar-light" />
+    <span className="kd-dot-box" aria-hidden="true">
+      <span className={`kd-dot${pulse ? " kd-pulse" : ""}`} data-glow={glow} />
     </span>
   );
 }
@@ -77,6 +85,16 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const [activityOpen, setActivityOpen] = useState(false); // closed by default: it can get long
+  const [activityAll, setActivityAll] = useState(false);
+  const toggleGroup = (title: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(title)) next.delete(title);
+      else next.add(title);
+      return next;
+    });
 
   async function run(req: DataDeleteRequest) {
     setBusy(true);
@@ -107,13 +125,14 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
         </p>
       )}
 
-      <section>
+      {/* The word list sits in its own night panel so the page's fireflies don't compete with the word glows. */}
+      <section className="kd-panel">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <Heading count={data.words.length}>Words</Heading>
           <ul className="mb-5 flex flex-wrap gap-x-6 gap-y-2 text-muted" aria-label="What the glow means">
-            {(["seen", "learning", "known"] as const).map((g) => (
+            {(["seen", "learning", "known", "mastered"] as const).map((g) => (
               <li key={g} className="flex items-center gap-2">
-                <GlowDot glow={g} size="h-5 w-5" />
+                <GlowDot glow={g} />
                 {GLOW_NAME[g]}
               </li>
             ))}
@@ -127,6 +146,11 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
             {WORD_GROUPS.map((g) => {
               const words = data.words.filter((w) => g.states.includes(w.state)).sort((a, b) => a.lemma.localeCompare(b.lemma, "es"));
               if (g.optional && words.length === 0) return null;
+              const open = expanded.has(g.title);
+              const limit = g.title === "Seen" ? SEEN_LIMIT : GROUP_LIMIT;
+              const shown = open ? words : words.slice(0, limit);
+              const pulse = g.title === "Mastered" && words.length <= PULSE_MAX;
+              const listId = `words-${g.title.toLowerCase()}`;
               return (
                 <div key={g.title}>
                   <h3 className="mb-3 flex items-baseline gap-2 font-display text-lg font-bold">
@@ -136,23 +160,37 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
                   {words.length === 0 ? (
                     <p className="text-muted">None yet.</p>
                   ) : (
-                    <ul className="flex flex-wrap gap-x-2 gap-y-2">
-                      {words.map((w) => {
-                        const glow = GLOW[w.state] ?? "seen";
-                        return (
-                          <li
-                            key={w.lemma}
-                            className="group flex items-center gap-2 rounded-full py-1 pl-1.5 pr-1 transition-colors duration-150 hover:bg-line/60 focus-within:bg-line/60"
-                            title={w.lastHoverAt ? `Last looked up ${fmt(w.lastHoverAt)}` : undefined}
-                          >
-                            <GlowDot glow={glow} />
-                            <span className="text-lg font-bold">{w.lemma}</span>
-                            <span className="sr-only">, {g.title}</span>
-                            <DeleteButton label={w.lemma} busy={busy} onClick={() => void run({ kind: "word", lemma: w.lemma })} />
-                          </li>
-                        );
-                      })}
-                    </ul>
+                    <>
+                      {/* Even columns at any count or width; a long word is cut with "…" (full word on hover). */}
+                      <ul id={listId} className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-x-2 gap-y-1">
+                        {shown.map((w) => {
+                          const glow = GLOW[w.state] ?? "seen";
+                          return (
+                            <li
+                              key={w.lemma}
+                              className="group flex min-w-0 items-center gap-2 rounded-full py-1 pl-1.5 pr-1 transition-colors duration-150 hover:bg-line/60 focus-within:bg-line/60"
+                              title={w.lastHoverAt ? `${w.lemma}. Last looked up ${fmt(w.lastHoverAt)}` : w.lemma}
+                            >
+                              <GlowDot glow={glow} pulse={pulse && glow === "mastered"} />
+                              <span className="min-w-0 flex-1 truncate text-lg font-bold">{w.lemma}</span>
+                              <span className="sr-only">, {g.title}</span>
+                              <DeleteButton label={w.lemma} busy={busy} onClick={() => void run({ kind: "word", lemma: w.lemma })} />
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      {words.length > limit && (
+                        <button
+                          type="button"
+                          aria-expanded={open}
+                          aria-controls={listId}
+                          onClick={() => toggleGroup(g.title)}
+                          className="mt-3 rounded-sm text-base font-semibold text-accent underline decoration-1 underline-offset-4 hover:text-ink"
+                        >
+                          {open ? "Show fewer" : `Show all (${words.length})`}
+                        </button>
+                      )}
+                    </>
                   )}
                 </div>
               );
@@ -163,13 +201,39 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
 
       <div className="grid gap-16 lg:grid-cols-[3fr_2fr]">
         <section>
-          <Heading count={data.events.length}>Activity</Heading>
-          {data.events.length === 0 ? (
+          {/* A dropdown: the activity log can run to hundreds of entries. */}
+          <h2 className="mb-5 font-display text-2xl font-extrabold">
+            <button
+              type="button"
+              aria-expanded={activityOpen}
+              aria-controls="activity-list"
+              onClick={() => setActivityOpen((o) => !o)}
+              className="flex items-center gap-3 rounded-sm text-left transition-colors duration-150 hover:text-accent"
+            >
+              <svg
+                viewBox="0 0 20 20"
+                width="20"
+                height="20"
+                aria-hidden="true"
+                className={`shrink-0 text-muted transition-transform duration-200 ${activityOpen ? "rotate-90" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M7.5 4.5 13 10l-5.5 5.5" />
+              </svg>
+              Activity <span className="font-sans text-lg font-normal text-muted">{data.events.length}</span>
+            </button>
+          </h2>
+          {!activityOpen ? null : data.events.length === 0 ? (
             <p className="text-muted">No activity stored yet.</p>
           ) : (
-            // A timeline: one line, one small light per moment.
-            <ol className="relative ml-1.5 border-l-2 border-line">
-              {data.events.map((e) => (
+            <>
+            {/* A timeline: one line, one small light per moment, newest first. */}
+            <ol id="activity-list" className="relative ml-1.5 border-l-2 border-line">
+              {(activityAll ? data.events : data.events.slice(0, ACTIVITY_LIMIT)).map((e) => (
                 <li key={e.id} className="group relative flex items-center justify-between gap-3 py-2 pl-6">
                   <span className="absolute -left-[5px] top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-accent" aria-hidden="true" />
                   <span className="min-w-0">
@@ -181,6 +245,18 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
                 </li>
               ))}
             </ol>
+            {data.events.length > ACTIVITY_LIMIT && (
+              <button
+                type="button"
+                aria-expanded={activityAll}
+                aria-controls="activity-list"
+                onClick={() => setActivityAll((a) => !a)}
+                className="ml-8 mt-3 rounded-sm text-base font-semibold text-accent underline decoration-1 underline-offset-4 hover:text-ink"
+              >
+                {activityAll ? "Show fewer" : `Show more (${data.events.length - ACTIVITY_LIMIT})`}
+              </button>
+            )}
+            </>
           )}
         </section>
 

@@ -26,7 +26,9 @@ export function SettingsForm({ initial, onSave }: { initial: Settings; onSave: (
         setSaving(false);
       }}
     >
-      <LevelPicker value={s.level} onChange={(level) => set({ level })} />
+      <div id="level" className="scroll-mt-24">
+        <LevelPicker value={s.level} onChange={(level) => set({ level })} />
+      </div>
 
       <fieldset>
         <legend className="mb-3 text-xl font-bold text-ink">How many Spanish words on pages?</legend>
@@ -65,7 +67,9 @@ export function SettingsForm({ initial, onSave }: { initial: Settings; onSave: (
         <p className="text-sm text-muted">Luci never swaps more than this many words on one page. 0 means none.</p>
       </div>
 
-      <ReadingToggle checked={s.useReadingInLessons} onChange={(useReadingInLessons) => set({ useReadingInLessons })} />
+      <div id="reading" className="scroll-mt-24">
+        <ReadingToggle checked={s.useReadingInLessons} onChange={(useReadingInLessons) => set({ useReadingInLessons })} />
+      </div>
 
       <section>
         <h2 className="mb-2 text-xl font-bold text-ink">Paused sites</h2>
