@@ -4,6 +4,8 @@
 // Hover timestamps are relative to now (getTutorContextData uses a 24h window): reseed right before judging.
 //   cd scripts && npm run seed-demo            (needs web/.env.local + seeded `words`)
 //   cd scripts && npm run seed-demo -- --dry   (print the plan, no DB writes)
+//   cd scripts && npm run seed-demo -- --clean (same wipe + settings reset, but no demo state: empty jar for a
+//                                               live onboarding run; reset between judge groups)
 import "../build-wordlist/lib.ts"; // loads web/.env.local
 import { createHash } from "node:crypto";
 import { Recap, settingsFixture } from "@parrot/shared";
@@ -26,6 +28,24 @@ async function rest(path: string, init: RequestInit = {}) {
   if (!res.ok) throw new Error(`${init.method ?? "GET"} ${path}: ${res.status} ${await res.text()}`);
   const text = await res.text();
   return text ? JSON.parse(text) : null;
+}
+
+// --clean: the same full wipe and settings reset as below, but nothing seeded (new-user demo).
+if (process.argv.includes("--clean")) {
+  if (dry) {
+    console.log("seed-demo --clean: would wipe events, articles, tutor_sessions, user_words and reset settings");
+    process.exit(0);
+  }
+  for (const table of ["events", "articles", "tutor_sessions", "user_words"]) {
+    await rest(`${table}?user_id=eq.${userId}`, { method: "DELETE" });
+  }
+  await rest("settings?on_conflict=user_id", {
+    method: "POST",
+    headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({ user_id: userId, data: settingsFixture }),
+  });
+  console.log("seed-demo --clean: wiped the demo user's words, events, articles and tutor sessions; settings reset");
+  process.exit(0);
 }
 
 // ---- Demo content (agreed with Naren and Andrew) ----

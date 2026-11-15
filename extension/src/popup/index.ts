@@ -29,6 +29,7 @@ const immJumps = el("imm-jumps");
 const immReset = el<HTMLButtonElement>("imm-reset");
 const immNote = el("imm-note");
 const pairingSection = el("pairing");
+const unpairBtn = el<HTMLButtonElement>("unpair");
 
 // ---------------------------------------------------------------- display only (Luci look)
 
@@ -37,6 +38,7 @@ function showPaired(paired: boolean | null): void {
   pairedEl.textContent = paired === null ? "Status unknown" : paired ? "✓ Paired" : "Not paired yet";
   pairedEl.className = `chip ${paired === null ? "" : paired ? "ok" : "warn"}`;
   pairingSection.hidden = paired === true;
+  unpairBtn.hidden = paired !== true;
 }
 
 /** The "always on" button's label once the site is on. It stays clickable, exactly as before. */
@@ -185,6 +187,17 @@ pairBtn.addEventListener("click", () => {
     .finally(() => {
       pairBtn.disabled = false;
     });
+});
+
+// HACK(demo): back to "Not paired yet" so the pairing step can be shown again.
+unpairBtn.addEventListener("click", () => {
+  send({ type: "UNPAIR" })
+    .then(() => {
+      showPaired(false);
+      codeInput.value = "";
+      pairResult.textContent = "";
+    })
+    .catch(() => undefined);
 });
 
 // ---------------------------------------------------------------- immersion (D-019: one number)
