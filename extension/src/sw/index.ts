@@ -18,7 +18,17 @@ import { neverListReason } from "../neverlist";
 import { DEFAULT_DIAL, DEMO_RATE, IMMERSION_RATES, dialPercent, dialRaw, type Dial } from "../swapBudget";
 
 // HACK(demo): the web app runs on localhost for the demo. manifest host_permissions matches.
-const API_BASE = "http://localhost:3000";
+/**
+ * Where the server lives. The deployed site first, the local dev server second, so the demo still
+ * runs if the venue wifi dies — and so teammates do not each need a server and a set of API keys.
+ *
+ * `pickBase()` does not just take the first host that answers: a parked or misconfigured domain
+ * happily returns 200 with an HTML page, and locking onto that would be worse than being offline.
+ * A base only wins if it answers /api/candidates as our API does.
+ */
+const API_BASES = ["https://lumo.casa", "http://localhost:3000"] as const;
+/** The base that proved itself this session. Cleared on a failure so the other gets a turn. */
+let apiBase: string | null = null;
 
 /** Sent until pairing succeeds, so the server-side check can be switched on at any time. */
 const FALLBACK_TOKEN = "demo-extension-token";
@@ -106,17 +116,57 @@ function normalizeOrigin(raw: string): string | null {
   }
 }
 
+/**
+ * Is this host actually our API? A reachable host is not enough: Porkbun's parking page for
+ * lumo.casa answers 200 with HTML for any path. We ask for /api/candidates and accept the base
+ * only if it replies the way our server does — JSON, or a 401 (ours, just unpaired).
+ */
+async function isOurApi(base: string, token: string): Promise<boolean> {
+  try {
+    const res = await fetch(base + "/api/candidates", {
+      headers: { authorization: `Bearer ${token}` },
+    });
+    if (res.status === 401) return true; // our auth check answered
+    return (res.headers.get("content-type") ?? "").includes("application/json");
+  } catch {
+    return false; // DNS failure, offline, server down
+  }
+}
+
+/** The first base that proves itself, remembered for the session. */
+async function pickBase(token: string): Promise<string> {
+  if (apiBase) return apiBase;
+  for (const base of API_BASES) {
+    if (await isOurApi(base, token)) {
+      apiBase = base;
+      console.log(`[parrot] using ${base}`);
+      return base;
+    }
+    console.warn(`[parrot] ${base} is not answering as Lumo's server, trying the next one`);
+  }
+  // Nothing answered. Use the last one so callers get a real error, and re-probe next time.
+  return API_BASES[API_BASES.length - 1];
+}
+
 /** The one place a network call happens. Always carries a bearer token. */
 async function api(path: string, init?: RequestInit): Promise<Response> {
   const { pairingToken } = await readState();
-  return fetch(API_BASE + path, {
-    ...init,
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${pairingToken ?? FALLBACK_TOKEN}`,
-      ...init?.headers,
-    },
-  });
+  const token = pairingToken ?? FALLBACK_TOKEN;
+  const base = await pickBase(token);
+  try {
+    return await fetch(base + path, {
+      ...init,
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${token}`,
+        ...init?.headers,
+      },
+    });
+  } catch (err) {
+    // That host just went away mid-session (wifi dropped, dev server killed): re-probe next call.
+    apiBase = null;
+    throw err;
+  }
 }
 
 async function pair(code: string): Promise<ResponseMap["PAIR"]> {
