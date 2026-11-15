@@ -1,7 +1,7 @@
 import { TranslateRequest, TranslateResponse, type TranslateItem } from "@parrot/shared";
 import { translateBatch, type TranslateOutput } from "@/lib/claude";
 import { checkExtensionToken } from "@/lib/auth";
-import { getDb } from "@/lib/db";
+import { errText, getDb } from "@/lib/db";
 import { json, parseBody, preflight, withCors } from "@/lib/http";
 import { NextResponse } from "next/server";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -28,7 +28,7 @@ function saveCache(): void {
   try {
     writeFileSync(CACHE_FILE, JSON.stringify(Object.fromEntries(cache)));
   } catch (err) {
-    console.warn("[api/translate] could not save cache", err);
+    console.warn("[api/translate] could not save cache:", errText(err));
   }
 }
 const keyOf = (it: { lemma: string; englishMatch: string; sentence: string }) =>
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
       saveCache();
     } catch (err) {
       // Degrade: no swaps for the uncached items (not cached, so a reload retries).
-      console.error("[api/translate] failed", err);
+      console.error("[api/translate] failed:", errText(err));
     }
   }
   console.log(`[api/translate] ${items.length} items, ${items.length - todo.length} cached`);

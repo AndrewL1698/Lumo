@@ -45,7 +45,7 @@ npm run seed-demo             # wipe + reseed user_words for DEMO_USER_ID (needs
 - **One past tutor session** (yesterday) whose recap has a gender-agreement error (*la problema → el problema*, 3×). This feeds the tutor's `topErrors` and the `onWeakList` flag.
 - **Settings** reset to `settingsFixture`.
 
-`articleKey` is lowercase SHA-256 hex (UTF-8) of `` `${location.hostname}\n${document.title}` ``, the same recipe as the extension (confirmed with Naren: NPR = `59809d94…8271`). The script is idempotent: it wipes the user's `user_words` and every seed-owned row by its fixed id before writing, so it's safe after "Delete everything". Hover times are relative to now, and the tutor only looks back 24h, so **rerun it right before judging**.
+`articleKey` is lowercase SHA-256 hex (UTF-8) of `` `${location.hostname}\n${document.title}` ``, the same recipe as the extension (confirmed with Naren: NPR = `59809d94…8271`). The script is idempotent and a **full demo reset**: it wipes all of the demo user's words, events, articles and tutor sessions (everyone's test clicks too), then writes the demo state. It's safe to run any time, including after "Delete everything". Hover times are relative to now, and the tutor only looks back 24h, so **rerun it right before judging**.
 HACK: `ts-fsrs` is installed here, not in `/web`, until the scaffold lands. Both commands set `NODE_PATH` so `web/lib/learner` can resolve it.
 
 ### Attribution

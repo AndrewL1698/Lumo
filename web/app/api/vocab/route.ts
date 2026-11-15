@@ -1,6 +1,6 @@
 import { VocabResponse, type VocabItem } from "@parrot/shared";
 import { DEMO_USER_ID } from "@/lib/config";
-import { getDb } from "@/lib/db";
+import { errText, getDb } from "@/lib/db";
 import { json } from "@/lib/http";
 import { rowToUserWord, USER_WORD_COLUMNS } from "@/lib/learner/rows";
 
@@ -60,7 +60,7 @@ export async function GET() {
     streakDays = streak(events.data.map((e) => e.ts as string), now);
   } catch (err) {
     // Degrade to empty lists rather than an error page.
-    console.error("[api/vocab] failed", err);
+    console.error("[api/vocab] failed:", errText(err));
   }
 
   return json(

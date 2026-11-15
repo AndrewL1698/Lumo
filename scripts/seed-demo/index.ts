@@ -1,6 +1,6 @@
 // Demo seed (architecture §7, brief 3.6): backdated FSRS history so "due" and "mastered" exist during the demo,
 // plus the demo article, its hovers (with sentences), one past tutor session with a recap, and settings.
-// Idempotent: wipes DEMO_USER_ID's user_words, and every seed-owned row by its fixed id, before writing.
+// Idempotent: wipes ALL of DEMO_USER_ID's words, events, articles and tutor sessions before writing (full demo reset).
 // Hover timestamps are relative to now (getTutorContextData uses a 24h window): reseed right before judging.
 //   cd scripts && npm run seed-demo            (needs web/.env.local + seeded `words`)
 //   cd scripts && npm run seed-demo -- --dry   (print the plan, no DB writes)
@@ -162,7 +162,11 @@ if (dry) process.exit(0);
 
 // ---- Writes ----
 
-await rest(`user_words?user_id=eq.${userId}`, { method: "DELETE" });
+// Full reset of the demo user: everyone's test hovers, clicks, articles and tutor sessions go too, so leftovers
+// never show up in Luci's lesson plan on stage. Settings are rewritten below. (Utterances cascade with sessions.)
+for (const table of ["events", "articles", "tutor_sessions", "user_words"]) {
+  await rest(`${table}?user_id=eq.${userId}`, { method: "DELETE" });
+}
 await rest("user_words", {
   method: "POST",
   headers: { Prefer: "return=minimal" },
@@ -218,14 +222,10 @@ const events = [
     meta: { sentence: h.sentence },
   })),
 ];
-await rest(`events?id=in.(${Array.from({ length: 20 }, (_, k) => [seedId(100 + k), seedId(200 + k)]).flat().join(",")})`, {
-  method: "DELETE",
-});
 await rest("events", { method: "POST", headers: { Prefer: "return=minimal" }, body: JSON.stringify(events) });
 console.log(`seed-demo: wrote ${articles.length} articles, ${events.length} events`);
 
-// Past session: delete by fixed id (utterances cascade), then insert.
-await rest(`tutor_sessions?id=eq.${SESSION_ID}`, { method: "DELETE" });
+// Past session (all of the user's sessions were cleared above).
 await rest("tutor_sessions", {
   method: "POST",
   headers: { Prefer: "return=minimal" },
