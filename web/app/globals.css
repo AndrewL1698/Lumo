@@ -73,7 +73,8 @@ a {
 
 /* Night theme: the tutor page (".night-page") turns the whole page, nav and footer included, to deep navy
    with warm glow accents. Contrast on #0f1a2e: ink 15:1, muted 8:1, go/stop/accent all above 7:1. */
-body:has(.night-page) {
+body:has(.night-page),
+.night-scope {
   --color-bg: #0f1a2e;
   --color-panel: #142139;
   --color-ink: #eef1f6;
@@ -88,10 +89,12 @@ body:has(.night-page) {
   color-scheme: dark;
 }
 /* the tutor's words to light up glow softly at night */
-body:has(.night-page) .glow-learning {
+body:has(.night-page) .glow-learning,
+.night-scope .glow-learning {
   box-shadow: 0 0 14px 2px rgb(255 210 58 / 0.18);
 }
-body:has(.night-page) .glow-known {
+body:has(.night-page) .glow-known,
+.night-scope .glow-known {
   box-shadow: 0 0 18px 4px rgb(255 210 58 / 0.4);
 }
 /* Luci's dark body gets a faint rim so it reads against the night */
@@ -433,6 +436,41 @@ html.firefly-cursor
 @media (prefers-reduced-motion: reduce) {
   .jar-fly,
   .jar-fly > .jar-light {
+    animation: none !important;
+  }
+}
+
+/* Home page: a few fireflies drifting behind the hero (components/home/DriftingFireflies.tsx). */
+.home-fly {
+  background: #f5b800;
+  box-shadow:
+    0 0 6px 2px rgb(255 210 58 / 0.9),
+    0 0 22px 10px rgb(245 184 0 / 0.35);
+  animation-timing-function: ease-in-out, ease-in-out;
+  animation-iteration-count: infinite, infinite;
+  animation-direction: alternate, normal;
+}
+@keyframes home-drift-0 {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(60px, -40px); }
+  100% { transform: translate(-30px, 30px); }
+}
+@keyframes home-drift-1 {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(-50px, -30px); }
+  100% { transform: translate(40px, -60px); }
+}
+@keyframes home-drift-2 {
+  0% { transform: translate(0, 0); }
+  50% { transform: translate(35px, 45px); }
+  100% { transform: translate(-45px, -20px); }
+}
+@keyframes home-pulse {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 0.4; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-fly {
     animation: none !important;
   }
 }
