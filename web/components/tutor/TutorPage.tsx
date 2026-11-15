@@ -27,6 +27,8 @@ export function TutorPage({ session }: { session: TutorSession }) {
 
   // Browsers only allow mic access and audio playback after a click, so the session starts from a button.
   const [begun, setBegun] = useState(false);
+  // Tutor lines whose English the learner chose to reveal before answering.
+  const [shownEnglish, setShownEnglish] = useState<Set<string>>(new Set());
   // Between "End session" and the recap arriving: a recap-shaped placeholder. `notice` is remembered at the
   // click so a new notice afterwards means the recap failed (the hook reports it as a notice).
   const [ending, setEnding] = useState<{ notice: string | null } | null>(null);
@@ -234,13 +236,20 @@ export function TutorPage({ session }: { session: TutorSession }) {
               <p className="relative text-xl leading-snug text-ink sm:text-2xl" aria-live={isNewest ? "polite" : undefined}>
                 {t.tutorText || <span className="text-muted">…</span>}
               </p>
+              {/* English: shown by itself once you've answered; before that, only if you ask for it. */}
               {t.tutorEnglish &&
-                (turns.slice(i + 1).some((x) => x.rawText) ? (
+                (turns.slice(i + 1).some((x) => x.rawText) || shownEnglish.has(t.id) ? (
                   <p className="mt-3 text-lg italic text-muted" lang="en">
                     {t.tutorEnglish}
                   </p>
                 ) : (
-                  <p className="mt-3 text-sm text-muted">The English shows after you answer.</p>
+                  <button
+                    type="button"
+                    onClick={() => setShownEnglish((s) => new Set(s).add(t.id))}
+                    className="mt-3 rounded-sm text-sm text-muted underline decoration-line underline-offset-4 transition-colors duration-150 hover:text-ink hover:decoration-ink"
+                  >
+                    Show English
+                  </button>
                 ))}
             </div>
           </div>
