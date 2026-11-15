@@ -13,6 +13,9 @@
 //
 // It sits one below the hover card's z-index so the card is never washed by it.
 
+/** The "Lumo is on" edge glow. Off by request; the code stays so it can come back with one change. */
+export const AMBIENCE_ENABLED = false;
+
 const LAYER_ID = "luci-ambience";
 const STYLE_ID = "luci-ambience-style";
 /** One below the hover card (2147483647), so the card always reads clean on top. */
@@ -48,6 +51,11 @@ function injectStyle(): void {
  * Attached to <html>, not <body>, so an SPA replacing the body does not take it with it.
  */
 export function showAmbience(): void {
+  // Turned off: the yellow edge glow was distracting. Set to true to bring it back (e.g. for a stage demo).
+  if (!AMBIENCE_ENABLED) {
+    hideAmbience(); // also clears a layer left by an older build in an open tab
+    return;
+  }
   injectStyle();
   if (document.getElementById(LAYER_ID)) return;
   const el = document.createElement("div");
