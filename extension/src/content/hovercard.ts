@@ -33,20 +33,57 @@ interface Handlers {
 // (--color-panel, --color-ink, --color-muted, --color-line, --color-accent, --color-go).
 // Fonts stay system ones, since the host page can't load ours.
 //
-// The card is dark on purpose, so `muted` and `go` are the web app's LIGHT variants — the previous
-// dark-on-cream values (#5f6772, #1f7a45) would be unreadable on navy.
-const C = {
+// Dark by default (the night panel, so `muted` and `go` are the web app's light-on-navy variants). The popup's
+// theme toggle can switch it to a cream card (LIGHT below).
+const DARK = {
   panel: "rgb(14 24 42 / .92)",
   ink: "#f4efe3",
   muted: "#b8c3d4",
   line: "rgb(214 225 240 / .14)",
   /** Amber hairline for the one accented control (the speaker). */
   sunLine: "rgb(255 210 58 / .28)",
+  /** Amber as a fill (lit speaker, confirmed "Still learning"). */
   accent: "#f5c94a",
+  /** Amber as text / icon / ring. */
+  accentText: "#f5c94a",
   go: "#7fdca3",
   /** Text sitting ON an amber or green fill: both are light, so it has to be the dark navy. */
   onFill: "#0f1a2c",
+  shadow: "0 8px 28px rgba(0,0,0,.45), 0 0 0 4px rgba(245,201,74,.10)",
 };
+/** Light card (the popup's "lumoTheme": light). Contrast on the cream panel: ink 15:1, muted 7:1, amber text 5.4:1. */
+const LIGHT: typeof DARK = {
+  panel: "rgb(255 251 242 / .97)",
+  ink: "#25211a",
+  muted: "#5c5446",
+  line: "rgb(60 48 24 / .16)",
+  sunLine: "rgb(176 125 0 / .38)",
+  accent: "#f5b800",
+  accentText: "#8a5800",
+  go: "#8fd8ab",
+  onFill: "#1a2028",
+  shadow: "0 8px 24px rgba(60,48,24,.22), 0 0 0 4px rgba(245,184,0,.12)",
+};
+/** Current colours. Styling only: follows the popup's theme toggle (chrome.storage.local "lumoTheme"). */
+let C = DARK;
+try {
+  void chrome.storage?.local
+    .get("lumoTheme")
+    .then((got) => {
+      C = got.lumoTheme === "light" ? LIGHT : DARK;
+    })
+    .catch(() => undefined);
+  chrome.storage?.onChanged.addListener((changes, area) => {
+    if (area === "local" && changes.lumoTheme) C = changes.lumoTheme.newValue === "light" ? LIGHT : DARK;
+  });
+} catch {
+  // storage unavailable: stay dark
+}
+
+/** The card's own colours, re-applied on every show so a theme change takes effect on the next card. */
+function paintCard(el: HTMLElement): void {
+  Object.assign(el.style, { background: C.panel, color: C.ink, border: `1px solid ${C.line}`, boxShadow: C.shadow });
+}
 /** How long the "✓" confirmation stays before the card closes. The event is already sent on click. */
 const CONFIRM_MS = 550;
 
@@ -78,7 +115,7 @@ function buildCard(): HTMLElement {
     backdropFilter: "blur(8px)",
     font: "14px/1.4 system-ui, -apple-system, Segoe UI, sans-serif",
     // A firm shadow plus a faint amber halo, so the card reads on light and dark pages alike.
-    boxShadow: "0 8px 28px rgba(0,0,0,.45), 0 0 0 4px rgba(245,201,74,.10)",
+    boxShadow: C.shadow,
     pointerEvents: "auto",
   } satisfies Partial<CSSStyleDeclaration>);
   document.body.appendChild(el);
@@ -87,6 +124,7 @@ function buildCard(): HTMLElement {
 
 function render(el: HTMLElement, t: HoverTarget, handlers: Handlers): void {
   el.textContent = "";
+  paintCard(el);
   el.setAttribute("aria-label", `${t.spanish}: ${t.english}`); // what a screen reader announces for the card
 
   const es = document.createElement("div");
@@ -109,7 +147,7 @@ function render(el: HTMLElement, t: HoverTarget, handlers: Handlers): void {
     border: `1px solid ${C.sunLine}`,
     borderRadius: "999px",
     background: "transparent",
-    color: C.accent,
+    color: C.accentText,
     padding: "0",
     cursor: "pointer",
     transition: "background-color .15s, box-shadow .15s",
@@ -117,7 +155,7 @@ function render(el: HTMLElement, t: HoverTarget, handlers: Handlers): void {
   // Lit, the button fills with amber — so the icon has to flip to the dark navy to stay visible.
   const speakGlow = (on: boolean) => {
     speak.style.background = on ? C.accent : "transparent";
-    speak.style.color = on ? C.onFill : C.accent;
+    speak.style.color = on ? C.onFill : C.accentText;
     speak.style.boxShadow = on ? "0 0 0 3px rgba(245,201,74,.3)" : "none";
   };
   speak.addEventListener("mouseenter", () => speakGlow(true));
@@ -126,7 +164,7 @@ function render(el: HTMLElement, t: HoverTarget, handlers: Handlers): void {
   });
   // Keyboard focus gets a visible amber ring (the hover glow alone is mouse-only).
   speak.addEventListener("focus", () => {
-    if (speak.matches(":focus-visible")) speak.style.outline = `2px solid ${C.accent}`;
+    if (speak.matches(":focus-visible")) speak.style.outline = `2px solid ${C.accentText}`;
   });
   speak.addEventListener("blur", () => (speak.style.outline = ""));
   speak.style.outlineOffset = "2px";
@@ -215,6 +253,7 @@ function render(el: HTMLElement, t: HoverTarget, handlers: Handlers): void {
 /** Card for a whole Spanish sentence or paragraph: just the English it replaced. No audio, no verdicts. */
 function renderBlock(el: HTMLElement, t: HoverTarget): void {
   el.textContent = "";
+  paintCard(el);
   el.setAttribute("aria-label", "English translation");
   ++renderId; // a pending word-card close must not hide this card
   const label = document.createElement("div");

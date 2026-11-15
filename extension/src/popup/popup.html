@@ -18,6 +18,12 @@
         --on-amber: #0f1a2c;
         --go: #7fdca3;
         --stop: #ff958b;
+        --amber-text: #f5c94a; /* amber used as text or a ring (light mode needs a deeper one) */
+        --chip-bg: rgb(14 24 42 / 0.7);
+        --card-bg: rgb(14 24 42 / 0.8);
+        --input-bg: rgb(8 14 26 / 0.6);
+        --placeholder: rgb(184 195 212 / 0.7);
+        --tint: rgb(255 210 58 / 0.12);
         color-scheme: dark;
       }
       * { box-sizing: border-box; }
@@ -48,7 +54,7 @@
       p { margin: 0; overflow-wrap: anywhere; }
       [hidden] { display: none !important; }
       button, input { font: inherit; }
-      :focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+      :focus-visible { outline: 2px solid var(--amber-text); outline-offset: 2px; }
 
       /* ---- background art: decorative, behind everything, never clickable ---- */
       .sky-art { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
@@ -68,7 +74,7 @@
       header h1 { margin: 0; font-size: 17px; font-weight: 800; letter-spacing: -0.01em; }
       #open-app {
         margin-left: auto;
-        color: var(--amber);
+        color: var(--amber-text);
         text-decoration: none;
         font-weight: 600;
         border-radius: 4px;
@@ -82,7 +88,7 @@
         padding: 2px 9px;
         border: 1px solid var(--line);
         border-radius: 999px;
-        background: rgb(14 24 42 / 0.7); /* on the bare sky the red chip text was 4.4:1; on this it's 7:1+ */
+        background: var(--chip-bg); /* on the bare sky the red chip text was 4.4:1; on this it's 7:1+ */
         color: var(--muted);
         font-size: 12px;
       }
@@ -94,7 +100,7 @@
         padding: 12px;
         border: 1px solid var(--line);
         border-radius: 10px;
-        background: rgb(14 24 42 / 0.8); /* the web app's translucent navy panel */
+        background: var(--card-bg); /* the web app's translucent navy panel */
         -webkit-backdrop-filter: blur(6px);
         backdrop-filter: blur(6px);
       }
@@ -182,7 +188,7 @@
         cursor: pointer;
       }
       .seg-group button:first-child { border-left: 0; }
-      .seg-group button:hover { background: rgb(255 210 58 / 0.12); }
+      .seg-group button:hover { background: var(--tint); }
       .seg-group button.active { background: var(--amber); color: var(--on-amber); font-weight: 700; }
       .seg-group button:focus-visible { outline-offset: -2px; }
       #imm-reset {
@@ -217,12 +223,12 @@
         padding: 7px 9px;
         border: 1px solid var(--line);
         border-radius: 6px;
-        background: rgb(8 14 26 / 0.6);
+        background: var(--input-bg);
         color: var(--ink);
         letter-spacing: 0.2em;
         font-variant-numeric: tabular-nums;
       }
-      #code::placeholder { color: rgb(184 195 212 / 0.7); letter-spacing: 0.2em; }
+      #code::placeholder { color: var(--placeholder); letter-spacing: 0.2em; }
       #pair {
         padding: 7px 14px;
         border: 0;
@@ -255,6 +261,72 @@
       @keyframes ff-flap-l { to { transform: rotate(-14deg) scaleY(0.6); } }
       @keyframes ff-flap-r { to { transform: rotate(14deg) scaleY(0.6); } }
       @keyframes ff-pulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.85; } }
+
+      /* ---- theme toggle (theme.ts) ---- */
+      #theme-toggle {
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        margin-left: 4px;
+        padding: 0;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: transparent;
+        color: var(--ink);
+        cursor: pointer;
+      }
+      #theme-toggle:hover { background: var(--tint); }
+      #theme-toggle .moon { display: none; }
+      html[data-theme="light"] #theme-toggle .sun { display: none; }
+      html[data-theme="light"] #theme-toggle .moon { display: block; }
+
+      /* ---- light mode: a dusk meadow (same palette as the web app's light theme). Contrast on the cream sky and
+         the panels: ink 12:1+, muted 5.7:1+, go 5:1+, stop 5.4:1+, amber text 4.6:1+, dark text on amber 9:1 (AA). ---- */
+      html[data-theme="light"] {
+        --bg: #f7f0e1;
+        --panel: #fffbf2;
+        --ink: #25211a;
+        --muted: #5c5446;
+        --line: rgb(60 48 24 / 0.16);
+        --amber: #f5b800;
+        --amber-line: rgb(176 125 0 / 0.38);
+        --on-amber: #1a2028;
+        --go: #1e6b3f;
+        --stop: #a52a20;
+        --amber-text: #8a5800;
+        --chip-bg: rgb(255 251 242 / 0.85);
+        --card-bg: rgb(255 251 242 / 0.82);
+        --input-bg: #ffffff;
+        --placeholder: rgb(92 84 70 / 0.7);
+        --tint: rgb(176 125 0 / 0.1);
+        color-scheme: light;
+        background: #f7f0e1;
+      }
+      html[data-theme="light"] body {
+        background:
+          radial-gradient(120% 40% at 20% 0%, rgb(255 236 200 / 0.7), transparent 60%),
+          radial-gradient(90% 35% at 85% 6%, rgb(252 214 180 / 0.45), transparent 65%),
+          radial-gradient(140% 22% at 50% 102%, rgb(190 205 160 / 0.75), transparent 70%),
+          linear-gradient(180deg, #fbf3e2 0%, #f9eed9 30%, #f6ecd6 55%, #f1e8cf 80%, #e6e2c4 100%);
+      }
+      html[data-theme="light"] .chip.ok { border-color: rgb(30 107 63 / 0.35); }
+      html[data-theme="light"] .chip.warn { border-color: rgb(165 42 32 / 0.35); }
+      html[data-theme="light"] .primary { box-shadow: 0 0 12px rgb(240 165 0 / 0.3); }
+      html[data-theme="light"] .primary.is-on,
+      html[data-theme="light"] .secondary.is-on { border-color: rgb(30 107 63 / 0.4); }
+      html[data-theme="light"] #nudge { background: rgb(245 184 0 / 0.1); }
+      /* amber glows, deeper so they show on cream */
+      html[data-theme="light"] .sky-art .glow {
+        background: #d98e00;
+        box-shadow: 0 0 5px 2px rgb(214 135 0 / 0.55), 0 0 14px 5px rgb(240 160 0 / 0.2);
+      }
+      html[data-theme="light"] .sky-art .grass path { fill: #9bb08a; }
+      html[data-theme="light"] .sky-art .grass path:nth-child(3n) { fill: #8aa07a; }
+      html[data-theme="light"] .sky-art .grass path:nth-child(3n + 1) { fill: #b3c29d; }
+      html[data-theme="light"] #luci-logo { filter: drop-shadow(0 1px 2px rgb(60 48 24 / 0.25)); } /* lift the cream tile off the cream sky */
+      html[data-theme="light"] .popup-fly .ff-tail { fill: #f0a800; }
+      html[data-theme="light"] .popup-fly .ff-halo { fill: #f5b800; }
 
       @media (prefers-reduced-motion: reduce) {
         * { transition: none !important; }
@@ -290,6 +362,15 @@
       <h1>Lumo</h1>
       <!-- HACK: same address as API_BASE in sw/index.ts -->
       <a id="open-app" href="http://localhost:3000" target="_blank" rel="noopener">Open Lumo ↗</a>
+      <button id="theme-toggle" type="button" aria-label="Switch to light mode" title="Switch to light mode">
+        <svg class="sun" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round">
+          <circle cx="12" cy="12" r="4.2" />
+          <path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6" />
+        </svg>
+        <svg class="moon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round">
+          <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
+        </svg>
+      </button>
     </header>
 
     <div class="chips" aria-live="polite">
