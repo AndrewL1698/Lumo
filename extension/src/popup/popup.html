@@ -10,6 +10,9 @@
       #swaps { border-top: 1px solid #ddd; padding-top: 8px; }
       #amount { width: 100%; }
       .muted { color: #777; }
+      #immersion { border-top: 1px solid #ddd; padding-top: 8px; }
+      #immersion .row { margin: 6px 0; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+      #immersion button.active { font-weight: bold; outline: 2px solid #b8860b; }
     </style>
   </head>
   <body>
@@ -25,9 +28,17 @@
 
     <section id="swaps">
       <label for="amount">Spanish words per page: <b id="amount-value">…</b></label>
-      <input id="amount" type="range" min="0" max="25" step="1" />
+      <input id="amount" type="range" min="0" max="200" step="1" />
       <label><input id="auto" type="checkbox" /> Grow automatically as you improve</label>
       <p id="amount-note" class="muted"></p>
+    </section>
+
+    <section id="immersion">
+      <p id="imm-line">Immersion …</p>
+      <div class="row" id="imm-rates"><span class="muted">Speed</span></div>
+      <div class="row" id="imm-jumps"><span class="muted">Jump to</span></div>
+      <div class="row"><button id="imm-reset">Reset progress</button></div>
+      <p id="imm-note" class="muted"></p>
     </section>
 
     <section>

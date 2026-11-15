@@ -31,3 +31,17 @@ export type TranslateItem = z.infer<typeof TranslateItem>;
 
 export const TranslateResponse = z.object({ items: z.array(TranslateItem) });
 export type TranslateResponse = z.infer<typeof TranslateResponse>;
+
+/**
+ * POST /api/translate-sentences (D-018, immersion dial). Whole sentences or plain paragraphs from the page the
+ * learner is reading, turned into natural Latin American Spanish. Bearer token required.
+ */
+export const SentenceTranslateRequest = z.object({
+  articleKey: z.string(),
+  sentences: z.array(z.string().min(1).max(2000)).min(1).max(40),
+});
+export type SentenceTranslateRequest = z.infer<typeof SentenceTranslateRequest>;
+
+/** One entry per request sentence, same order. `null` = unusable: leave that text in English. */
+export const SentenceTranslateResponse = z.object({ items: z.array(z.string().nullable()) });
+export type SentenceTranslateResponse = z.infer<typeof SentenceTranslateResponse>;

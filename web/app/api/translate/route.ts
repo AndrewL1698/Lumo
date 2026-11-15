@@ -1,5 +1,5 @@
 import { TranslateRequest, TranslateResponse, type TranslateItem } from "@parrot/shared";
-import { translateBatch, type TranslateOutput } from "@/lib/claude";
+import { cleanSwap, translateBatch, type TranslateOutput } from "@/lib/claude";
 import { checkExtensionToken } from "@/lib/auth";
 import { errText, getDb } from "@/lib/db";
 import { json, parseBody, preflight, withCors } from "@/lib/http";
@@ -72,7 +72,9 @@ export async function POST(req: Request) {
 
   const result: TranslateItem[] = items.map((it) => {
     const out = cache.get(keyOf(it));
-    return out ? { span: out.span, replacement: out.replacement, lemma: it.lemma } : null;
+    // cleanSwap runs when serving, so it also fixes swaps cached before it existed (D-018 update).
+    const replacement = out ? cleanSwap(it.lemma, out.span, out.replacement) : null;
+    return out && replacement ? { span: out.span, replacement, lemma: it.lemma } : null;
   });
   return withCors(json({ items: result }, TranslateResponse));
 }

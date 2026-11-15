@@ -21,7 +21,11 @@ export type Message =
   | { type: "QUEUE_EVENTS"; events: ExtensionEvent[] }
   | { type: "TTS"; text: string; lemma: string }
   | { type: "GET_SETTINGS" }
-  | { type: "SET_SWAP_AMOUNT"; perPageCap?: number; autoGrow?: boolean };
+  | { type: "SET_SWAP_AMOUNT"; perPageCap?: number; autoGrow?: boolean }
+  /** Immersion dial (D-018): set the popup rate, jump to a percent, or reset progress (points and knewIt). */
+  | { type: "SET_IMMERSION"; rate?: number; percent?: number; reset?: boolean }
+  /** Whole sentences or paragraphs to natural Spanish (D-018). Same order as sent. */
+  | { type: "TRANSLATE_SENTENCES"; articleKey: string; sentences: string[] };
 
 export interface ResponseMap {
   PING: { ok: true; from: "sw" };
@@ -38,10 +42,21 @@ export interface ResponseMap {
    * `null` when TTS is unavailable: the card just shows no audio rather than an error.
    */
   TTS: { dataUrl: string } | null;
-  /** Server settings (cached copy if offline) plus the popup's local "Grow automatically" switch. */
-  GET_SETTINGS: { settings: Settings; autoGrow: boolean };
+  /**
+   * Server settings (cached copy if offline) plus local-only state: the popup's "Grow automatically" switch, the
+   * immersion dial (D-018), and the lemmas whose latest verdict was "Knew it" (shown steady, not flickering).
+   */
+  GET_SETTINGS: {
+    settings: Settings;
+    autoGrow: boolean;
+    immersion: { points: number; rate: number; percent: number };
+    knewIt: string[];
+  };
   /** Saves perPageCap to the server (only that field) and/or autoGrow locally. */
   SET_SWAP_AMOUNT: { ok: boolean; error?: string };
+  SET_IMMERSION: { ok: boolean };
+  /** One entry per sentence, same order. `null` = unusable, leave that text English. `null` overall = call failed. */
+  TRANSLATE_SENTENCES: { items: (string | null)[] } | null;
 }
 
 export type MessageType = Message["type"];

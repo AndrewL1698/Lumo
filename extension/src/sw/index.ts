@@ -7,12 +7,14 @@ import {
   CandidatesResponse,
   EventsResponse,
   PairResponse,
+  SentenceTranslateResponse,
   Settings,
   TranslateResponse,
   type ExtensionEvent,
 } from "@parrot/shared";
 import type { Message, ResponseMap } from "../messages";
 import { neverListReason } from "../neverlist";
+import { IMMERSION_POINTS, IMMERSION_RATES, immersionPercent, pointsForPercent, SLIDER_MAX, type Immersion } from "../swapBudget";
 
 // HACK(demo): the web app runs on localhost for the demo. manifest host_permissions matches.
 const API_BASE = "http://localhost:3000";
@@ -51,7 +53,16 @@ interface StoredState {
   eventQueue?: ExtensionEvent[];
   /** Popup "Grow automatically" switch (D-006). Local only; default on. */
   autoGrow?: boolean;
+  /** Immersion dial progress and popup rate (D-018). Local only. */
+  immersion?: Immersion;
+  /** Lemmas whose latest verdict was "Knew it" (D-018): shown steady. Local only. */
+  knewIt?: string[];
 }
+
+const DEFAULT_IMMERSION: Immersion = { points: 0, rate: 1 };
+
+/** Max sentences per /api/translate-sentences request (SentenceTranslateRequest). */
+const SENTENCES_PER_REQUEST = 40;
 
 // Used only when the server can't be reached and nothing is cached yet (getSettings below).
 const DEFAULT_SETTINGS: Settings = {
@@ -70,6 +81,8 @@ async function readState(): Promise<StoredState> {
     "settings",
     "eventQueue",
     "autoGrow",
+    "immersion",
+    "knewIt",
   ])) as StoredState;
 }
 
@@ -197,9 +210,36 @@ async function fetchSettings(): Promise<Settings | null> {
 }
 
 async function getSettings(): Promise<ResponseMap["GET_SETTINGS"]> {
-  const { settings: cached, autoGrow = true } = await readState();
+  const { settings: cached, autoGrow = true, immersion = DEFAULT_IMMERSION, knewIt = [] } = await readState();
   const settings = (await fetchSettings()) ?? cached ?? DEFAULT_SETTINGS;
-  return { settings, autoGrow };
+  return {
+    settings,
+    autoGrow,
+    immersion: { points: immersion.points, rate: immersion.rate, percent: immersionPercent(immersion) },
+    knewIt,
+  };
+}
+
+/** Immersion dial (D-018): popup rate, "jump to" percent, or reset progress. */
+async function setImmersion(rate?: number, percent?: number, reset?: boolean): Promise<ResponseMap["SET_IMMERSION"]> {
+  const { immersion = DEFAULT_IMMERSION } = await readState();
+  const next: Immersion = { ...immersion };
+  if (rate !== undefined && (IMMERSION_RATES as readonly number[]).includes(rate) && rate !== next.rate) {
+    // The rate only speeds up points earned from now on: keep the current percent (review A1).
+    next.points = (next.points * next.rate) / rate;
+    next.rate = rate;
+  }
+  if (percent !== undefined && Number.isFinite(percent)) {
+    next.points = pointsForPercent(Math.max(0, Math.min(100, percent)), next.rate);
+  }
+  const patch: Partial<StoredState> = { immersion: next };
+  if (reset) {
+    next.points = 0;
+    patch.knewIt = [];
+  }
+  await chrome.storage.local.set(patch);
+  candidatesCache = null;
+  return { ok: true };
 }
 
 /** Change only perPageCap on the server (fresh read first, so nothing else is overwritten). */
@@ -209,7 +249,7 @@ async function setSwapAmount(perPageCap?: number, autoGrow?: boolean): Promise<R
   if (perPageCap === undefined) return { ok: true };
   const fresh = await fetchSettings();
   if (!fresh) return { ok: false, error: "could not reach Luci" };
-  const next: Settings = { ...fresh, perPageCap: Math.max(0, Math.min(25, Math.round(perPageCap))) };
+  const next: Settings = { ...fresh, perPageCap: Math.max(0, Math.min(SLIDER_MAX, Math.round(perPageCap))) };
   try {
     const res = await api("/api/settings", { method: "PUT", body: JSON.stringify(next) });
     if (!res.ok) return { ok: false, error: `server returned ${res.status}` };
@@ -218,6 +258,40 @@ async function setSwapAmount(perPageCap?: number, autoGrow?: boolean): Promise<R
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "could not reach Luci" };
   }
+}
+
+/** Whole sentences/paragraphs to Spanish (D-018). Groups of ≤40 in parallel; a failed group's slots are null. */
+async function translateSentences(articleKey: string, sentences: string[]): Promise<ResponseMap["TRANSLATE_SENTENCES"]> {
+  if (!sentences.length) return { items: [] };
+  // The server rejects a whole request if one text is empty or over 2000 chars, so those stay English (review A1).
+  const sendable = sentences.map((s, i) => ({ s, i })).filter(({ s }) => s.length > 0 && s.length <= 2000);
+  if (!sendable.length) return { items: sentences.map(() => null) };
+  const groups: string[][] = [];
+  for (let i = 0; i < sendable.length; i += SENTENCES_PER_REQUEST) {
+    groups.push(sendable.slice(i, i + SENTENCES_PER_REQUEST).map(({ s }) => s));
+  }
+  const results = await Promise.all(
+    groups.map(async (group): Promise<(string | null)[] | null> => {
+      try {
+        const res = await api("/api/translate-sentences", {
+          method: "POST",
+          body: JSON.stringify({ articleKey, sentences: group }),
+        });
+        if (!res.ok) return null;
+        const parsed = SentenceTranslateResponse.safeParse(await res.json());
+        if (!parsed.success) return null;
+        // Keep slots aligned even if the server returns the wrong count.
+        return group.map((_, i) => parsed.data.items[i] ?? null);
+      } catch {
+        return null;
+      }
+    }),
+  );
+  if (results.every((r) => r === null)) return null;
+  const flat = results.flatMap((r, gi) => r ?? groups[gi]!.map(() => null));
+  const items: (string | null)[] = sentences.map(() => null);
+  sendable.forEach(({ i }, k) => (items[i] = flat[k] ?? null));
+  return { items };
 }
 
 // ---------------------------------------------------------------- text to speech
@@ -259,12 +333,32 @@ async function tts(text: string, lemma: string): Promise<ResponseMap["TTS"]> {
 let flushTimer: ReturnType<typeof setTimeout> | undefined;
 
 async function queueEvents(events: ExtensionEvent[]): Promise<ResponseMap["QUEUE_EVENTS"]> {
-  const { eventQueue = [] } = await readState();
+  const { eventQueue = [], immersion = DEFAULT_IMMERSION, knewIt = [] } = await readState();
   // Dedupe by id here too, so a content-script retry never double-queues.
   const byId = new Map(eventQueue.map((e) => [e.id, e]));
+
+  // Immersion dial (D-018): count only events not already queued, so retries never double-count.
+  let points = immersion.points;
+  const knew = new Set(knewIt);
+  let dialChanged = false;
+  for (const e of events) {
+    if (byId.has(e.id)) continue;
+    if (e.type === "hover" || e.type === "knew_it" || e.type === "didnt_know") {
+      points += IMMERSION_POINTS[e.type];
+      dialChanged = true;
+      if (e.lemma && e.type === "knew_it") knew.add(e.lemma);
+      if (e.lemma && e.type === "didnt_know") knew.delete(e.lemma);
+    }
+  }
+
   for (const e of events) byId.set(e.id, e);
   const merged = [...byId.values()];
-  await chrome.storage.local.set({ eventQueue: merged });
+  const patch: Partial<StoredState> = { eventQueue: merged };
+  if (dialChanged) {
+    patch.immersion = { ...immersion, points };
+    patch.knewIt = [...knew];
+  }
+  await chrome.storage.local.set(patch);
 
   if (events.some((e) => FLUSH_NOW.has(e.type))) {
     await flush(); // awaited on purpose: see FLUSH_NOW
@@ -294,6 +388,7 @@ async function flush(): Promise<void> {
     const sent = new Set(eventQueue.map((e) => e.id));
     const { eventQueue: latest = [] } = await readState();
     await chrome.storage.local.set({ eventQueue: latest.filter((e) => !sent.has(e.id)) });
+    candidatesCache = null; // the next page load reads the word states these events changed
   } catch (err) {
     // Keep the queue and retry. Ids are client-made uuids, so resending is idempotent.
     console.warn("[parrot] event flush failed, will retry", err);
@@ -327,6 +422,10 @@ async function handle(message: Message): Promise<ResponseMap[Message["type"]]> {
       return getSettings();
     case "SET_SWAP_AMOUNT":
       return setSwapAmount(message.perPageCap, message.autoGrow);
+    case "SET_IMMERSION":
+      return setImmersion(message.rate, message.percent, message.reset);
+    case "TRANSLATE_SENTENCES":
+      return translateSentences(message.articleKey, message.sentences);
   }
 }
 

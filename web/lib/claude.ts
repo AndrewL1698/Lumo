@@ -205,12 +205,39 @@ Return one result per item with the same i:
 - match: false if englishMatch in this sentence does not carry one of the lemma's senses (e.g. "river bank" for banco, which means a financial bank or a bench). When false, span and replacement are "".
 - span: the exact English text to replace, copied character-for-character from the sentence. If the item has a determiner, span is exactly "<determiner> <englishMatch>" and replacement includes the Spanish determiner ("the strike" → "la huelga", "Our house" → "Nuestra casa", "my friends" → "mis amigos"). Without one, span is just englishMatch. Never include adjectives or other words.
 - replacement: the Spanish for span, inflected to fit: article, gender, number, verb person and tense ("la huelga", "unas casas", "mis amigos", "trabajaba"). Keep the original capitalization if span starts the sentence.
+Without a determiner in span, the replacement must not start with an article ("a smear campaign": span "campaign" → "campaña", never "una campaña").
 Never translate any other words.`;
 
 export type TranslateInput = { sentence: string; lemma: string; englishMatch: string; senses?: string[] };
 export type TranslateOutput = { span: string; replacement: string } | null;
 
 const DETERMINERS = new Set("the a an this that these those my your his her its our their".split(" "));
+
+const ES_ARTICLE = /^(el|la|los|las|un|una|unos|unas)\s+/i;
+const fold = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+
+/**
+ * Last check on a word swap before it reaches the page (D-018 update). Applied when serving, so it also fixes
+ * entries already in the translate cache. Returns the replacement to show, or null = don't swap.
+ * - No English determiner in span → no Spanish article either ("a smear campaign" must not become "a smear una campaña").
+ * - A replacement identical to the English is a no-op ("Popular" → "Popular").
+ * - For non-verb lemmas the replacement must contain the lemma's stem, so a different word filed under this lemma
+ *   ("still" → "todavía" for quieto) is dropped. Verbs are exempt (fue, tuvo, hizo).
+ */
+export function cleanSwap(lemma: string, span: string, replacement: string): string | null {
+  let out = replacement.trim();
+  const firstWord = span.trim().split(/\s+/)[0]?.toLowerCase() ?? "";
+  const article = ES_ARTICLE.exec(out);
+  if (!DETERMINERS.has(firstWord) && article && out.length > article[0].length) {
+    const rest = out.slice(article[0].length);
+    out = /^[A-ZÁÉÍÓÚÑ]/.test(out) ? rest.charAt(0).toUpperCase() + rest.slice(1) : rest;
+  }
+  if (!out || out.toLowerCase() === span.trim().toLowerCase()) return null;
+  if (lemma.length >= 3 && !/(ar|er|ir)(se)?$/.test(fold(lemma)) && !fold(out).includes(fold(lemma).slice(0, 3))) {
+    return null;
+  }
+  return out;
+}
 
 /** The determiner/possessive directly before englishMatch in the sentence, as written ("The", "my"), or undefined. */
 export function determinerBefore(sentence: string, englishMatch: string): string | undefined {
@@ -220,8 +247,32 @@ export function determinerBefore(sentence: string, englishMatch: string): string
   return prev && DETERMINERS.has(prev.toLowerCase()) ? prev : undefined;
 }
 
-/** Words per Haiku call. Small groups run in parallel, so a page waits for the slowest group, not one big call. */
+/**
+ * Words per Haiku call. Small groups run in parallel, so a page waits for the slowest group, not one big call.
+ * Big immersion batches (D-018) use bigger groups so 150+ words don't queue behind the concurrency cap; a normal
+ * page (≤ 32 uncached words) keeps the original 4.
+ */
 const TRANSLATE_CHUNK = 4;
+const TRANSLATE_CHUNK_BIG = 8;
+const BIG_BATCH = 32;
+
+/** Haiku calls in flight at once, shared by word and sentence translation, so a big page can't burst past rate limits. */
+const TRANSLATE_CONCURRENCY = 8;
+let translateInFlight = 0;
+const translateWaiting: (() => void)[] = [];
+
+/** Runs fn once a slot is free (so its timeout only starts then). A finished call hands its slot to the next waiter. */
+async function limited<T>(fn: () => Promise<T>): Promise<T> {
+  if (translateInFlight < TRANSLATE_CONCURRENCY) translateInFlight++;
+  else await new Promise<void>((resolve) => translateWaiting.push(resolve));
+  try {
+    return await fn();
+  } finally {
+    const next = translateWaiting.shift();
+    if (next) next();
+    else translateInFlight--;
+  }
+}
 
 /**
  * Translate a page's batch. Results are in input order: null = sense mismatch or unusable output (don't swap),
@@ -229,9 +280,10 @@ const TRANSLATE_CHUNK = 4;
  * group failed.
  */
 export async function translateBatch(items: TranslateInput[]): Promise<(TranslateOutput | undefined)[]> {
+  const size = items.length > BIG_BATCH ? TRANSLATE_CHUNK_BIG : TRANSLATE_CHUNK;
   const chunks: TranslateInput[][] = [];
-  for (let i = 0; i < items.length; i += TRANSLATE_CHUNK) chunks.push(items.slice(i, i + TRANSLATE_CHUNK));
-  const settled = await Promise.allSettled(chunks.map(translateChunk));
+  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
+  const settled = await Promise.allSettled(chunks.map((c) => limited(() => translateChunk(c))));
   if (settled.every((r) => r.status === "rejected")) throw (settled[0] as PromiseRejectedResult).reason;
   return settled.flatMap((r, k) => (r.status === "fulfilled" ? r.value : chunks[k].map(() => undefined)));
 }
@@ -260,5 +312,60 @@ async function translateChunk(items: TranslateInput[]): Promise<TranslateOutput[
     // A dropped determiner would leave "the la huelga" / "the huelga" on the page: don't swap.
     if (dets[i] && !r.span.startsWith(`${dets[i]} `)) return null;
     return { span: r.span, replacement: r.replacement };
+  });
+}
+
+// ---- Sentence translate (/api/translate-sentences, D-018 immersion dial) ----
+
+const SentenceOut = z.object({
+  items: z.array(z.object({ i: z.number().int(), spanish: z.string() })),
+});
+
+const SENTENCE_SYSTEM = `You translate English text for a language learner reading a news article in English.
+Each item has i and text: a sentence or a short paragraph from the article.
+Return one item per input with the same i, where spanish is the text in natural, fluent Latin American Spanish at the same register.
+- Translate everything. Never summarize, shorten, add, or explain.
+- Keep names, numbers, and quotation marks as they are.`;
+
+/** Texts per Haiku call: a text can be a whole paragraph, so groups stay small and run in parallel. */
+const SENTENCE_CHUNK = 3;
+
+/**
+ * Translate whole sentences/paragraphs. Results are in input order: string = Spanish, null = unusable (missing,
+ * empty, or unchanged), undefined = that group's call failed (don't cache). Throws only if every group failed.
+ */
+export async function translateSentences(texts: string[]): Promise<(string | null | undefined)[]> {
+  const chunks: string[][] = [];
+  for (let i = 0; i < texts.length; i += SENTENCE_CHUNK)
+    chunks.push(texts.slice(i, i + SENTENCE_CHUNK));
+  const settled = await Promise.allSettled(
+    chunks.map((c) => limited(() => translateSentenceChunk(c))),
+  );
+  if (settled.every((r) => r.status === "rejected"))
+    throw (settled[0] as PromiseRejectedResult).reason;
+  return settled.flatMap((r, k) =>
+    r.status === "fulfilled" ? r.value : chunks[k].map(() => undefined),
+  );
+}
+
+async function translateSentenceChunk(texts: string[]): Promise<(string | null)[]> {
+  const res = await getClaude().messages.parse(
+    {
+      model: MODELS.correction, // Haiku, like word translate
+      max_tokens: 4000,
+      system: SENTENCE_SYSTEM,
+      thinking: { type: "disabled" },
+      output_config: { effort: "low", format: zodOutputFormat(SentenceOut) },
+      messages: [{ role: "user", content: JSON.stringify(texts.map((text, i) => ({ i, text }))) }],
+    },
+    { timeout: 20_000, maxRetries: 1 },
+  );
+  if (res.stop_reason !== "end_turn" || !res.parsed_output)
+    throw new Error(`translate-sentences stop_reason=${res.stop_reason}`);
+  const byIndex = new Map(res.parsed_output.items.map((r) => [r.i, r.spanish.trim()]));
+  return texts.map((text, i) => {
+    const es = byIndex.get(i);
+    if (!es || es.toLowerCase() === text.trim().toLowerCase()) return null;
+    return es;
   });
 }
