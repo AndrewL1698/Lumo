@@ -1,7 +1,6 @@
 "use client";
 import Link from "next/link";
 import type { Settings } from "@parrot/shared";
-import { DEMO_PAIRING_CODE } from "@/components/onboarding/OnboardingForm";
 import { LEVELS } from "@/components/onboarding/LevelPicker";
 import { PairingCode } from "@/components/onboarding/PairingCode";
 import { ReadingSites } from "@/components/onboarding/ReadingSites";
@@ -103,7 +102,7 @@ export function SetupChecklist({ settings, status }: { settings: Settings; statu
           }
         />
         <Item done={status.paired} title="Pair the extension">
-          {!status.paired && <PairingCode code={DEMO_PAIRING_CODE} />}
+          {!status.paired && <PairingCode />}
         </Item>
         <Item done={status.siteOn} title="Turn Lumo on for a site">
           {!status.siteOn && <ReadingSites allowlist={settings.allowlist} />}

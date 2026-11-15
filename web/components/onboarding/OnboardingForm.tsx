@@ -10,9 +10,6 @@ import { ReadingSites } from "./ReadingSites";
 import { ReadingToggle } from "./ReadingToggle";
 import { StarterSites } from "./StarterSites";
 
-// TODO(demo): hard-coded until Karthik picks the demo pairing code (no endpoint gives one yet).
-export const DEMO_PAIRING_CODE = "482913";
-
 const STEPS = ["Your level", "Quick check", "Your sites", "Pair and read"] as const;
 
 // Four steps: pick a level, let Lumo check it in a short voice chat (optional, D-020), choose reading sites from a
@@ -20,11 +17,9 @@ const STEPS = ["Your level", "Quick check", "Your sites", "Pair and read"] as co
 // No account: everything saves to the one built-in profile. `onSave` merges a patch into the saved settings.
 export function OnboardingForm({
   initial,
-  pairingCode = DEMO_PAIRING_CODE,
   onSave,
 }: {
   initial: Settings;
-  pairingCode?: string;
   onSave: (patch: Partial<Settings>) => Promise<boolean>;
 }) {
   const [step, setStep] = useState(0);
@@ -103,7 +98,7 @@ export function OnboardingForm({
             Your level is set to <strong>{LEVELS.find((l) => l.value === level)?.title}</strong>.
             You can change it any time in Settings.
           </p>
-          <PairingCode code={pairingCode} />
+          <PairingCode />
           <ReadingSites allowlist={allowlist} />
           <section className="rounded-sm border border-line bg-panel p-5">
             <h2 className="text-xl font-bold text-ink">Then read, and talk</h2>
