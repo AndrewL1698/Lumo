@@ -2,6 +2,7 @@
 
 import "./theme"; // visual only: light/dark, applied before anything else renders
 import { send } from "../messages";
+import { neverListReason } from "../neverlist";
 import "./firefly"; // visual only: the wandering firefly
 import { READING_SITES } from "@parrot/shared";
 import { DEMO_RATE, IMMERSION_JUMPS, IMMERSION_RATES, budgetFor } from "../swapBudget";
@@ -175,12 +176,41 @@ pairBtn.addEventListener("click", () => {
     pairResult.textContent = "Enter the 6-digit code from Lumo's setup page.";
     return;
   }
+  // HACK(demo): the sites picked in onboarding (D-021) switch on with this same click, so NPR fills itself on
+  // stage. permissions.request must be the first call here (user gesture). Already-granted sites don't prompt.
+  const sites = savedSites.filter((o) => /^https?:\/\//.test(o) && !neverListReason(o));
+  const grant: Promise<boolean> = sites.length
+    ? chrome.permissions.request({ origins: sites.map((o) => o + "/*") }).catch(() => false)
+    : Promise.resolve(false);
   pairBtn.disabled = true;
   pairResult.textContent = "Pairing…";
-  send({ type: "PAIR", code })
-    .then((res) => {
-      pairResult.textContent = res.ok ? "Paired" : (res.error ?? "Pairing failed");
-      if (res.ok) showPaired(true);
+  Promise.all([grant, send({ type: "PAIR", code })])
+    .then(async ([granted, res]) => {
+      if (!res.ok) {
+        pairResult.textContent = res.error ?? "Pairing failed";
+        return;
+      }
+      showPaired(true);
+      if (!sites.length) {
+        pairResult.textContent = "Paired";
+        return;
+      }
+      if (!granted) {
+        pairResult.textContent = "Paired. Turn sites on from the popup.";
+        return;
+      }
+      // One at a time: enableSite read-modify-writes enabledOrigins.
+      let on = 0;
+      for (const site of sites) {
+        const r = await send({ type: "ENABLE_SITE", origin: site }).catch(() => ({ ok: false }));
+        if (!r.ok) continue;
+        on++;
+        if (site === origin) {
+          showSiteOn();
+          nudgeEl.hidden = true;
+        }
+      }
+      pairResult.textContent = `Paired. Lumo is on for ${on} site${on === 1 ? "" : "s"}.`;
     })
     .catch((err: unknown) => {
       pairResult.textContent = err instanceof Error ? err.message : "Pairing failed";
@@ -210,10 +240,13 @@ async function reloadActiveTab(): Promise<void> {
 }
 
 let immersion = { percent: 0, rate: 1, points: 0, solid: 0 };
+/** The learner's saved sites (onboarding's starter list), switched on by Pair. Fresh from the server on open. */
+let savedSites: string[] = [];
 
 async function initImmersion(): Promise<void> {
   const s = await send({ type: "GET_SETTINGS" }).catch(() => null);
   if (s?.immersion) immersion = s.immersion;
+  if (s?.settings) savedSites = s.settings.allowlist;
   renderImmersion();
 }
 
