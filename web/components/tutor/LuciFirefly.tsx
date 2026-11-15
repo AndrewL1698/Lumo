@@ -285,7 +285,7 @@ export function LuciFirefly({
          <div ref={reactRef} className="luci-react relative h-full w-full" data-react={reaction ?? undefined}>
         <svg viewBox="0 0 120 120" width="100%" height="100%" overflow="visible">
               {/* tail light: a flat halo and the lamp itself */}
-              <circle className="luci-halo" cx="60" cy="92" r="24" fill="#ffe9a0" />
+              <circle className="luci-halo" cx="60" cy="92" r="24" fill="#ffd23a" />
               <ellipse className="luci-tail" cx="60" cy="90" rx="16" ry="13" fill="#ffd23a" />
               {/* wings: fixed angle on the group, the beat on the shape */}
               <g transform="rotate(-32 34 46)">
@@ -295,7 +295,7 @@ export function LuciFirefly({
                 <ellipse className="luci-wing luci-wing-r" cx="86" cy="46" rx="13" ry="21" fill="#6fa8d6" fillOpacity=".55" />
               </g>
               {/* antennae */}
-              <path d="M52 40 C48 28 42 22 36 20 M68 40 C72 28 78 22 84 20" fill="none" stroke="#2a3a4a" strokeWidth="3" strokeLinecap="round" />
+              <path d="M52 40 C48 28 42 22 36 20 M68 40 C72 28 78 22 84 20" fill="none" stroke="#6a7f9f" strokeWidth="3" strokeLinecap="round" />
               <circle cx="36" cy="20" r="4" fill="#ffd23a" />
               <circle cx="84" cy="20" r="4" fill="#ffd23a" />
               {/* body */}

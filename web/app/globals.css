@@ -1,26 +1,27 @@
 @import "tailwindcss";
 
-/* Luci design tokens (docs/brand/README.md), cleaned to our rules: warm light ground, off-white panels,
-   flat glow (no shadows). Glow brightness = how well you know a word.
-   go = correct / known text, wait = learning / listening text, stop = mistake / delete. */
+/* Luci design tokens: a painted night (components/NightSky.tsx) behind every page. Warm off-white text,
+   translucent navy panels, the yellow glow as the accent. Contrast measured on the darkest and lightest
+   parts of the sky (#0d1626 .. #24364a): ink >= 11:1, muted >= 6.5:1, go / stop / accent >= 5.5:1 (AA).
+   go = correct / known, wait = learning / listening, stop = mistake / delete. */
 @theme {
-  --color-bg: #f6f7f2;
-  --color-panel: #fcfcf8;
-  --color-ink: #1a2028;
-  --color-muted: #5f6772;
-  --color-line: #e2e3da;
-  --color-sun: #fff7d9;
-  --color-sun-line: #f1e2a6;
+  --color-bg: #0f1a2c;
+  --color-panel: rgb(14 24 42 / 0.74);
+  --color-ink: #f4efe3;
+  --color-muted: #b8c3d4;
+  --color-line: rgb(214 225 240 / 0.14);
+  --color-sun: rgb(46 38 22 / 0.78);
+  --color-sun-line: rgb(255 210 58 / 0.28);
   --color-glow: #ffd23a;
   --color-glow-soft: #ffe9a0;
-  --color-accent: #9a6a00;
-  --color-go: #1f7a45;
-  --color-wait: #9a6a00;
-  --color-stop: #b83a3a;
+  --color-accent: #f5c94a;
+  --color-go: #7fdca3;
+  --color-wait: #f5c94a;
+  --color-stop: #ff958b;
 
   --radius-xs: 3px;
-  --radius-sm: 4px;
-  --radius-md: 6px;
+  --radius-sm: 5px;
+  --radius-md: 10px;
 
   --font-sans: var(--font-atkinson), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
@@ -31,12 +32,12 @@
 
 html {
   font-size: 18px; /* projector */
-  color-scheme: light;
-  scrollbar-color: var(--color-line) var(--color-bg);
+  color-scheme: dark;
+  background: #101a2b; /* under the painted sky, and while it loads */
+  scrollbar-color: rgb(214 225 240 / 0.25) #101a2b;
 }
 
 body {
-  background: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-sans);
   caret-color: var(--color-ink);
@@ -53,12 +54,12 @@ body {
 }
 
 ::selection {
-  background: var(--color-glow-soft);
+  background: rgb(255 210 58 / 0.35);
   color: var(--color-ink);
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-ink);
+  outline: 2px solid var(--color-glow);
   outline-offset: 2px;
 }
 
@@ -71,39 +72,43 @@ a {
   font-variant-numeric: tabular-nums;
 }
 
-/* Night theme: the tutor page (".night-page") turns the whole page, nav and footer included, to deep navy
-   with warm glow accents. Contrast on #0f1a2e: ink 15:1, muted 8:1, go/stop/accent all above 7:1. */
-body:has(.night-page),
-.night-scope {
-  --color-bg: #0f1a2e;
-  --color-panel: #142139;
-  --color-ink: #eef1f6;
-  --color-muted: #aab5c7;
-  --color-line: #263552;
-  --color-sun: #1a2944;
-  --color-sun-line: #6f5c22;
-  --color-accent: #f5c94a;
-  --color-go: #6fd497;
-  --color-wait: #f5c94a;
-  --color-stop: #ff8a80;
-  color-scheme: dark;
+/* ---------- The painted night (components/NightSky.tsx) ---------- */
+.night-sky-paint {
+  /* soft, uneven layers like brushed paint: slate-blue sky, navy middle, dark moss near the ground */
+  background:
+    radial-gradient(120% 60% at 20% 0%, rgb(58 82 102 / 0.55), transparent 60%),
+    radial-gradient(90% 50% at 85% 10%, rgb(44 66 88 / 0.45), transparent 65%),
+    radial-gradient(140% 45% at 50% 105%, rgb(40 58 40 / 0.9), transparent 70%),
+    linear-gradient(180deg, #2a3f52 0%, #1b2a40 26%, #121c33 48%, #111b2c 66%, #15231f 86%, #1a2a1f 100%);
 }
-/* the tutor's words to light up glow softly at night */
-body:has(.night-page) .glow-learning,
-.night-scope .glow-learning {
-  box-shadow: 0 0 14px 2px rgb(255 210 58 / 0.18);
+.night-sky-grain {
+  /* canvas / paper grain: fine noise, very low opacity */
+  opacity: 0.11;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 1.4 -0.2'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
-body:has(.night-page) .glow-known,
-.night-scope .glow-known {
-  box-shadow: 0 0 18px 4px rgb(255 210 58 / 0.4);
+
+/* Panels: translucent navy with a soft blur, so the night shows through. */
+.bg-panel,
+.bg-sun {
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+/* Words glow softly against the night. */
+.glow-learning {
+  box-shadow: 0 0 14px 2px rgb(255 210 58 / 0.16);
+}
+.glow-known {
+  box-shadow: 0 0 18px 4px rgb(255 210 58 / 0.38);
 }
 /* Luci's dark body gets a faint rim so it reads against the night */
-body:has(.night-page) .luci-body {
-  stroke: #46597a;
+.luci-body {
+  stroke: #4c6080;
   stroke-width: 1.5;
 }
 
-/* Text on the yellow glow is always dark, by day and by night. */
+/* Text on the yellow glow is always dark. */
 .bg-glow,
 .glow-known,
 .jar-lit {
@@ -274,8 +279,8 @@ ruby.fix rt {
 }
 
 @keyframes luci-glow {
-  0%, 100% { opacity: calc(var(--halo) * 0.75); }
-  50% { opacity: var(--halo); }
+  0%, 100% { opacity: calc(var(--halo) * 0.3); }
+  50% { opacity: calc(var(--halo) * 0.45); }
 }
 @keyframes luci-blink {
   0%, 94%, 100% { transform: scaleY(1); }
@@ -359,7 +364,10 @@ html.firefly-cursor
   width: 6px;
   height: 6px;
   border-radius: 9999px;
-  background: #c98a00;
+  background: #ffd23a;
+  box-shadow:
+    0 0 4px 1px rgb(255 226 120 / 0.9),
+    0 0 12px 4px rgb(255 200 40 / 0.45);
   opacity: 0;
   will-change: transform, opacity;
 }

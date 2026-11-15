@@ -18,7 +18,6 @@ export function useFetch<T>(url: string, schema: { parse: (x: unknown) => T }, o
     } finally {
       setLoading(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url]);
 
   useEffect(() => {
