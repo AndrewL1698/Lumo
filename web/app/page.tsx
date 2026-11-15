@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { correctResponseFixture, rawTextFixture } from "@parrot/shared";
-import { DriftingFireflies } from "@/components/home/DriftingFireflies";
 import { LuciMark } from "@/components/LuciMark";
 import { CorrectionCards } from "@/components/tutor/CorrectionCards";
 import { TranscriptView } from "@/components/tutor/TranscriptView";
@@ -17,7 +16,6 @@ export default function Home() {
   return (
     <div className="space-y-24">
       <section className="relative isolate grid items-center gap-12 lg:grid-cols-[1fr_1.05fr]">
-        <DriftingFireflies />
         <div>
           <p className={`${eyebrow} flex items-center gap-2`}>
             <LuciMark size={22} />
@@ -45,7 +43,7 @@ export default function Home() {
         </div>
 
         {/* A window into a night session: the real correction view, rendered with sample data. */}
-        <figure className="night-scope rounded-md bg-bg px-7 pb-6 pt-5 text-ink">
+        <figure className="rounded-md bg-panel px-7 pb-6 pt-5 text-ink">
           <TranscriptView raw={rawTextFixture} result={correctResponseFixture.correction} />
           <div className="mt-5">
             <CorrectionCards raw={rawTextFixture} result={correctResponseFixture.correction} />

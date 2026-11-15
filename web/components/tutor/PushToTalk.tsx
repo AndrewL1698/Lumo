@@ -78,7 +78,7 @@ export function PushToTalk({
             ? "bg-glow text-ink"
             : disabled
               ? "cursor-not-allowed border border-line text-muted"
-              : "bg-ink text-panel hover:bg-[#2f3946]"
+              : "bg-ink text-[#14213a] hover:bg-[#e2dccd]"
         }`}
       >
         {BUTTON[status]}

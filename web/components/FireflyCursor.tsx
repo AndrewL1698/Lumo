@@ -123,8 +123,8 @@ export function FireflyCursor() {
             </g>
             <circle className="ff-halo" cx="16" cy="22.5" r="7.6" fill="#ffe9a0" />
             <ellipse className="ff-tail" cx="16" cy="22" rx="4.2" ry="5.2" stroke="#b07d00" strokeWidth=".8" />
-            <ellipse cx="16" cy="14.5" rx="3.8" ry="4.6" fill="#2a3a4a" />
-            <circle cx="16" cy="8" r="3.4" fill="#2a3a4a" />
+            <ellipse cx="16" cy="14.5" rx="3.8" ry="4.6" fill="#2a3a4a" stroke="#8fa6c4" strokeWidth=".6" />
+            <circle cx="16" cy="8" r="3.4" fill="#2a3a4a" stroke="#8fa6c4" strokeWidth=".6" />
             <path d="M14.9 5.1 Q14 3.2 12.6 2.9 M17.1 5.1 Q18 3.2 19.4 2.9" fill="none" stroke="#2a3a4a" strokeWidth=".9" strokeLinecap="round" />
             <circle cx="14.7" cy="7.7" r=".9" fill="#fcfcf8" />
             <circle cx="17.3" cy="7.7" r=".9" fill="#fcfcf8" />
