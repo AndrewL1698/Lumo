@@ -1,4 +1,5 @@
 import type { VocabResponse } from "@parrot/shared";
+import { DeleteButton } from "@/components/privacy/KnownData";
 
 // The same words as the jar, as a readable list grouped by how brightly they glow. No boxes.
 const GROUPS: { key: "known" | "learning" | "mastered"; title: string }[] = [
@@ -22,7 +23,18 @@ export function StreakBadge({ days }: { days: number }) {
   );
 }
 
-export function VocabLists({ data, fresh = new Set<string>() }: { data: VocabResponse; fresh?: Set<string> }) {
+// `onDelete` (the Jar page): a bin beside each word, shown on hover or focus, like everywhere else Luci lists data.
+export function VocabLists({
+  data,
+  fresh = new Set<string>(),
+  onDelete,
+  busy = false,
+}: {
+  data: VocabResponse;
+  fresh?: Set<string>;
+  onDelete?: (lemma: string) => void;
+  busy?: boolean;
+}) {
   return (
     <div className="grid gap-x-12 gap-y-10 md:grid-cols-3">
       {GROUPS.map(({ key, title }) => {
@@ -47,12 +59,17 @@ export function VocabLists({ data, fresh = new Set<string>() }: { data: VocabRes
             ) : (
               <ul className="mt-3 space-y-2">
                 {words.map((w) => (
-                  <li key={w.lemma} className="flex items-baseline gap-2">
+                  <li key={w.lemma} className="group flex items-baseline gap-2">
                     <span className={`text-lg font-bold ${fresh.has(w.lemma) ? "glow-known" : ""}`}>
                       {w.article && <span className="font-normal text-muted">{w.article} </span>}
                       {w.lemma}
                     </span>
                     <span className="text-muted">{w.english}</span>
+                    {onDelete && (
+                      <span className="ml-auto self-center">
+                        <DeleteButton label={w.lemma} busy={busy} onClick={() => onDelete(w.lemma)} />
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>

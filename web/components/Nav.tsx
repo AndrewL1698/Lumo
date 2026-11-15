@@ -9,7 +9,6 @@ const LINKS = [
   { href: "/tutor", label: "Tutor" },
   { href: "/progress", label: "Your course" },
   { href: "/vocabulary", label: "Your jar" },
-  { href: "/privacy", label: "What Lumo knows" },
   { href: "/settings", label: "Settings" },
 ];
 

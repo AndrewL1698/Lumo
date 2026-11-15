@@ -49,7 +49,7 @@ UI and explanations are in English; the Spanish is Latin American.
 ## Technical implementation
 ```
 Chrome extension (MV3)                 Web app (Next.js)
-  swaps words on allowed sites           Tutor · Your jar · What Lumo knows · Settings
+  swaps words on allowed sites           Tutor · Your course · Your jar · Settings
   hover cards, reading events            push-to-talk, live corrections, recap
           │  pairing token                        │
           ▼                                       ▼
@@ -141,7 +141,7 @@ used it correctly out loud, and *Shining bright* when you've kept remembering it
 
 ![Your jar page](docs/img/vocabulary.png)
 
-**What Lumo knows:** everything stored about you, with a delete button on each item.
+**Your jar, and what's behind it:** every word as a firefly with a bin beside it, plus a "What Lumo keeps about you" section under the jar: the articles, the activity log and "Delete everything".
 
 ![What Lumo knows page](docs/img/privacy.png)
 
@@ -151,7 +151,7 @@ used it correctly out loud, and *Shining bright* when you've kept remembering it
   GitHub), or login and form pages, even if you allow them. This is enforced in code.
 - **Minimal data.** It never sends full page text, your browsing history, or anything you type on other sites. It stores
   the words you look up, a short activity log, article titles and websites, and your tutor transcripts.
-- **You can see and delete everything.** The "What Lumo knows" page lists every stored item with a delete button, plus
+- **You can see and delete everything.** The jar page lists every stored item with a delete button, plus
   "Delete everything".
 - **No keys in the browser.** All Claude and ElevenLabs calls go through server routes; the extension and the web page
   never hold an API key.
