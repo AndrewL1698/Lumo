@@ -5,7 +5,7 @@ Owner: Naren. Locked after Phase 3. Only use sentences that passed ≥5 rehearsa
 | Time | Presenter says | On screen | Fallback if it fails |
 |---|---|---|---|
 | 0:00 | Problem + who it's for (1 line) | | |
-| 0:15 | | Demo news site with swapped Spanish words; the amber edge glow shows Luci is on | |
+| 0:15 | | Demo news site with swapped Spanish words (each one glows softly, so it's clear Lumo is on) | |
 | 0:30 | | Hover **empresa**: translation, article, 🔊, Knew it / Didn't know | |
 | 0:50 | "It planned this session before I said anything." | Open tutor; **Tonight's lesson card** is open: the article and why it was picked, the target words each with a reason, one mistake to watch. Opener references the article just read | Card absent (plan failed) → skip the line, go straight to the opener |
 | 1:05 | | Speak scripted sentence 1; **correction appears on screen**. Why line here just reads _"Just talking…"_ — don't point at it yet | Show pre-recorded correction |
@@ -120,7 +120,7 @@ and the 1:30 flip.
 ## Rehearsal log
 
 Five clean runs in a row before this script is locked. A run passes only if **every** box is true:
-swaps appear and the edge glow is on · the hover card opens with audio · the lesson card is present
+swaps appear and glow · the hover card opens with audio · the lesson card is present
 and names the article · sentence 1 is transcribed **verbatim** (the error is still there) · the
 on-screen correction appears · the why line matches what this script says · sentence 2 flips the
 word to known and ticks it off the card · the 1:40 reload shows *empresa* gold and the percent near 40%.
