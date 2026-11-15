@@ -642,6 +642,8 @@ function blockOp(b: Block, spanish: string): SwapOp {
  * known words are free and late text may hold some.
  */
 async function sweep(root: Node): Promise<void> {
+  // Luci switched off mid-page (watchLuciSwitch): no more swaps, not even known words, and nothing sent (review).
+  if (pageCap === 0) return;
   const blocksLeft =
     sentenceBlocksDone < rules.sentenceBlocks || paragraphBlocksDone < rules.paragraphBlocks;
 

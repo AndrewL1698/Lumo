@@ -273,15 +273,20 @@ async function fetchSettings(): Promise<Settings | null> {
  * speed change, jump or reset (setImmersion).
  */
 async function getSettings(): Promise<ResponseMap["GET_SETTINGS"]> {
-  const { settings: cached, dial: stored = DEFAULT_DIAL, knewIt = [] } = await readState();
   const [fetched, candidates] = await Promise.all([fetchSettings(), getCandidates(true)]);
+  const { settings: cached, knewIt = [] } = await readState();
   const settings = fetched ?? cached ?? DEFAULT_SETTINGS;
 
   const u = candidates?.understanding;
-  const points = u?.points ?? stored.points;
-  const dial: Dial = { ...stored, points, peak: clampPct(Math.max(stored.peak, dialRaw(stored, points))) };
-  // Only on change: the content script reloads its budget on storage changes.
-  if (dial.points !== stored.points || dial.peak !== stored.peak) await chrome.storage.local.set({ dial });
+  // Read-modify-write after the network calls and under the lock, so a popup click made meanwhile isn't overwritten.
+  const dial = await withDial(async () => {
+    const { dial: stored = DEFAULT_DIAL } = await readState();
+    const next = settle(stored, u?.points ?? stored.points);
+    // Only on change: the content script reloads its budget on storage changes.
+    if (JSON.stringify(next) !== JSON.stringify(stored)) await chrome.storage.local.set({ dial: next });
+    return next;
+  });
+  const points = dial.points;
 
   const solid =
     u?.solid ?? candidates?.candidates.filter((c) => c.state === "known" || c.state === "mastered").length ?? 0;
@@ -294,27 +299,49 @@ async function getSettings(): Promise<ResponseMap["GET_SETTINGS"]> {
 
 /** Immersion (D-019): speed change, "jump to" percent, or reset to the learner's real level. */
 async function setImmersion(rate?: number, percent?: number, reset?: boolean): Promise<ResponseMap["SET_IMMERSION"]> {
-  const { dial: stored = DEFAULT_DIAL } = await readState();
-  const { points } = stored;
-  let next: Dial = { ...stored };
-  const cur = clampPct(Math.max(stored.peak, dialRaw(stored, points)));
-  if (rate !== undefined && (IMMERSION_RATES as readonly number[]).includes(rate) && rate !== next.rate) {
-    // Speed only scales gains made from now on: keep the current percent.
-    next = { ...next, rate, base: cur, peak: cur, points0: points };
-  }
-  if (percent !== undefined && Number.isFinite(percent)) {
-    const target = clampPct(percent);
-    next = { ...next, base: target, peak: target, points0: points };
-  }
-  const patch: Partial<StoredState> = { dial: next };
-  if (reset) {
-    // Back to the learner's real level: points × 1 × DIAL_K.
-    patch.dial = { rate: 1, base: 0, points0: 0, peak: 0, points };
-    patch.knewIt = [];
-  }
-  await chrome.storage.local.set(patch);
+  // Fresh points first (review: a click right after a tutor session must not use stale points as points0).
+  const fresh = (await getCandidates(true))?.understanding?.points;
+  await withDial(async () => {
+    const { dial: stored = DEFAULT_DIAL } = await readState();
+    const points = fresh ?? stored.points;
+    let next = settle(stored, points);
+    const cur = next.peak;
+    if (rate !== undefined && (IMMERSION_RATES as readonly number[]).includes(rate) && rate !== next.rate) {
+      // Speed only scales gains made from now on: keep the current percent.
+      next = { ...next, rate, base: cur, peak: cur, points0: points };
+    }
+    if (percent !== undefined && Number.isFinite(percent)) {
+      const target = clampPct(percent);
+      next = { ...next, base: target, peak: target, points0: points };
+    }
+    const patch: Partial<StoredState> = { dial: next };
+    if (reset) {
+      // Back to the learner's real level: points × 1 × DIAL_K.
+      patch.dial = { rate: 1, base: 0, points0: 0, peak: 0, points };
+      patch.knewIt = [];
+    }
+    await chrome.storage.local.set(patch);
+  });
   candidatesCache = null;
   return { ok: true };
+}
+
+/**
+ * The dial with fresh points. The peak never drops; when points fall below it (a hover sends a known word back to
+ * learning, −2), rebase onto the peak so later gains count in full instead of first refilling the dip (review).
+ */
+function settle(stored: Dial, points: number): Dial {
+  const raw = dialRaw(stored, points);
+  if (raw >= stored.peak) return { ...stored, points, peak: clampPct(raw) };
+  return { ...stored, points, base: stored.peak, points0: points };
+}
+
+/** Serialises every read-modify-write of `dial` in this worker. */
+let dialLock: Promise<unknown> = Promise.resolve();
+function withDial<T>(fn: () => Promise<T>): Promise<T> {
+  const run = dialLock.then(fn, fn);
+  dialLock = run.catch(() => undefined);
+  return run;
 }
 
 /** Change only perPageCap on the server (fresh read first, so nothing else is overwritten). */
