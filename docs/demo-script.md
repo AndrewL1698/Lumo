@@ -1,6 +1,6 @@
 # Luci: Demo Script (2 minutes)
 
-Owner: Naren. Locked after Phase 3. Only use sentences that passed ≥5 rehearsal runs. Setup: headset mic, phone hotspot, localhost, demo user seeded.
+Owner: Naren. Locked after Phase 3. Only use sentences that passed ≥5 rehearsal runs. Setup: headset mic, phone hotspot, localhost, demo user seeded. **Immersion (D-019):** NPR set to **Always on for this site** in the popup (not "Try on this page", which ends on reload), then, after `seed-demo`, popup **Reset progress** → **Demo** speed. See "Immersion beat" below.
 
 | Time | Presenter says | On screen | Fallback if it fails |
 |---|---|---|---|
@@ -10,7 +10,8 @@ Owner: Naren. Locked after Phase 3. Only use sentences that passed ≥5 rehearsa
 | 0:50 | "It planned this session before I said anything." | Open tutor; **Tonight's lesson card** is open: the article and why it was picked, the target words each with a reason, one mistake to watch. Opener references the article just read | Card absent (plan failed) → skip the line, go straight to the opener |
 | 1:05 | | Speak scripted sentence 1; **correction appears on screen**. Why line here just reads _"Just talking…"_ — don't point at it yet | Show pre-recorded correction |
 | 1:30 | "It caught that, and chose not to interrupt me." | Speak scripted sentence 2; **empresa** used correctly → "now known" toast, lesson card ticks it off, vocab page. **Why line now reads _"Not correcting out loud yet…"_** — point at it here | If the why line differs, drop the line and stay on the toast |
-| 1:45 | Eval numbers (precision / recall / latency), privacy line | Pitch slide | |
+| 1:40 | "It knows *empresa* now, so the article gets more Spanish." | Switch to the NPR tab and **reload**: *empresa* is solid gold, and the page jumps from ~5% to ~40% Spanish (about 15 → 80 words). Optional: open the popup to show the number | Slow or unchanged → popup **Jump to 35** → reload (pre-warmed) |
+| 1:50 | Eval numbers (precision / recall / latency), privacy line | Pitch slide | |
 | 2:00 | Close | | |
 
 ### What the why line actually says, turn by turn
@@ -93,13 +94,36 @@ and the 1:30 flip.
 
 > Demo URL: _pending from Karthik_
 
+## Immersion beat (D-019, added Sun ~1am, Andrew; Naren to confirm the timing)
+
+**What judges see:** the tutor turns a word "known", and the article on the next reload has more Spanish in it. The page's Spanish is driven by what the learner has proven, not by a slider.
+
+**How the number moves:**
+- Immersion % = understanding points × speed × 0.25. A known word = 2 points, a "Knew it" = 1, a hover = 0.
+- After `seed-demo`: 9 known words = 18 points ≈ **5%**.
+- At **Demo** speed (70×), each point after Demo was picked adds 17.5%. *empresa* turning known at 1:30 is +2 points → **~40%**.
+- The percent never drops, even if a gold word gets hovered (hovering sends it back to "learning").
+
+**Say it straight if asked:** "Demo speed compresses a week of practice into one sentence. At normal speed each known word adds a quarter of a percent."
+
+**Setup (in this order):**
+1. `npm run seed-demo -w scripts`.
+2. In the popup, **Reset progress**, then **Demo**.
+   - Never seed after Reset. A reseed wipes progress while the dial keeps its peak, which hides the tutor's gain.
+
+**Pre-warm:** run the whole script once as a rehearsal. It translates exactly the ~40% page and fills the cache, so the 1:40 reload is quick. Then redo the setup above.
+
+**Optional extra growth:** click **Knew it** on other non-gold words before the tutor (+17.5% each).
+- Don't click Knew it on *empresa*: it stops counting once *empresa* is known, so it adds nothing in the end.
+- At 55% and above, whole Spanish sentences appear.
+
 ## Rehearsal log
 
 Five clean runs in a row before this script is locked. A run passes only if **every** box is true:
 swaps appear and the edge glow is on · the hover card opens with audio · the lesson card is present
 and names the article · sentence 1 is transcribed **verbatim** (the error is still there) · the
 on-screen correction appears · the why line matches what this script says · sentence 2 flips the
-word to known and ticks it off the card.
+word to known and ticks it off the card · the 1:40 reload shows *empresa* gold and the percent near 40%.
 
 | Run | Date/time | Pass? | STT kept the error? | Why line seen | Issues |
 |---|---|---|---|---|---|
