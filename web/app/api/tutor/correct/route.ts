@@ -12,6 +12,14 @@ import { canonicalLemma, validateCorrection } from "@/lib/tutor/validate";
 const EMPTY: ValidatedCorrection = { shown: [], kept: [], target_words_used: [], overall_ok: true };
 const FAILED_HEADER = { "X-Correction-Failed": "1" };
 
+/** `flag` and `spanish_version` for the response, present only when set. */
+function flagFields(v: ValidatedCorrection) {
+  return {
+    ...(v.flag ? { flag: v.flag } : {}),
+    ...(v.spanish_version ? { spanish_version: v.spanish_version } : {}),
+  };
+}
+
 /** One short line for the server log; never sent to the client. */
 function reason(err: unknown, timedOut: boolean): string {
   if (timedOut) return `timeout after ${TUTOR.correctTimeoutMs}ms`;
@@ -53,7 +61,7 @@ export async function POST(req: Request) {
       tutorPrevious,
       signal: ac.signal,
     });
-    v = validateCorrection(rawText, model);
+    v = validateCorrection(rawText, model, tutorPrevious);
     // "la casa" / "Casa" → the session's exact lemma, for the policy, the response and the learner model.
     const targets = session.context.targetWords;
     v.target_words_used = v.target_words_used.map((u) => ({ ...u, lemma: canonicalLemma(u.lemma, targets) }));
@@ -63,6 +71,7 @@ export async function POST(req: Request) {
       errors: v.kept,
       target_words_used: v.target_words_used,
       overall_ok: v.overall_ok,
+      ...flagFields(v),
     });
   } catch (err) {
     v = EMPTY;
@@ -90,7 +99,7 @@ export async function POST(req: Request) {
 
   const serverMs = Date.now() - t0;
   console.log(
-    `[correct] ${utteranceId} stt=${sttPath} shown=${v.shown.length} kept=${v.kept.length} words=${wordUpdates.length} serverMs=${serverMs}${failed ? " FAILED" : ""}`,
+    `[correct] ${utteranceId} stt=${sttPath} shown=${v.shown.length} kept=${v.kept.length} words=${wordUpdates.length} serverMs=${serverMs}${v.flag ? ` flag=${v.flag}` : ""}${failed ? " FAILED" : ""}`,
   );
   return json(
     {
@@ -99,6 +108,7 @@ export async function POST(req: Request) {
         errors: v.shown,
         target_words_used: v.target_words_used,
         overall_ok: v.overall_ok,
+        ...flagFields(v),
       },
       wordUpdates,
       serverMs,

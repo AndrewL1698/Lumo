@@ -42,6 +42,9 @@ const ModelCorrectionSchema = z.object({
     z.object({ lemma: z.string(), form: z.string(), correct: z.boolean() }),
   ),
   overall_ok: z.boolean(),
+  // Last, and never called "ok": asked for first, it made Haiku miss real errors on the eval set.
+  answer: z.enum(["answered", "english", "off_topic", "unclear"]),
+  spanish_version: z.string().nullable(),
 });
 
 /** Correction lane: Haiku, thinking off, structured output. The raw transcript is passed through untouched. */
@@ -79,6 +82,32 @@ export async function warmUpCorrector(): Promise<void> {
   } catch {
     // Warm-up only; the real call reports its own errors.
   }
+}
+
+const TUTOR_TRANSLATE_SYSTEM = `The text in <line> is one thing a Spanish tutor said out loud to a learner. Translate it into plain, natural English for someone who speaks no Spanish.
+When the tutor gives the learner a Spanish word or phrase to say (after words like "Puedes decir", "Se dice" or "Puedes empezar con"), keep that phrase in Spanish and add its English in brackets, for example: You can say "Me llamo Ana" (My name is Ana). Translate everything else, questions included.
+Reply with the translation only, with no quotation marks around it.`;
+
+/** English for one finished tutor line (shown under the bubble). Haiku, plain text. Throws on any failure. */
+export async function translateTutorLine(text: string, signal?: AbortSignal): Promise<string> {
+  const response = await getClaude().messages.create(
+    {
+      model: MODELS.correction,
+      max_tokens: 300,
+      thinking: { type: "disabled" },
+      output_config: { effort: "low" },
+      system: TUTOR_TRANSLATE_SYSTEM,
+      messages: [{ role: "user", content: `<line>${text}</line>` }],
+    },
+    { signal },
+  );
+  if (response.stop_reason === "refusal") throw new ClaudeRefusalError("translator refused");
+  const english = response.content
+    .map((b) => (b.type === "text" ? b.text : ""))
+    .join("")
+    .trim();
+  if (!english) throw new Error(`translator returned no text (stop_reason: ${response.stop_reason})`);
+  return english;
 }
 
 /** Conversation lane: Sonnet, streaming text deltas. Throws ClaudeRefusalError after the stream on a refusal. */

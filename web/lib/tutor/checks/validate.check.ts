@@ -64,6 +64,30 @@ assert.equal(validateCorrection(raw, model([err({ severity: 1.6 })])).shown[0].s
 const c = validateCorrection(raw, { errors: [], target_words_used: [], overall_ok: false });
 assert.deepEqual(c, { shown: [], kept: [], target_words_used: [], overall_ok: true });
 
+// ---- turn flags ----
+const used = [{ lemma: "huelga", form: "huelga", correct: true }];
+// English: no errors, no target-word credit, the Spanish version is passed on.
+assert.deepEqual(
+  validateCorrection("Hi, my name is Shravan", { ...model([err({ span: "my name" })], used), answer: "english", spanish_version: " Hola, me llamo Shravan. " }),
+  { shown: [], kept: [], target_words_used: [], overall_ok: false, flag: "english", spanish_version: "Hola, me llamo Shravan." },
+);
+// A Spanish sentence the model called English: the flag is dropped and grading goes on as usual.
+const notEnglish = validateCorrection(raw, { ...model([err({})], used), answer: "english", spanish_version: "x" });
+assert.equal(notEnglish.flag, undefined);
+assert.equal(notEnglish.shown.length, 1);
+// Unclear: no errors either.
+assert.deepEqual(validateCorrection(raw, { ...model([err({})], used), answer: "unclear" }), {
+  shown: [], kept: [], target_words_used: [], overall_ok: false, flag: "unclear",
+});
+// Off topic needs a tutor line; with one, errors and target words are kept.
+assert.equal(validateCorrection(raw, { ...model([], used), answer: "off_topic" }).flag, undefined);
+const off = validateCorrection(raw, { ...model([err({})], used), answer: "off_topic" }, "¿Qué piensas de la noticia?");
+assert.equal(off.flag, "off_topic");
+assert.equal(off.shown.length, 1);
+assert.equal(off.target_words_used.length, 1);
+assert.equal(validateCorrection(raw, { ...model([]), answer: "off_topic" }, "¿Qué?").overall_ok, false);
+assert.deepEqual(validateCorrection(raw, { ...model([]), answer: "answered", spanish_version: null }), c);
+
 // ---- validateTargetWords (§1.6) ----
 const targets = tutorContextFixture.targetWords; // huelga, aprovechar, casa
 const use = (lemma: string, form: string | undefined, correct = true) => ({ lemma, form, correct });

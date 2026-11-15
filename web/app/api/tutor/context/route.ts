@@ -1,4 +1,5 @@
 import { TutorContext } from "@parrot/shared";
+import { warmUpCorrector } from "@/lib/claude";
 import { json } from "@/lib/http";
 import { DEMO_USER_ID, TUTOR, isTutorMock } from "@/lib/config";
 import { getTutorContextData } from "@/lib/learner/queries";
@@ -15,6 +16,9 @@ export async function GET() {
 
   // /api/tutor/correct and /reply read this exact context by sessionId.
   setSessionContext(context.sessionId, context);
+
+  // Not awaited: compiles the corrector's output schema now, so the first spoken turn does not pay for it.
+  if (!isTutorMock()) void warmUpCorrector();
 
   const targets = context.targetWords.map((w) => w.lemma).join(",");
   console.log(

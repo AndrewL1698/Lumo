@@ -7,7 +7,7 @@ import { CandidatesResponse } from "./candidates";
 import { EventsResponse } from "./events";
 import { Settings } from "./settings";
 import { TranslateResponse } from "./translate";
-import { CorrectResponse, Recap, SttTokenResponse, TutorContext } from "./tutor";
+import { CorrectResponse, Recap, SttTokenResponse, TutorContext, TutorTranslateResponse } from "./tutor";
 
 const now = "2026-11-14T15:00:00.000Z";
 const tomorrow = "2026-11-15T15:00:00.000Z";
@@ -105,9 +105,41 @@ export const correctResponseCleanFixture = CorrectResponse.parse({
   wordUpdates: [],
 });
 
+/** /api/tutor/correct when the learner answered in English ("Hi, my name is Shravan"). */
+export const correctResponseEnglishFixture = CorrectResponse.parse({
+  serverMs: 720,
+  correction: {
+    utterance_id: "utt_demo_3",
+    errors: [],
+    target_words_used: [],
+    overall_ok: false,
+    flag: "english",
+    spanish_version: "Hola, me llamo Shravan.",
+  },
+  wordUpdates: [],
+});
+
+/** /api/tutor/correct when the answer has nothing to do with the tutor's question. */
+export const correctResponseOffTopicFixture = CorrectResponse.parse({
+  serverMs: 690,
+  correction: {
+    utterance_id: "utt_demo_4",
+    errors: [],
+    target_words_used: [],
+    overall_ok: false,
+    flag: "off_topic",
+  },
+  wordUpdates: [],
+});
+
 /** What /api/tutor/reply streams (text/plain) in mock mode. */
 export const replyTextFixture =
   "Claro, entiendo. El problema es que la huelga sigue, ¿verdad? ¿Cómo llegas al trabajo esta semana?";
+
+/** /api/tutor/translate for `replyTextFixture`. */
+export const tutorTranslateResponseFixture = TutorTranslateResponse.parse({
+  english: "Sure, I understand. The problem is that the strike goes on, right? How are you getting to work this week?",
+});
 
 export const recapFixture = Recap.parse({
   topErrors: [

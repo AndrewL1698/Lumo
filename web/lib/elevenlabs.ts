@@ -37,7 +37,7 @@ export async function mintSttToken(): Promise<string> {
   return data.token;
 }
 
-type TtsOpts = { outputFormat?: string; voiceId?: string };
+type TtsOpts = { outputFormat?: string; voiceId?: string; /** 1 (or unset) = the voice's normal pace. */ speed?: number };
 
 /** `web/.cache/tts`, whether the process runs from the repo root (tsx) or from `web/` (Next). */
 function ttsCacheDir(): string {
@@ -57,9 +57,13 @@ const forceSpanish = (text: string) => text.trim().split(/\s+/).length <= 3;
 export function ttsCachePath(text: string, opts?: TtsOpts): string {
   const voiceId = opts?.voiceId ?? process.env.ELEVENLABS_VOICE_ID ?? "";
   const format = opts?.outputFormat ?? ELEVENLABS.ttsOutputFormat;
+  const speed = opts?.speed ?? 1;
   const key = createHash("sha256")
     // "auto" in the key so audio cached while everything was forced to Spanish isn't replayed.
-    .update([voiceId, ELEVENLABS.ttsModel, format, ...(forceSpanish(text) ? [] : ["auto"]), text].join("\n"))
+    // The speed is in the key only when it is not 1, so audio cached before speeds existed is still found.
+    .update(
+      [voiceId, ELEVENLABS.ttsModel, format, ...(forceSpanish(text) ? [] : ["auto"]), ...(speed === 1 ? [] : [`speed ${speed}`]), text].join("\n"),
+    )
     .digest("hex");
   return path.join(ttsCacheDir(), `${key}.bin`);
 }
@@ -70,7 +74,8 @@ export async function ttsChunk(text: string, opts?: TtsOpts): Promise<ArrayBuffe
   const voiceId = opts?.voiceId ?? envVoiceId;
   if (!voiceId) throw new Error("ELEVENLABS_VOICE_ID is not set");
   const format = opts?.outputFormat ?? ELEVENLABS.ttsOutputFormat;
-  const cacheFile = ttsCachePath(text, { voiceId, outputFormat: format });
+  const speed = opts?.speed ?? 1;
+  const cacheFile = ttsCachePath(text, { voiceId, outputFormat: format, speed });
 
   try {
     return new Uint8Array(await readFile(cacheFile)).buffer;
@@ -86,6 +91,7 @@ export async function ttsChunk(text: string, opts?: TtsOpts): Promise<ArrayBuffe
       text,
       model_id: ELEVENLABS.ttsModel,
       ...(forceSpanish(text) ? { language_code: "es" } : {}),
+      ...(speed === 1 ? {} : { voice_settings: { speed } }),
     }),
   });
   if (!res.ok) throw await httpError("TTS", res, apiKey);

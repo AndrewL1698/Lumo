@@ -3,6 +3,8 @@
  * chunk at a time, in (turn, index) order. The ordering/stop logic touches no DOM: fetchAudio and decode
  * are injectable, so checks/audio.check.ts runs it under Node.
  */
+import type { Level } from "@parrot/shared";
+import { ELEVENLABS } from "../../config";
 import type { AudioQueue } from "../types";
 
 /** One decoded chunk. `at` is a delay in seconds from now (the queue always passes 0). */
@@ -16,6 +18,8 @@ export type AudioQueueOptions = {
   fetchAudio?: (text: string, signal: AbortSignal) => Promise<ArrayBuffer>;
   decode?: (buf: ArrayBuffer) => Promise<Playable>;
   onChunkFailed?: (turn: number, index: number) => void;
+  /** The learner's level, read per chunk: lower levels get a slower voice. Unknown = normal pace. */
+  level?: () => Level | undefined;
 };
 
 type Item = {
@@ -27,11 +31,11 @@ type Item = {
   onStart?: () => void;
 };
 
-async function defaultFetchAudio(text: string, signal: AbortSignal): Promise<ArrayBuffer> {
+async function defaultFetchAudio(text: string, signal: AbortSignal, level?: Level): Promise<ArrayBuffer> {
   const res = await fetch("/api/tts", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({ text, level }),
     signal,
   });
   if (!res.ok) throw new Error(`/api/tts ${res.status}`);
@@ -73,7 +77,7 @@ async function defaultDecode(buf: ArrayBuffer): Promise<Playable> {
 }
 
 /** Built-in voice (NEXT_PUBLIC_TTS_MODE=browser): zero credits, no fetch. */
-function speechPlayable(text: string): Playable {
+function speechPlayable(text: string, rate: number): Playable {
   return {
     duration: 0,
     play(_at, onStart, onEnd) {
@@ -81,6 +85,7 @@ function speechPlayable(text: string): Playable {
       const voices = synth.getVoices();
       const utt = new SpeechSynthesisUtterance(text);
       utt.lang = "es-MX";
+      utt.rate = rate;
       const voice =
         voices.find((v) => v.lang === "es-MX") ?? voices.find((v) => v.lang.startsWith("es"));
       if (voice) utt.voice = voice;
@@ -105,7 +110,8 @@ function speechPlayable(text: string): Playable {
 export function createAudioQueue(opts: AudioQueueOptions = {}): AudioQueue {
   const mode =
     opts.mode ?? (process.env.NEXT_PUBLIC_TTS_MODE === "browser" ? "browser" : "elevenlabs");
-  const fetchAudio = opts.fetchAudio ?? defaultFetchAudio;
+  const level = () => opts.level?.();
+  const fetchAudio = opts.fetchAudio ?? ((text: string, signal: AbortSignal) => defaultFetchAudio(text, signal, level()));
   const decode = opts.decode ?? defaultDecode;
 
   /** Bumped by stopAll(); anything started under an older generation is ignored. */
@@ -180,7 +186,7 @@ export function createAudioQueue(opts: AudioQueueOptions = {}): AudioQueue {
       const signal = abort.signal;
       const load =
         mode === "browser"
-          ? Promise.resolve().then(() => speechPlayable(text))
+          ? Promise.resolve().then(() => speechPlayable(text, ELEVENLABS.ttsSpeed[level() ?? "upper_intermediate"]))
           : Promise.resolve()
               .then(() => fetchAudio(text, signal))
               .then((buf) => (myGen === gen ? decode(buf) : null));

@@ -30,12 +30,18 @@ export const TargetWordUse = z.object({
 });
 export type TargetWordUse = z.infer<typeof TargetWordUse>;
 
+/** Why a turn is not a normal Spanish answer. The UI shows a line for it instead of "No mistakes found". */
+export const TurnFlag = z.enum(["english", "off_topic", "unclear"]);
+export type TurnFlag = z.infer<typeof TurnFlag>;
+
 /** Correction lane output (specs §7.5). `utterance_id` is set by the server, not the model. */
 export const CorrectionResult = z.object({
   utterance_id: z.string(),
   errors: z.array(CorrectionError),
   target_words_used: z.array(TargetWordUse),
   overall_ok: z.boolean(),
+  flag: TurnFlag.optional(), // absent = a normal Spanish answer
+  spanish_version: z.string().optional(), // only with flag "english": what they said, in Spanish
 });
 export type CorrectionResult = z.infer<typeof CorrectionResult>;
 
@@ -93,6 +99,13 @@ export const ReplyRequest = z.object({
   history: z.array(HistoryTurn),
 });
 export type ReplyRequest = z.infer<typeof ReplyRequest>;
+
+/** POST /api/tutor/translate — English for one finished tutor line, shown under its bubble. */
+export const TutorTranslateRequest = z.object({ text: z.string().min(1).max(1000) });
+export type TutorTranslateRequest = z.infer<typeof TutorTranslateRequest>;
+
+export const TutorTranslateResponse = z.object({ english: z.string() });
+export type TutorTranslateResponse = z.infer<typeof TutorTranslateResponse>;
 
 /** POST /api/tutor/end */
 export const EndRequest = z.object({ sessionId: z.string() });

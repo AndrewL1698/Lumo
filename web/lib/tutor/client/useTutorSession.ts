@@ -10,8 +10,10 @@ import {
   SttBatchResponse,
   SttTokenResponse,
   TutorContext,
+  TutorTranslateResponse,
   type CorrectionResult,
   type HistoryTurn,
+  type Level,
   type SttPath,
   type TargetWord,
   type TurnTimeline,
@@ -86,6 +88,8 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
   let started = false;
   let starting = false;
   let sessionId = "";
+  /** The learner's level from the session context; sets the tutor's speaking speed. */
+  let level: Level | undefined;
   let turns: Turn[] = [];
 
   let queue: AudioQueue | null = null;
@@ -104,6 +108,7 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
 
   const getQueue = (): AudioQueue => {
     queue ??= createAudioQueue({
+      level: () => level,
       onChunkFailed: () => set.notice("Audio unavailable for part of the reply; showing captions."),
     });
     return queue;
@@ -178,8 +183,35 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
     reply.abort.abort();
     getQueue().stopAll();
     turnNo++; // late stream / audio results for the old number are dropped
-    if (trim) updateTurn(reply.turnId, (t) => ({ ...t, tutorText: reply.started.join(" ") }));
+    if (trim) {
+      // The English must match what was actually heard, so it is dropped and fetched again.
+      updateTurn(reply.turnId, (t) => ({ ...t, tutorText: reply.started.join(" "), tutorEnglish: undefined }));
+      translateLane(reply.turnId);
+    }
     finishReply(reply);
+  }
+
+  /** English for a tutor line (shown under its bubble). Fire and forget: a failure just shows no English. */
+  function translateLane(turnId: string) {
+    const text = turns.find((t) => t.id === turnId)?.tutorText?.trim();
+    if (!text) return;
+    const myEpoch = epoch;
+    void (async () => {
+      try {
+        const res = await fetch("/api/tutor/translate", {
+          method: "POST",
+          headers: JSON_HEADERS,
+          body: JSON.stringify({ text: text.slice(0, 1000) }),
+        });
+        if (!res.ok) return;
+        const { english } = TutorTranslateResponse.parse(await res.json());
+        if (epoch !== myEpoch) return;
+        // Only if the line is still the one that was translated (a barge-in trims it).
+        updateTurn(turnId, (t) => (t.tutorText?.trim() === text ? { ...t, tutorEnglish: english } : t));
+      } catch {
+        // no English for this line
+      }
+    })();
   }
 
   function closeScribe() {
@@ -315,6 +347,7 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
     try {
       if (!live()) return;
       for (const chunk of chunker.flush()) speak(chunk); // the last sentence only comes out of flush()
+      translateLane(args.turnId); // the text is complete; the English arrives while the audio plays
       if (reply.started.length === 0) set.status("speaking"); // stream ended; audio is loading or playing
       await q.idle(myTurn); // covers everything enqueued above
       if (!live()) return;
@@ -467,6 +500,7 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
         }
 
         sessionId = context.sessionId;
+        level = context.level;
         set.targetWords(context.targetWords);
         if (micOk) recorder = rec;
         else {

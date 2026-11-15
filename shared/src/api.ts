@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { LearnerEventType } from "./events";
-import { IsoDate, UserWord, WordState } from "./words";
+import { IsoDate, Level, UserWord, WordState } from "./words";
 
 /** Error body for any non-2xx JSON response. */
 export const ApiError = z.object({ error: z.string() });
@@ -14,7 +14,11 @@ export const PairResponse = z.object({ token: z.string() });
 export type PairResponse = z.infer<typeof PairResponse>;
 
 /** POST /api/tts — hover-card pronunciation and tutor speech. Response is audio/mpeg. */
-export const TtsRequest = z.object({ text: z.string().min(1).max(500), lemma: z.string().optional() });
+export const TtsRequest = z.object({
+  text: z.string().min(1).max(500),
+  lemma: z.string().optional(),
+  level: Level.optional(), // tutor speech only: the server slows the voice down for lower levels
+});
 export type TtsRequest = z.infer<typeof TtsRequest>;
 
 /** GET /api/vocab (specs §6.3). */

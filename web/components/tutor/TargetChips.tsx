@@ -4,9 +4,9 @@ import type { TargetWord } from "@parrot/shared";
 export function TargetChips({ words, known = [] }: { words: TargetWord[]; known?: string[] }) {
   if (words.length === 0) return null;
   return (
-    <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2 border-b border-line pb-4">
-      <p className="font-display text-lg font-semibold text-ink">Words to light up</p>
-      <ul className="flex flex-wrap gap-x-6 gap-y-2">
+    <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1 border-b border-line pb-3 sm:gap-y-2 sm:pb-4">
+      <p className="font-display text-base font-semibold text-ink sm:text-lg">Words to light up</p>
+      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm sm:gap-x-6 sm:gap-y-2 sm:text-base">
         {words.map((w) => {
           const done = known.includes(w.lemma);
           return (

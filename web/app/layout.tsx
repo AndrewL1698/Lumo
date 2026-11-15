@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import { FireflyCursor } from "@/components/FireflyCursor";
 import { Footer } from "@/components/Footer";
 import { Nav } from "@/components/Nav";
+import { Grass, NightSky } from "@/components/NightSky";
+import { SkyFireflies } from "@/components/SkyFireflies";
 import "./globals.css";
 
 const atkinson = Atkinson_Hyperlegible({ weight: ["400", "700"], subsets: ["latin"], variable: "--font-atkinson", display: "swap" });
@@ -18,10 +20,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" className={`${atkinson.variable} ${bricolage.variable} ${plexMono.variable}`}>
-      <body className="flex min-h-screen flex-col">
+      <body className="relative flex min-h-screen flex-col">
+        <NightSky>
+          <SkyFireflies />
+        </NightSky>
         <Nav />
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">{children}</main>
         <Footer />
+        <Grass />
         <FireflyCursor />
       </body>
     </html>
