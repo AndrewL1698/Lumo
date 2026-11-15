@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { TutorSession } from "@/app/tutor/session";
+import type { TutorSession, TutorTurn } from "@/app/tutor/session";
 import { btn } from "@/components/ui/PageHeader";
 import { CorrectionCards } from "./CorrectionCards";
 import { KnownToast } from "./KnownToast";
@@ -44,26 +44,16 @@ export function TutorPage({ session }: { session: TutorSession }) {
     }
   }, [turns, seen]);
 
-  // Keep the newest message in view as turns, corrections and captions arrive.
+  // The newest exchange is at the top. When a new one starts (you begin talking, or a new turn arrives),
+  // bring the page back to the top if you had scrolled down. Only on those moments, never per character.
   const last = turns[turns.length - 1];
-  const scrollKey = `${turns.length}|${status}|${last?.correction ? 1 : 0}|${last?.tutorText?.length ?? 0}|${partial.length}`;
-  // Calm scrolling: at most one smooth scroll in flight (restarting a smooth scroll on every streamed
-  // character or partial word made the whole page, Luci included, jerk), and only when content is hidden.
-  const lastScroll = useRef(0);
-  const scrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const exchangeKey = `${turns.length}|${status === "listening" ? 1 : 0}`;
   useEffect(() => {
-    if (turns.length < 2 && status !== "listening") return; // nothing to scroll to yet
-    if (scrollTimer.current) return; // one pending scroll covers this change too
-    const go = () => {
-      scrollTimer.current = null;
-      const hidden = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
-      if (hidden < 8) return;
-      lastScroll.current = performance.now();
-      window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
-    };
-    scrollTimer.current = setTimeout(go, Math.max(0, 600 - (performance.now() - lastScroll.current)));
-  }, [scrollKey]);
-  useEffect(() => () => void (scrollTimer.current && clearTimeout(scrollTimer.current)), []);
+    if (turns.length < 2 && status !== "listening") return;
+    if (window.scrollY < 24) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+  }, [exchangeKey]);
 
   // Wide screens: one Luci, pinned beside the conversation, never remounted. Narrow screens: Luci sits
   // beside the newest tutor message.
@@ -141,6 +131,71 @@ export function TutorPage({ session }: { session: TutorSession }) {
   }
 
   const liveText = turns.find((t) => t.id === liveTutorTurn)?.tutorText ?? "";
+
+  // Exchanges, newest first: the newest at full size, the next two smaller and dimmer, the rest folded away.
+  const newest = last;
+  const older = turns
+    .slice(0, -1)
+    .map((t, i) => ({ t, i }))
+    .reverse();
+  const recent = older.slice(0, 2);
+  const earlier = older.slice(2);
+
+  const renderExchange = (t: TutorTurn, i: number, prominent: boolean) => {
+    const isNewest = t.id === newest?.id;
+    const pending = isNewest && !t.tutorText && (status === "checking" || status === "speaking");
+    const luciHere = isNewest && !wide;
+    return (
+      <article
+        key={t.id}
+        className={`space-y-6 py-6 ${prominent || isNewest ? "exchange-newest" : "exchange-older"}`}
+        aria-label={isNewest ? "Latest exchange" : undefined}
+      >
+        {t.rawText && (
+          <div className="grid gap-2 sm:grid-cols-[6rem_1fr] sm:gap-4">
+            <p className={`${speaker} text-muted`}>You</p>
+            <div className="space-y-3">
+              <TranscriptView raw={t.rawText} result={t.correction} />
+              {!t.correction && <p className="text-muted">Checking…</p>}
+              {t.correctionFailed && <p className="text-muted">This answer could not be checked. It was still received.</p>}
+              <CorrectionCards raw={t.rawText} result={t.correction} />
+            </div>
+          </div>
+        )}
+        {(t.tutorText || pending) && (
+          <div className={`flex gap-3 sm:gap-5 ${luciHere ? "items-center" : "items-start"}`} data-luci-live={luciHere ? "" : undefined}>
+            {wide ? null : luciHere ? (
+              // Narrow screens: Luci sits beside the newest reply.
+              <div className="flex w-24 shrink-0 justify-center py-4 sm:w-44">{luci("h-24 w-24 sm:h-44 sm:w-44")}</div>
+            ) : (
+              <div className="flex w-16 shrink-0 justify-center pt-1 sm:w-24">
+                <LuciFirefly still size={44} />
+              </div>
+            )}
+            <div
+              className={`relative min-w-0 flex-1 rounded-md border border-sun-line bg-sun px-4 py-3 sm:px-5 sm:py-4 before:absolute before:-left-[7px] before:h-3 before:w-3 before:rotate-45 before:border-b before:border-l before:border-sun-line before:bg-sun ${
+                luciHere ? "before:top-[calc(50%-6px)]" : "before:top-6"
+              }`}
+            >
+              <p className="sr-only">Luci says</p>
+              {/* screen readers hear each new reply as it arrives */}
+              <p className="relative text-xl leading-snug text-ink sm:text-2xl" aria-live={isNewest ? "polite" : undefined}>
+                {t.tutorText || <span className="text-muted">…</span>}
+              </p>
+              {t.tutorEnglish &&
+                (turns.slice(i + 1).some((x) => x.rawText) ? (
+                  <p className="mt-3 text-lg italic text-muted" lang="en">
+                    {t.tutorEnglish}
+                  </p>
+                ) : (
+                  <p className="mt-3 text-sm text-muted">The English shows after you answer.</p>
+                ))}
+            </div>
+          </div>
+        )}
+      </article>
+    );
+  };
   const luci = (className: string) => (
     <LuciFirefly mood={status} speechText={liveText} reaction={reaction.kind} reactionKey={reaction.n} className={className} />
   );
@@ -164,60 +219,37 @@ export function TutorPage({ session }: { session: TutorSession }) {
 
       <TargetChips words={targetWords} known={known} />
 
-      <ol className="divide-y divide-line">
-        {turns.map((t, i) => (
-          <li key={t.id} className="space-y-6 py-6 first:pt-2">
-            {t.rawText && (
-              <div className="grid gap-2 sm:grid-cols-[6rem_1fr] sm:gap-4">
-                <p className={`${speaker} text-muted`}>You</p>
-                <div className="space-y-3">
-                  <TranscriptView raw={t.rawText} result={t.correction} />
-                  {!t.correction && <p className="text-muted">Checking…</p>}
-                  {t.correctionFailed && <p className="text-muted">This answer could not be checked. It was still received.</p>}
-                  <CorrectionCards raw={t.rawText} result={t.correction} />
-                </div>
-              </div>
-            )}
-            {t.tutorText && (
-              <div
-                className={`flex gap-3 sm:gap-5 ${t.id === liveTutorTurn && !wide ? "items-center" : "items-start"}`}
-                data-luci-live={t.id === liveTutorTurn && !wide ? "" : undefined}
-              >
-                {wide ? null : t.id === liveTutorTurn ? (
-                  // Narrow screens: the live Luci sits beside the newest message.
-                  <div className="flex w-24 shrink-0 justify-center py-4 sm:w-44">{luci("h-24 w-24 sm:h-44 sm:w-44")}</div>
-                ) : (
-                  <div className="flex w-16 shrink-0 justify-center pt-1 sm:w-24">
-                    <LuciFirefly still size={52} />
-                  </div>
-                )}
-                <div
-                  className={`relative min-w-0 flex-1 rounded-md border border-sun-line bg-sun px-4 py-3 sm:px-5 sm:py-4 before:absolute before:-left-[7px] before:h-3 before:w-3 before:rotate-45 before:border-b before:border-l before:border-sun-line before:bg-sun ${
-                    t.id === liveTutorTurn && !wide ? "before:top-[calc(50%-6px)]" : "before:top-6"
-                  }`}
-                >
-                  <p className="sr-only">Tutor</p>
-                  <p className="relative text-xl leading-snug text-ink sm:text-2xl">{t.tutorText}</p>
-                  {t.tutorEnglish &&
-                    (turns.slice(i + 1).some((x) => x.rawText) ? (
-                      <p className="mt-3 text-lg italic text-muted" lang="en">
-                        {t.tutorEnglish}
-                      </p>
-                    ) : (
-                      <p className="mt-3 text-sm text-muted">The English shows after you answer.</p>
-                    ))}
-                </div>
-              </div>
-            )}
-          </li>
-        ))}
-      </ol>
-
+      {/* Newest exchange first. Inside an exchange the order stays natural: you, the correction, Luci's reply. */}
       {status === "listening" && (
-        <div className="grid gap-2 border-t border-line pt-6 sm:grid-cols-[6rem_1fr] sm:gap-4">
-          <p className={`${speaker} text-accent`}>You</p>
-          <p className="text-2xl text-muted">{partial || "Listening"}</p>
-        </div>
+        <section aria-label="You are speaking" className="exchange-newest">
+          <div className="grid gap-2 sm:grid-cols-[6rem_1fr] sm:gap-4">
+            <p className={`${speaker} text-accent`}>You</p>
+            <p className="text-2xl text-ink">{partial || <span className="text-muted">Listening…</span>}</p>
+          </div>
+        </section>
+      )}
+
+      {newest && renderExchange(newest, turns.length - 1, status !== "listening")}
+
+      {recent.length > 0 && (
+        <ol className="space-y-2 border-t border-line pt-2" aria-label="Earlier exchanges">
+          {recent.map(({ t, i }) => (
+            <li key={t.id}>{renderExchange(t, i, false)}</li>
+          ))}
+        </ol>
+      )}
+      {earlier.length > 0 && (
+        <details className="group/earlier border-t border-line pt-4">
+          <summary className="cursor-pointer list-none text-muted transition-colors duration-150 hover:text-ink [&::-webkit-details-marker]:hidden">
+            <span className="group-open/earlier:hidden">Earlier in this conversation ({earlier.length})</span>
+            <span className="hidden group-open/earlier:inline">Hide the earlier conversation</span>
+          </summary>
+          <ol className="mt-2 space-y-2" aria-label="Earlier in this conversation">
+            {earlier.map(({ t, i }) => (
+              <li key={t.id}>{renderExchange(t, i, false)}</li>
+            ))}
+          </ol>
+        </details>
       )}
      </div>
      </div>

@@ -483,6 +483,27 @@ html.firefly-cursor
   }
 }
 
+/* Tutor: older exchanges sit below the newest one, smaller and dimmer; pointing at one brings it back up. */
+.exchange-older {
+  opacity: 0.68;
+  transition: opacity 200ms ease;
+}
+.exchange-older:hover,
+.exchange-older:focus-within {
+  opacity: 1;
+}
+.exchange-older [class~="text-2xl"],
+.exchange-older [class~="sm:text-2xl"] {
+  font-size: 1.15rem !important;
+}
+.exchange-older [class~="text-xl"],
+.exchange-older [class~="text-lg"] {
+  font-size: 1rem !important;
+}
+.exchange-older.py-6 {
+  padding-block: 0.75rem;
+}
+
 /* "Your jar" lights up when a spark lands in it */
 .jar-lit {
   background: var(--color-glow);
