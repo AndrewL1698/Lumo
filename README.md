@@ -19,7 +19,17 @@ English news every day but never find time to study.
 - **AI speaking tutors** (Speak, Praktika and similar) let you talk, but they don't know what you've been reading, so the
   conversation is generic and nothing you read gets practised.
 
-## What's different
+## Usefulness
+- **Speaking practice without a fluent speaker nearby.** Most learners never get conversation practice; Luci gives it
+  every evening, about what you actually read.
+- **No new habit needed.** It works inside reading you already do, so the vocabulary comes from your own news, not a
+  textbook list.
+- **Corrections you can trust.** On our test set it flagged no correct sentence (0% false alarms) and every flag was a
+  real mistake (100% precision). A tutor that corrects things you said right teaches you to ignore it.
+- **English support that fits your level.** Beginners get English help built into what the tutor says; upper-intermediate
+  learners get Spanish only. Every correction comes with a one-line English reason.
+
+## Creativity: what's different
 Luci connects reading and speaking in one loop:
 1. **Read:** on a news site you've enabled, a few English words become Spanish (*the strike → la huelga*). Hover or click one
    for the meaning and pronunciation. Luci notes which words you looked up.
@@ -30,9 +40,13 @@ Luci connects reading and speaking in one loop:
 4. **Prove it:** use a target word correctly out loud and it lights up in your jar, from *Still faint* to *Glowing steady*.
    Seeing or hovering a word is never enough.
 
+**The learner model is something you can see.** The name comes from the firefly, and so does the design: each swapped
+word on the page glows brighter the better you know it, and your words live in a jar of fireflies. A word only shines
+once you've said it correctly, so the rule that seeing a word isn't knowing it is visible right on the page.
+
 UI and explanations are in English; the Spanish is Latin American.
 
-## How it works
+## Technical implementation
 ```
 Chrome extension (MV3)                 Web app (Next.js)
   swaps words on allowed sites           Tutor · Your jar · What Luci knows · Settings
@@ -54,6 +68,12 @@ Chrome extension (MV3)                 Web app (Next.js)
   a verbatim substring of what you said, shows only corrections with confidence ≥ 0.7, and never grades accents or
   punctuation in spoken mode (speech-to-text adds those itself).
 - **Structured output.** Corrections come back as validated JSON (zod schemas shared by the web app and the extension).
+- **Voice starts early.** The tutor's streamed reply is cut into sentences, and each sentence goes to text-to-speech as soon
+  as it's complete, so the tutor starts speaking before the whole reply is written.
+- **No keys in the browser.** Speech-to-text connects with a single-use token from the server; every Claude and ElevenLabs
+  call goes through a server route.
+- **Fails gracefully.** If the database is down, the tutor runs on a default lesson. After two text-to-speech failures it
+  switches to the browser's voice. If a correction can't be checked, the screen says so instead of claiming "no mistakes".
 - **Word list.** The 3,000 most frequent Spanish words from subtitles, common nouns first, with profanity removed
   (see [`scripts/README.md`](scripts/README.md)).
 
@@ -68,8 +88,8 @@ The tutor decides how to teach on every turn instead of following a script:
 - **Steers the conversation** toward a target word you haven't used yet, every other turn.
 - **Acts on the outcome.** A target word used correctly in speech updates your learner model and moves to "known".
 
-You can watch it decide. The *Tonight's lesson* card lists each target word with its reason ("you hovered it this
-morning", "due for review"), and each word lights up as you use it. A small grey **why** line under every tutor reply
+You can watch it decide. The *Tonight's lesson* card lists each target word with its reason (when you hovered it while
+reading, or that it's due for review), and each word lights up as you use it. A small grey **why** line under every tutor reply
 says what it chose and why, e.g. *"Not correcting out loud yet: Luci waits until a mistake comes up in two turns"*. Neither adds an extra Claude
 call: both come from decisions the tutor already makes in code.
 
@@ -79,6 +99,17 @@ call: both come from decisions the tutor already makes in code.
 - **Spaced repetition (FSRS).** Each word has its own review schedule, so words you keep forgetting come back sooner.
 - **Reading shapes speaking.** What you read and looked up decides tomorrow's target words, and repeated mistakes decide
   what the tutor watches for.
+
+## User experience
+- **Talk by holding Space** (or the on-screen button), or type instead.
+- **Corrections sit inline in your own sentence**, always visible rather than hidden behind a hover: the mistake struck
+  through, the fix in green, and the English reason underneath.
+- **English when you need it, not before.** The tutor's English translation stays hidden until you answer, so you try the
+  Spanish first; a *Show English* button reveals it early.
+- **Click or hover any swapped word** for its meaning and pronunciation, then mark *Knew it* or *Didn't know*.
+- **Visible progress:** a "now known" pop-up the moment a word counts, and a recap at the end with your top mistakes,
+  the words you learned and what to review tomorrow.
+- **The newest exchange stays on screen:** the lesson card folds to one line after your first answer.
 
 ## Results
 Correction accuracy on 50 Spanish sentences (35 with one planted learner mistake, 15 correct), run three times through
