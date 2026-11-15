@@ -1,4 +1,4 @@
-// Time-of-day greetings (D-011), shared by the home page and the tutor's opening line so they never disagree.
+// Time-of-day greetings (D-015), shared by the home page and the tutor's opening line so they never disagree.
 // Pure: no clock reads here. Callers pass the learner's local time (browser) or the server's (tutor, on localhost).
 
 export type PartOfDay = "late_night" | "early" | "morning" | "afternoon" | "evening" | "night";
