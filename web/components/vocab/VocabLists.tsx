@@ -1,4 +1,4 @@
-import type { VocabItem, VocabResponse } from "@parrot/shared";
+import type { VocabResponse } from "@parrot/shared";
 
 // The same words as the jar, as a readable list grouped by how brightly they glow. No boxes.
 const GROUPS: { key: "known" | "learning" | "mastered"; title: string }[] = [
@@ -7,7 +7,6 @@ const GROUPS: { key: "known" | "learning" | "mastered"; title: string }[] = [
   { key: "mastered", title: "Shining bright" },
 ];
 
-const isDue = (w: VocabItem) => !!w.dueAt && new Date(w.dueAt).getTime() <= Date.now();
 
 export function StreakBadge({ days }: { days: number }) {
   return (
@@ -54,11 +53,6 @@ export function VocabLists({ data, fresh = new Set<string>() }: { data: VocabRes
                       {w.lemma}
                     </span>
                     <span className="text-muted">{w.english}</span>
-                    {key !== "mastered" && isDue(w) && (
-                      <span className="ml-auto inline-block h-2.5 w-2.5 shrink-0 self-center rounded-full border-2 border-accent" title="Up for review">
-                        <span className="sr-only">Up for review</span>
-                      </span>
-                    )}
                   </li>
                 ))}
               </ul>
