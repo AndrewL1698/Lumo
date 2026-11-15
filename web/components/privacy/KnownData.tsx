@@ -23,8 +23,11 @@ const EVENT_LABEL: Record<string, string> = {
 type Glow = "seen" | "learning" | "known" | "mastered";
 const GLOW: Record<string, Glow> = { new: "seen", seen: "seen", learning: "learning", known: "known", known_assumed: "known", mastered: "mastered" };
 const GLOW_NAME: Record<Glow, string> = { seen: "Seen", learning: "Learning", known: "Known", mastered: "Mastered" };
-/** Each group shows this many words, then a "Show all" toggle. */
+/** Each group shows this many words, then a "Show all" toggle. Seen is the least interesting, so it shows fewer. */
 const GROUP_LIMIT = 24;
+const SEEN_LIMIT = 20;
+/** Activity, once opened, shows the newest this many entries, then "Show more". */
+const ACTIVITY_LIMIT = 20;
 /** The mastered pulse is the only animation; above this many mastered words it stays static. */
 const PULSE_MAX = 30;
 
@@ -83,6 +86,8 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
   const [confirming, setConfirming] = useState(false);
   const [failed, setFailed] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const [activityOpen, setActivityOpen] = useState(false); // closed by default: it can get long
+  const [activityAll, setActivityAll] = useState(false);
   const toggleGroup = (title: string) =>
     setExpanded((prev) => {
       const next = new Set(prev);
@@ -142,7 +147,8 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
               const words = data.words.filter((w) => g.states.includes(w.state)).sort((a, b) => a.lemma.localeCompare(b.lemma, "es"));
               if (g.optional && words.length === 0) return null;
               const open = expanded.has(g.title);
-              const shown = open ? words : words.slice(0, GROUP_LIMIT);
+              const limit = g.title === "Seen" ? SEEN_LIMIT : GROUP_LIMIT;
+              const shown = open ? words : words.slice(0, limit);
               const pulse = g.title === "Mastered" && words.length <= PULSE_MAX;
               const listId = `words-${g.title.toLowerCase()}`;
               return (
@@ -173,7 +179,7 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
                           );
                         })}
                       </ul>
-                      {words.length > GROUP_LIMIT && (
+                      {words.length > limit && (
                         <button
                           type="button"
                           aria-expanded={open}
@@ -195,13 +201,39 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
 
       <div className="grid gap-16 lg:grid-cols-[3fr_2fr]">
         <section>
-          <Heading count={data.events.length}>Activity</Heading>
-          {data.events.length === 0 ? (
+          {/* A dropdown: the activity log can run to hundreds of entries. */}
+          <h2 className="mb-5 font-display text-2xl font-extrabold">
+            <button
+              type="button"
+              aria-expanded={activityOpen}
+              aria-controls="activity-list"
+              onClick={() => setActivityOpen((o) => !o)}
+              className="flex items-center gap-3 rounded-sm text-left"
+            >
+              <svg
+                viewBox="0 0 20 20"
+                width="20"
+                height="20"
+                aria-hidden="true"
+                className={`shrink-0 text-muted transition-transform duration-200 ${activityOpen ? "rotate-90" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M7.5 4.5 13 10l-5.5 5.5" />
+              </svg>
+              Activity <span className="font-sans text-lg font-normal text-muted">{data.events.length}</span>
+            </button>
+          </h2>
+          {!activityOpen ? null : data.events.length === 0 ? (
             <p className="text-muted">No activity stored yet.</p>
           ) : (
-            // A timeline: one line, one small light per moment.
-            <ol className="relative ml-1.5 border-l-2 border-line">
-              {data.events.map((e) => (
+            <>
+            {/* A timeline: one line, one small light per moment, newest first. */}
+            <ol id="activity-list" className="relative ml-1.5 border-l-2 border-line">
+              {(activityAll ? data.events : data.events.slice(0, ACTIVITY_LIMIT)).map((e) => (
                 <li key={e.id} className="group relative flex items-center justify-between gap-3 py-2 pl-6">
                   <span className="absolute -left-[5px] top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-accent" aria-hidden="true" />
                   <span className="min-w-0">
@@ -213,6 +245,18 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
                 </li>
               ))}
             </ol>
+            {data.events.length > ACTIVITY_LIMIT && (
+              <button
+                type="button"
+                aria-expanded={activityAll}
+                aria-controls="activity-list"
+                onClick={() => setActivityAll((a) => !a)}
+                className="ml-8 mt-3 rounded-sm text-base font-semibold text-accent underline decoration-1 underline-offset-4 hover:text-ink"
+              >
+                {activityAll ? "Show fewer" : `Show more (${data.events.length - ACTIVITY_LIMIT})`}
+              </button>
+            )}
+            </>
           )}
         </section>
 
