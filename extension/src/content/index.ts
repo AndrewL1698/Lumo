@@ -248,7 +248,8 @@ function findMatches(nodes: Text[], byLemma: Map<string, Candidate>): Match[] {
  * Score-first greedy pick (every step, D-018): best review words until the 70/30 share is met, then every fresh word,
  * then review again to top up. A match is skipped if its lemma is already used on the page, its sentence already has
  * rules.perSentence picks, or it sits within minGap words of a pick. Word indices restart at 0 every sweep (each sweep
- * only sees new text nodes), so the gap starts fresh each sweep. Returned in document order.
+ * only sees new text nodes), so the gap starts fresh each sweep. Returned in priority order (best first), so the
+ * caller can over-pick and keep the best ones that translate.
  */
 function pickWords(matches: Match[], budget: number): Match[] {
   const review = matches.filter((m) => m.isReview).sort((a, b) => b.score - a.score);
@@ -275,8 +276,14 @@ function pickWords(matches: Match[], budget: number): Match[] {
   }
   for (const m of fresh) add(m);
   for (const m of review) add(m); // top up if fresh ran out
-  return chosen.sort((a, b) => a.wordIndex - b.wordIndex);
+  return chosen;
 }
+
+/**
+ * About a third of picks come back null (the word list's sense doesn't fit this sentence), so ask for more than the
+ * budget and keep the best ones that translate (measured on the NPR article, D-018 update).
+ */
+const OVERPICK = 1.6;
 
 // ---------------------------------------------------------------- swapping
 
@@ -596,7 +603,7 @@ async function sweep(root: Node): Promise<void> {
     const r = sentenceRanges.get(m.node);
     return !r || m.offset + m.englishMatch.length <= r.start || m.offset >= r.end;
   });
-  const chosen = pickWords(matches, Math.max(0, pageCap - swapCount));
+  const chosen = pickWords(matches, Math.ceil(Math.max(0, pageCap - swapCount) * OVERPICK));
   if (!chosen.length && !blocks.length) {
     console.log(`[parrot] step ${rules.step}: ${nodes.length} new text node(s), nothing worth swapping`);
     return;
@@ -628,7 +635,9 @@ async function sweep(root: Node): Promise<void> {
             if (r && start < r.end && start + item.span.length > r.start) return;
             ops.push(wordOp(m, start, item.span, item.replacement));
           });
-          ops.splice(Math.max(0, pageCap - swapCount)); // a parallel sweep may have used some of the budget
+          // Ops are in pick priority (best first): keep the best that translated, up to what's left of the budget
+          // (a parallel sweep may have used some).
+          ops.splice(Math.max(0, pageCap - swapCount));
           const applied = applyOps(ops);
           console.log(
             `[parrot] step ${rules.step}: swapped ${applied} of ${chosen.length} chosen ` +

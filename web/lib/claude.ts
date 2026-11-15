@@ -233,7 +233,9 @@ export function cleanSwap(lemma: string, span: string, replacement: string): str
     out = /^[A-ZÁÉÍÓÚÑ]/.test(out) ? rest.charAt(0).toUpperCase() + rest.slice(1) : rest;
   }
   if (!out || out.toLowerCase() === span.trim().toLowerCase()) return null;
-  if (lemma.length >= 3 && !/(ar|er|ir)$/.test(lemma) && !fold(out).includes(fold(lemma).slice(0, 3))) return null;
+  if (lemma.length >= 3 && !/(ar|er|ir)(se)?$/.test(fold(lemma)) && !fold(out).includes(fold(lemma).slice(0, 3))) {
+    return null;
+  }
   return out;
 }
 
