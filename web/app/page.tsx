@@ -2,6 +2,7 @@ import Link from "next/link";
 import { correctResponseFixture, rawTextFixture } from "@parrot/shared";
 import { LuciMark } from "@/components/LuciMark";
 import { Greeting } from "@/components/Greeting";
+import { GlossWord } from "@/components/GlossWord";
 import { CorrectionCards } from "@/components/tutor/CorrectionCards";
 import { TranscriptView } from "@/components/tutor/TranscriptView";
 import { btn, eyebrow } from "@/components/ui/PageHeader";
@@ -60,14 +61,17 @@ export default function Home() {
           the better you know it.
         </h2>
         <p className="mt-8 font-serif text-2xl leading-[1.9]">
-          I walked into the <span className="glow-seen">cocina</span> and found the old{" "}
-          <span className="glow-learning flicker">mesa</span> still covered in letters from my{" "}
-          <span className="glow-known">abuela</span>.
+          I walked into the <GlossWord word="cocina" gloss="la cocina · kitchen" className="glow-seen" /> and found the old{" "}
+          <GlossWord word="mesa" gloss="la mesa · table" className="glow-learning flicker" /> still covered in letters from my{" "}
+          <GlossWord word="abuela" gloss="la abuela · grandmother" className="glow-known" />.
         </p>
         <p className="mt-6 max-w-2xl text-lg text-muted">
-          <span className="glow-seen font-semibold text-ink">Cocina</span> glows faintly: you came across it.{" "}
-          <span className="glow-learning font-semibold text-ink">Mesa</span> flickers: you hovered it and heard it.{" "}
-          <span className="glow-known font-semibold">Abuela</span> shines steady: you said it correctly out loud.
+          <GlossWord word="Cocina" gloss="la cocina · kitchen" className="glow-seen font-semibold text-ink" /> glows faintly: you
+          came across it.{" "}
+          <GlossWord word="Mesa" gloss="la mesa · table" className="glow-learning font-semibold text-ink" /> flickers: you hovered it
+          and heard it.{" "}
+          <GlossWord word="Abuela" gloss="la abuela · grandmother" className="glow-known font-semibold" /> shines steady: you said it
+          correctly out loud.
         </p>
         <p className="mt-8 font-display text-2xl font-semibold">Luci can&apos;t light it for you. You light it by saying it.</p>
       </section>
