@@ -244,6 +244,8 @@ export type UseTutorSession = {
   notice: string | null;
   /** Last completed turn's timings, for ?debug=1. */
   lastTimeline: TurnTimeline | null;
+  /** J2 "Today's lesson" card from /api/tutor/context; null before start() or when the server sent none. */
+  plan: TutorContext["plan"] | null;
 };
 
 export type { CorrectResponse };
