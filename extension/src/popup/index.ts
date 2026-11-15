@@ -1,7 +1,7 @@
 // Parrot popup: worker health, enable current site (permission prompt), pairing stub.
 
 import { send } from "../messages";
-import { MAX_SWAPS, autoSwaps, solidCount } from "../swapBudget";
+import { IMMERSION_JUMPS, IMMERSION_RATES, MAX_SWAPS, autoSwaps, solidCount, stepFor } from "../swapBudget";
 
 function el<T extends HTMLElement>(id: string): T {
   const node = document.getElementById(id);
@@ -21,6 +21,11 @@ const amountInput = el<HTMLInputElement>("amount");
 const amountValue = el("amount-value");
 const autoBox = el<HTMLInputElement>("auto");
 const amountNote = el("amount-note");
+const immLine = el("imm-line");
+const immRates = el("imm-rates");
+const immJumps = el("imm-jumps");
+const immReset = el<HTMLButtonElement>("imm-reset");
+const immNote = el("imm-note");
 
 let origin: string | null = null;
 
@@ -116,7 +121,9 @@ async function initAmount(): Promise<void> {
   autoValue = autoSwaps(candidates);
   manualCap = s?.settings.perPageCap ?? MAX_SWAPS;
   autoBox.checked = s?.autoGrow ?? true;
+  if (s?.immersion) immersion = s.immersion;
   renderAmount();
+  renderImmersion();
 }
 
 async function reloadActiveTab(): Promise<void> {
@@ -147,10 +154,52 @@ amountInput.addEventListener("change", () => {
 
 autoBox.addEventListener("change", () => {
   renderAmount();
+  renderImmersion();
   void send({ type: "SET_SWAP_AMOUNT", autoGrow: autoBox.checked })
     .then(() => reloadActiveTab())
     .catch(() => undefined);
 });
+
+// ---------------------------------------------------------------- immersion dial (D-018)
+
+let immersion = { points: 0, rate: 1, percent: 0 };
+
+const rateButtons = IMMERSION_RATES.map((rate) => {
+  const b = document.createElement("button");
+  b.textContent = `${rate}×`;
+  b.addEventListener("click", () => void setImmersion({ rate }));
+  immRates.append(b);
+  return { rate, b };
+});
+
+for (const percent of IMMERSION_JUMPS) {
+  const b = document.createElement("button");
+  b.textContent = `${percent}%`;
+  b.addEventListener("click", () => void setImmersion({ percent }));
+  immJumps.append(b);
+}
+
+immReset.addEventListener("click", () => void setImmersion({ reset: true }));
+
+function renderImmersion(): void {
+  immLine.textContent = `Immersion ${immersion.percent}% · step ${stepFor(immersion.percent).step}`;
+  for (const { rate, b } of rateButtons) b.classList.toggle("active", rate === immersion.rate);
+  immNote.textContent = autoBox.checked
+    ? "Grows as you hover and answer on the page."
+    : "The slider sets words per page; the dial is paused.";
+}
+
+async function setImmersion(change: { rate?: number; percent?: number; reset?: boolean }): Promise<void> {
+  try {
+    await send({ type: "SET_IMMERSION", ...change });
+    const s = await send({ type: "GET_SETTINGS" });
+    if (s?.immersion) immersion = s.immersion;
+    renderImmersion();
+    await reloadActiveTab();
+  } catch {
+    immNote.textContent = "not saved: Luci isn't reachable";
+  }
+}
 
 void init();
 void initAmount();

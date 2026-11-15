@@ -13,10 +13,10 @@ import { installHoverCard, type HoverTarget } from "./hovercard";
 import { watchSeen } from "./seen";
 import wordindex from "../wordindex.json";
 import wordbands from "../wordbands.json";
-import { LEVEL_BAND, MAX_SWAPS, swapBudget } from "../swapBudget";
+import { LEVEL_BAND, MAX_SWAPS, STEPS, pageRules, type StepRules } from "../swapBudget";
 
 /** Bump when changing this file, so a stale bundle in Chrome is obvious in the console. */
-const BUILD = "2.5-k";
+const BUILD = "2.6-imm";
 
 /** Words that must sit between two swaps, so they are never adjacent (specs §5.2.7). Loosened when the
  * page budget is high, so the popup slider visibly matters (never below 4: still never adjacent). */
@@ -40,6 +40,10 @@ const BANDS: Record<string, number> = wordbands;
 let pageCap = MAX_SWAPS;
 let minGap = MIN_WORD_GAP;
 let userBand = 2;
+/** Immersion step rules for this page (D-018). Step 0 = today's behaviour on today's code path. */
+let rules: StepRules = STEPS[0]!;
+/** Lemmas whose latest verdict was "Knew it": shown steady (no flicker), never solid (D-018). Display only. */
+const knewIt = new Set<string>();
 
 let swapCount = 0;
 let lastSwapWordIndex = -Infinity;
@@ -128,16 +132,24 @@ function sentenceAround(node: Text, offset: number): string {
 // ---------------------------------------------------------------- matching and scoring
 
 /** How brightly a swap glows = how well the learner knows it (same three lights as the web app, D-016). */
-type Glow = "seen" | "learning" | "known";
+type Glow = "seen" | "learning" | "steady" | "known";
 function glowOf(state: string | undefined): Glow {
   if (state === "learning") return "learning";
   if (state === "known" || state === "mastered" || state === "known_assumed") return "known";
   return "seen"; // never met, or only seen on a page
 }
 
+/** "Knew it" words glow steady: learning's look without the flicker. Proven-known stays solid (D-018). */
+function glowFor(lemma: string, state: string | undefined): Glow {
+  const glow = glowOf(state);
+  return glow !== "known" && knewIt.has(lemma) ? "steady" : glow;
+}
+
 interface Match {
   glow: Glow;
   node: Text;
+  /** The token's index within its text node (when matched). */
+  offset: number;
   englishMatch: string;
   lemma: string;
   sentence: string;
@@ -166,10 +178,11 @@ function scoreOf(c: Candidate | undefined, lemma: string): number {
   if (!c) {
     // Never met: match the learner's level (D-007). Easier = assumed known, harder = only if nothing better.
     const band = BANDS[lemma] ?? userBand;
-    if (band < userBand) return SKIP;
+    // Immersion steps 1+ (D-018) include easier words too, below the learner's own band.
+    if (band < userBand) return rules.includeEasy ? 0.5 + jitter : SKIP;
     return band === userBand ? 1.0 + jitter : 0.2 + jitter * 0.25;
   }
-  if (c.state === "known_assumed") return SKIP;
+  if (c.state === "known_assumed") return rules.includeEasy ? 0.5 + jitter : SKIP;
   return (
     (c.isDue ? 3.0 : 0) +
     (c.hoveredRecently ? 2.0 : 0) +
@@ -205,6 +218,7 @@ function findMatches(nodes: Text[], byLemma: Map<string, Candidate>): Match[] {
       const state = byLemma.get(lemma.l)?.state;
       found.push({
         node,
+        offset: m.index,
         englishMatch: token,
         lemma: lemma.l,
         sentence: sentenceAround(node, m.index),
@@ -212,7 +226,7 @@ function findMatches(nodes: Text[], byLemma: Map<string, Candidate>): Match[] {
         sentenceKey: `${nodeStart}:${sentenceIndexAt(text, m.index)}`,
         isReview: Boolean(state && state !== "new"),
         score: lemma.s,
-        glow: glowOf(state),
+        glow: glowFor(lemma.l, state),
       });
     }
     wordsWalked += wordInNode;
@@ -252,6 +266,41 @@ function select(matches: Match[], budget: number): Match[] {
   return chosen;
 }
 
+/**
+ * Immersion steps 1–3 (D-018): the same 70/30 ranking as select(), then up to rules.perSentence per sentence,
+ * one swap per lemma per page, minGap words apart. Word indices restart at 0 every sweep, so the gap starts
+ * fresh each sweep (each sweep only sees new text nodes).
+ */
+function selectImmersive(matches: Match[], budget: number): Match[] {
+  const review = matches.filter((m) => m.isReview).sort((a, b) => b.score - a.score);
+  const fresh = matches.filter((m) => !m.isReview).sort((a, b) => b.score - a.score);
+
+  const wantReview = Math.round(budget * REVIEW_SHARE);
+  const keep = new Set([
+    ...review.slice(0, wantReview),
+    ...fresh.slice(0, budget - Math.min(wantReview, review.length)),
+  ]);
+
+  const chosen: Match[] = [];
+  const perSentence = new Map<string, number>();
+  const usedLemmas = new Set<string>(swappedLemmas);
+  let last = -Infinity;
+
+  for (const m of [...matches].sort((a, b) => a.wordIndex - b.wordIndex)) {
+    if (chosen.length >= budget) break;
+    if (!keep.has(m)) continue;
+    const inSentence = perSentence.get(m.sentenceKey) ?? 0;
+    if (inSentence >= rules.perSentence) continue;
+    if (usedLemmas.has(m.lemma)) continue;
+    if (m.wordIndex - last < minGap) continue;
+    chosen.push(m);
+    perSentence.set(m.sentenceKey, inSentence + 1);
+    usedLemmas.add(m.lemma);
+    last = m.wordIndex;
+  }
+  return chosen;
+}
+
 // ---------------------------------------------------------------- swapping
 
 function injectStyle(): void {
@@ -268,6 +317,7 @@ function injectStyle(): void {
     `${sel}[data-parrot-glow=seen]{background:rgba(255,210,58,.18);border-bottom:1px solid rgba(214,146,0,.55);}` +
     `${sel}[data-parrot-glow=learning]{background:rgba(255,210,58,.42);border-bottom:2px solid rgba(214,146,0,.9);` +
     `animation:parrot-flicker 2.4s ease-in-out infinite;}` +
+    `${sel}[data-parrot-glow=steady]{background:rgba(255,210,58,.42);border-bottom:2px solid rgba(214,146,0,.9);}` +
     `${sel}[data-parrot-glow=known]{background:#ffd23a;color:#1a2028;border-bottom:2px solid #d69200;` +
     `box-shadow:0 0 10px 1px rgba(255,210,58,.45);}` +
     `${sel}:hover{filter:brightness(1.08) saturate(1.2);}` +
@@ -302,7 +352,137 @@ function applySwap(m: Match, span: string, replacement: string): boolean {
   return true;
 }
 
+/**
+ * One replacement inside one text node: [start, end) of its current text becomes `el`. Generic so whole Spanish
+ * sentences (Part B, D-018) can go through the same applier; a higher `rank` wins an overlap (blocks over words).
+ */
+interface SwapOp {
+  node: Text;
+  start: number;
+  end: number;
+  el: HTMLElement;
+  rank: number;
+  /** Bookkeeping, run once the element is in the page. */
+  onApplied: () => void;
+}
+
+/**
+ * Where the server's `span` sits in the node: the occurrence that contains the matched token. The server may
+ * widen the span (a determiner, "the company"), so search from just before the token. -1 = not in this node.
+ */
+function locateSpan(m: Match, span: string): number {
+  const text = m.node.nodeValue ?? "";
+  if (!span) return -1;
+  const tokenEnd = m.offset + m.englishMatch.length;
+  for (let s = text.indexOf(span, Math.max(0, m.offset - span.length)); s >= 0 && s <= m.offset; s = text.indexOf(span, s + 1)) {
+    if (s + span.length >= tokenEnd) return s;
+  }
+  return -1;
+}
+
+function wordOp(m: Match, start: number, span: string, replacement: string): SwapOp {
+  // Same element and bookkeeping as applySwap().
+  const el = document.createElement("span");
+  el.setAttribute(MARK_ATTR, "");
+  el.dataset.parrotEn = span;
+  el.dataset.parrotLemma = m.lemma;
+  el.dataset.parrotGlow = m.glow;
+  el.dataset.parrotSentence = m.sentence;
+  el.textContent = replacement;
+  return {
+    node: m.node,
+    start,
+    end: start + span.length,
+    el,
+    rank: 0,
+    onApplied() {
+      swapCount++;
+      swappedLemmas.add(m.lemma);
+      lastSwapWordIndex = Math.max(lastSwapWordIndex, m.wordIndex);
+      observeForSeen?.(el);
+    },
+  };
+}
+
+/**
+ * Apply many replacements, several per text node. Overlaps are dropped (higher rank first, then earlier start).
+ * Each node is cut from its end backwards, so the earlier offsets stay valid. Returns how many were applied.
+ */
+function applyOps(ops: SwapOp[]): number {
+  const byNode = new Map<Text, SwapOp[]>();
+  for (const op of [...ops].sort((a, b) => b.rank - a.rank || a.start - b.start)) {
+    const kept = byNode.get(op.node) ?? [];
+    if (kept.some((k) => op.start < k.end && k.start < op.end)) continue;
+    kept.push(op);
+    byNode.set(op.node, kept);
+  }
+
+  let applied = 0;
+  for (const [node, kept] of byNode) {
+    if (!node.parentNode) continue;
+    for (const op of kept.sort((a, b) => b.start - a.start)) {
+      if (op.end > node.length) continue;
+      const after = node.splitText(op.end);
+      seenNodes.add(after); // our own split: the MutationObserver's re-sweep must not reprocess it
+      const mid = node.splitText(op.start);
+      mid.replaceWith(op.el);
+      op.onApplied();
+      applied++;
+    }
+  }
+  return applied;
+}
+
+/** Immersion steps 1–3 (D-018): many swaps per text node, placed by offset. Step 0 never comes here. */
+async function sweepImmersive(root: Node): Promise<void> {
+  if (swapCount >= pageCap) return;
+
+  const nodes = collectTextNodes(root).filter((n) => !seenNodes.has(n));
+  for (const n of nodes) seenNodes.add(n);
+  if (!nodes.length) return;
+
+  const candidates = await send({ type: "GET_CANDIDATES" }).catch(() => null);
+  const byLemma = new Map((candidates?.candidates ?? []).map((c) => [c.lemma, c]));
+
+  const matches = findMatches(nodes, byLemma);
+  const chosen = selectImmersive(matches, pageCap - swapCount);
+  if (!chosen.length) {
+    console.log(`[parrot] step ${rules.step}: ${nodes.length} new text node(s), nothing worth swapping`);
+    return;
+  }
+
+  // ONE batch for the page. Swaps appear only after it returns; load is never blocked.
+  const res = await send({
+    type: "TRANSLATE",
+    articleKey,
+    items: chosen.map((m) => ({ sentence: m.sentence, lemma: m.lemma, englishMatch: m.englishMatch })),
+  }).catch(() => null);
+
+  if (!res) {
+    console.log("[parrot] translate unavailable, leaving the page alone");
+    return;
+  }
+
+  const ops: SwapOp[] = [];
+  res.items.forEach((item, i) => {
+    const m = chosen[i];
+    if (!item || !m) return; // null = sense mismatch, don't swap
+    if (swappedLemmas.has(m.lemma)) return; // another sweep swapped it while this batch was out
+    const start = locateSpan(m, item.span);
+    if (start < 0) return; // span not in this node (crosses an inline element): skip rather than guess
+    ops.push(wordOp(m, start, item.span, item.replacement));
+  });
+  ops.splice(Math.max(0, pageCap - swapCount)); // a parallel sweep may have used some of the budget
+
+  const applied = applyOps(ops);
+  console.log(
+    `[parrot] step ${rules.step}: swapped ${applied} of ${chosen.length} chosen (page total ${swapCount}), ` +
+      `≤${rules.perSentence} per sentence`,
+  );
+}
+
 async function sweep(root: Node): Promise<void> {
+  if (rules.step > 0) return sweepImmersive(root);
   if (swapCount >= pageCap) return;
 
   const nodes = collectTextNodes(root).filter((n) => !seenNodes.has(n));
@@ -382,6 +562,13 @@ function wireHoverCard(): void {
     },
     onVerdict(t: HoverTarget, verdict) {
       queue(newEvent(verdict, { lemma: t.lemma, meta: { sentence: t.sentence } }));
+      // D-018, display only: Knew it = steady (no flicker), Didn't know = flicker. Solid stays for proven-known.
+      if (verdict === "knew_it") knewIt.add(t.lemma);
+      else knewIt.delete(t.lemma);
+      for (const el of document.querySelectorAll<HTMLElement>(`[${MARK_ATTR}]`)) {
+        if (el.dataset.parrotLemma !== t.lemma || el.dataset.parrotGlow === "known") continue;
+        el.dataset.parrotGlow = verdict === "knew_it" ? "steady" : "learning";
+      }
     },
     /** The service worker fetches and caches the audio; we only play it. */
     async onSpeak(t: HoverTarget) {
@@ -407,10 +594,17 @@ async function loadBudget(): Promise<void> {
     send({ type: "GET_CANDIDATES" }).catch(() => null),
   ]);
   if (!s) return; // service worker unreachable: keep the defaults
-  pageCap = swapBudget(s.settings, s.autoGrow, c?.candidates ?? []);
+  // An older service worker sends no immersion: that's step 0, today's behaviour.
+  const immersion = s.immersion ?? { points: 0, rate: 1, percent: 0 };
+  rules = pageRules(s.settings, s.autoGrow, immersion, c?.candidates ?? []);
+  pageCap = rules.words;
   userBand = LEVEL_BAND[s.settings.level] ?? 2;
-  minGap = Math.max(4, Math.round((MIN_WORD_GAP * 10) / Math.max(10, pageCap)));
-  console.log(`[parrot] budget ${pageCap} swaps (${s.autoGrow ? "auto" : "slider"}), level ${s.settings.level}, gap ${minGap}`);
+  minGap = rules.step === 0 ? Math.max(4, Math.round((MIN_WORD_GAP * 10) / Math.max(10, pageCap))) : rules.minGap;
+  for (const lemma of s.knewIt ?? []) knewIt.add(lemma);
+  console.log(
+    `[parrot] step ${rules.step}, immersion ${immersion.percent}%, budget ${pageCap} swaps ` +
+      `(${s.autoGrow ? "auto" : "slider"}), ≤${rules.perSentence} per sentence, gap ${minGap}, level ${s.settings.level}`,
+  );
 }
 
 async function main(): Promise<void> {
