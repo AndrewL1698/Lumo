@@ -6,6 +6,7 @@ import type { Level } from "@parrot/shared";
 import type { CorrectionError, HistoryTurn } from "@parrot/shared";
 import type { ClaudeMessage, CorrectorPromptArgs, TurnDirective, TutorPromptArgs } from "./types";
 import { tutorTimeLine } from "../greetings";
+import { UNITS } from "../curriculum/units";
 
 // ---------- (a) corrector ----------
 
@@ -159,6 +160,32 @@ const LESSON_RULES = `Today's lesson
   above.`;
 
 /**
+ * Added only when the session has article words outside today's unit (readingLemmas), so a lesson without them
+ * (the returning demo) keeps today's prompt byte for byte. The tutor never says the word on its catch-up turn:
+ * validateTargetWords denies credit for an echo of the tutor's last line.
+ */
+const CATCH_UP_RULES = `Words from their reading
+- This lesson has two halves: first the words in <session> that the learner looked up while
+  reading, one word per turn, then today's unit. These rules change the steps above.
+- opening: after greeting them about the article, say in one short sentence that you will
+  start with the words they looked up in it and then begin today's unit. Do not explain the
+  unit yet.
+- catch-up: <directive> names this turn's word under "steer toward". In one short reply:
+  - If their last answer was a try at the word before, confirm it in two or three words. If
+    they could not say it or asked for it, give it to them in two or three words.
+  - Do not say this turn's Spanish word, not in your question and not in an answer frame.
+    Name it by its English meaning and say they looked it up in the article (for example:
+    In your article you looked up the word for "bridge").
+  - Ask them to say one short sentence with it: give the sentence in English, then its first
+    three or four Spanish words, stopping just before the word (for example: How do you say
+    "Now I see the bridge"? You can start with: Ahora yo veo el…). This is the one step where
+    you may ask for a word directly, and this English is allowed at every level.
+- teach: when <directive> says the reading words are done, confirm their last answer in two
+  or three words, say that today's unit starts now, then do the teach step as above.
+- From the teach step on, keep to the unit. Do not go back to the reading words unless the
+  learner brings one up.`;
+
+/**
  * D-023: added only for hands-free sessions, so push-to-talk keeps today's prompt byte for byte. The learner is
  * talking freely rather than pressing a button for each answer, so Luci has to sound like a person in the room.
  */
@@ -202,11 +229,53 @@ function lessonBlock(context: TutorPromptArgs["context"]): string {
   return `\n<lesson>\n${lines.join("\n")}\n</lesson>`;
 }
 
-/** Which lesson step this turn is, from how many times the learner has spoken (the opener is 0). */
-export function lessonStep(answered: number): "opening" | "teach" | "practise" | "check" {
+export type LessonStep = "opening" | "catch-up" | "teach" | "practise" | "check";
+
+/**
+ * Which lesson step this turn is, from how many times the learner has spoken (the opener is 0). With `reading`
+ * article words the first `reading` answers are catch-up turns, then the unit steps run as before.
+ */
+export function lessonStep(answered: number, reading = 0): LessonStep {
   if (answered <= 0) return "opening";
-  if (answered === 1) return "teach";
-  return answered <= 4 ? "practise" : "check";
+  if (answered <= reading) return "catch-up";
+  const n = answered - reading;
+  if (n === 1) return "teach";
+  return n <= 4 ? "practise" : "check";
+}
+
+/** Hovered targets outside today's unit, in target order. [] = the lesson runs exactly as before. */
+export function readingLemmas(context: TutorPromptArgs["context"]): string[] {
+  const unit = UNITS.find((u) => u.id === context.lesson?.unitId);
+  if (!unit) return [];
+  const inUnit = new Set(unit.words.map((w) => w.toLowerCase()));
+  return context.targetWords
+    .filter((w) => w.source === "hovered" && !inUnit.has(w.lemma.toLowerCase()))
+    .map((w) => w.lemma);
+}
+
+/**
+ * This turn's lesson step and, on a catch-up turn, its article word. Counts answers from the history (like the
+ * step itself), not policy.turnIndex: /reply runs in parallel with /correct, so the policy lags by one answer.
+ */
+export function lessonTurn(
+  context: TutorPromptArgs["context"],
+  history: HistoryTurn[],
+  rawText: string | null,
+  conversational?: boolean,
+): { step: LessonStep; answered: number; reading: string[]; word: string | null } {
+  const last = history[history.length - 1];
+  const h = rawText !== null && last?.role === "learner" && last.text === rawText ? history.slice(0, -1) : history;
+  const answered = conversational ? substantialAnswers(h, rawText) : placementAnswered(h, rawText);
+  const reading = context.lesson ? readingLemmas(context) : [];
+  const step = lessonStep(answered, reading.length);
+  return { step, answered, reading, word: step === "catch-up" ? (reading[answered - 1] ?? null) : null };
+}
+
+/** The step as the directive shows it: the catch-up turns say which word of how many, teach says the switch. */
+function stepLabel(t: ReturnType<typeof lessonTurn>): string {
+  if (t.step === "catch-up") return `catch-up (reading word ${t.answered} of ${t.reading.length})`;
+  if (t.step === "teach" && t.reading.length) return "teach (the reading words are done)";
+  return t.step;
 }
 
 function sessionBlock(context: TutorPromptArgs["context"]): string {
@@ -253,11 +322,13 @@ export function buildTutorPrompt(args: TutorPromptArgs): {
     content: t.text,
   }));
   const placement = args.placementLine !== undefined;
+  const turn = context.lesson ? lessonTurn(context, args.history, rawText, args.conversational) : null; // dedupes itself
+  const shown = turn?.word ? { ...directive, steerLemma: turn.word } : directive;
   turns.push({
     role: "user",
     content: placement
       ? `<learner_said>${rawText ?? ""}</learner_said>\n<step>${args.placementLine}</step>`
-      : `<learner_said>${rawText ?? ""}</learner_said>\n${renderDirective(directive, context.lesson ? lessonStep(args.conversational ? substantialAnswers(history, rawText) : placementAnswered(history, rawText)) : undefined)}`,
+      : `<learner_said>${rawText ?? ""}</learner_said>\n${renderDirective(shown, turn ? stepLabel(turn) : undefined)}`,
   });
   if (turns[0].role === "assistant") turns.unshift({ role: "user", content: SESSION_START });
 
@@ -270,7 +341,10 @@ export function buildTutorPrompt(args: TutorPromptArgs): {
   }
 
   if (placement) return { system: PLACEMENT_SYSTEM, messages };
-  const rules = (context.lesson ? `\n\n${LESSON_RULES}` : "") + (args.conversational ? `\n\n${CONVERSATION_RULES}` : "");
+  const rules =
+    (context.lesson ? `\n\n${LESSON_RULES}` : "") +
+    (turn?.reading.length ? `\n\n${CATCH_UP_RULES}` : "") +
+    (args.conversational ? `\n\n${CONVERSATION_RULES}` : "");
   return { system: `${TUTOR_SYSTEM(context.level)}${rules}\n\n${sessionBlock(context)}`, messages };
 }
 

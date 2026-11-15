@@ -3,7 +3,7 @@ import { ClaudeRefusalError, streamTutorReply } from "@/lib/claude";
 import { isTutorMock, TUTOR } from "@/lib/config";
 import { parseBody } from "@/lib/http";
 import { nextDirective, WHY } from "@/lib/tutor/policy";
-import { buildTutorPrompt, placementAnswered, placementLine } from "@/lib/tutor/prompts";
+import { buildTutorPrompt, lessonTurn, placementAnswered, placementLine } from "@/lib/tutor/prompts";
 import { getSession, noteSpokenCorrection } from "@/lib/tutor/session";
 import type { TurnDirective } from "@/lib/tutor/types";
 import type { TutorContext } from "@parrot/shared";
@@ -109,9 +109,22 @@ export async function POST(req: Request) {
       why = "Level check: asking the next question";
       directive = { correction: "none", steerLemma: null, isOpener: body.rawText === null, why };
     } else {
-      const policy = nextDirective(session.policy);
+      // Half-and-half lesson: catch-up turns steer to their article word; the policy (reading words masked as used)
+      // steers among the unit words. With no article words this is exactly the old path.
+      const turn = lessonTurn(session.context, body.history, body.rawText, body.mode === "handsfree");
+      const policy = nextDirective(
+        turn.reading.length
+          ? { ...session.policy, usedLemmas: [...session.policy.usedLemmas, ...turn.reading] }
+          : session.policy,
+      );
       const d = { ...policy, isOpener: body.rawText === null };
-      d.why = why = finalWhy(d, policy.isOpener, session.context);
+      let lagged = policy.isOpener;
+      if (!d.isOpener && turn.word) {
+        d.steerLemma = turn.word;
+        if (d.correction === "none") d.why = `Steering toward '${turn.word}'`;
+        lagged = false; // the policy's counter lags on the first answer; the step comes from the history
+      }
+      d.why = why = finalWhy(d, lagged, session.context);
       directive = d;
     }
     if (directive.correction !== "none") noteSpokenCorrection(body.sessionId);

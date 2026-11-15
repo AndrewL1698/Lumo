@@ -6,10 +6,13 @@ import {
   buildPlacementAssessPrompt,
   buildTutorPrompt,
   CORRECTOR_SYSTEM,
+  lessonStep,
+  lessonTurn,
   PLACEMENT_ASSESS_SYSTEM,
   PLACEMENT_QUESTIONS,
   placementAnswered,
   placementLine,
+  readingLemmas,
   RECAP_SYSTEM,
 } from "../prompts";
 import type { ClaudeMessage, TurnDirective } from "../types";
@@ -232,6 +235,48 @@ assert.ok(RECAP_SYSTEM.includes("summary_en") && RECAP_SYSTEM.includes("tips"));
   const hf = buildTutorPrompt({ ...base, conversational: true });
   assert.equal(hf.system.replace(/\n\nTalking freely[\s\S]*?(?=\n\n<session>)/, ""), ptt.system, "hands-free only adds one block");
   assert.ok(hf.system.includes("Talking freely"));
+}
+
+// ---------- half-and-half lesson: article catch-up, then the unit ----------
+{
+  // No article words: exactly the old step sequence.
+  assert.deepEqual([0, 1, 2, 3, 4, 5, 6].map((n) => lessonStep(n)), ["opening", "teach", "practise", "practise", "practise", "check", "check"]);
+  assert.deepEqual(
+    [0, 1, 2, 3, 4, 5, 6, 7].map((n) => lessonStep(n, 2)),
+    ["opening", "catch-up", "catch-up", "teach", "practise", "practise", "practise", "check"],
+  );
+
+  const lesson = { unitId: "beg-0", title: "First words", canDo: "x", concept: "y", teach: "z", position: "p", prompts: ["¿?"] };
+  const newDemo = {
+    ...ctx,
+    level: "beginner" as const,
+    lesson,
+    targetWords: [
+      { lemma: "empresa", english: "company", source: "hovered" as const },
+      { lemma: "mundo", english: "world", source: "hovered" as const },
+      { lemma: "ser", english: "to be", source: "lesson" as const },
+    ],
+  };
+  assert.deepEqual(readingLemmas(newDemo), ["empresa", "mundo"]);
+  const h = [
+    { role: "tutor" as const, text: "¡Hola!" },
+    { role: "learner" as const, text: "Hola, soy Ana" },
+  ];
+  // First answer → catch-up on article word 1, whatever the policy wanted to steer to.
+  const one = buildTutorPrompt({ context: newDemo, history: h, rawText: "Hola, soy Ana", directive: { ...none, steerLemma: "ser" } });
+  assert.ok(one.system.includes("Words from their reading"));
+  assert.ok(one.messages.at(-1)!.content.includes("steer toward: empresa; lesson step: catch-up (reading word 1 of 2)"));
+  assert.equal(lessonTurn(newDemo, h, "Hola, soy Ana").word, "empresa");
+  const h3 = [...h, { role: "tutor" as const, text: "a" }, { role: "learner" as const, text: "b" }, { role: "tutor" as const, text: "c" }];
+  const three = buildTutorPrompt({ context: newDemo, history: h3, rawText: "La empresa es grande", directive: none });
+  assert.ok(three.messages.at(-1)!.content.includes("steer toward: none; lesson step: teach (the reading words are done)"));
+
+  // Returning demo (unit holds the article words): no catch-up block, old step labels.
+  const returning = { ...newDemo, lesson: { ...lesson, unitId: "int-1" } };
+  assert.deepEqual(readingLemmas(returning), []);
+  const r = buildTutorPrompt({ context: returning, history: h, rawText: "Hola, soy Ana", directive: none });
+  assert.ok(!r.system.includes("Words from their reading"));
+  assert.ok(r.messages.at(-1)!.content.endsWith("lesson step: teach</directive>"));
 }
 
 console.log("ok");

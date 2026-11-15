@@ -36,6 +36,7 @@ export const VocabItem = z.object({
   english: z.string(),
   state: WordState,
   dueAt: IsoDate.nullable(),
+  selfReported: z.boolean().optional(), // "Knew it" in the last 7 days: listed under known, still `learning` (D-027)
 });
 export type VocabItem = z.infer<typeof VocabItem>;
 
