@@ -69,6 +69,8 @@ A wrong use sends `spoken_incorrect` only when the overlapping error has confide
 | Empty transcript | Turn ignored, no lanes fired. |
 | Haiku slow (>4 s) or invalid | Screen shows no corrections for that turn; logged. Conversation continues. |
 | Sonnet: no first token in 4 s | Abort; play a pre-cached canned line ("Perdón, ¿puedes repetirlo?"). |
+| Learner answers in English, off topic, or unintelligibly | Not a failure: `/correct` returns `flag` (`english`, `off_topic`, `unclear`) and the screen shows a line for it instead of "No mistakes found". The tutor says "En español, por favor" and helps (§5b). |
+| `/api/tutor/translate` fails or is slow (>4 s) | That tutor line shows no English. Nothing else changes. |
 | TTS fails for a chunk | Captions only for that chunk. After 2 failures in a row, switch to the browser's built-in `es-MX` voice for the session. |
 | Database unreachable | `/context` returns a fixture context; corrections still show; toast is skipped. |
 | Server restart mid-session | Client resends history; policy state restarts empty. |
@@ -141,7 +143,7 @@ These are budgets to check, not measured numbers. The two unknowns are commit la
 | `tutor/client/timeline.ts` | Per-turn timestamps. |
 | `tutor/client/useTutorSession.ts` | **The one hook Shravan's UI uses** (§7). |
 
-**`/web/app`**: `api/stt-token`, `api/stt-batch`, `api/tts`, `api/tutor/{context,correct,reply,end,metrics}` (each a `route.ts`), and `tutor-lab/page.tsx` (bare test page with text box and debug panel).
+**`/web/app`**: `api/stt-token`, `api/stt-batch`, `api/tts`, `api/tutor/{context,correct,reply,translate,end,metrics}` (each a `route.ts`), and `tutor-lab/page.tsx` (bare test page with text box and debug panel).
 
 **`/eval`**: `stt-test/run.ts`, `stt-test/score.ts`, `stt-test/results.md`, `latency/summarize.ts`.
 
@@ -168,7 +170,9 @@ type CorrectionResult = {                      // specs §7.5
   utterance_id: string;                        // set by the server, not the model
   errors: CorrectionError[];
   target_words_used: TargetWordUse[];
-  overall_ok: boolean;
+  overall_ok: boolean;                         // false when `flag` is set
+  flag?: "english" | "off_topic" | "unclear";  // absent = a normal Spanish answer
+  spanish_version?: string;                    // only with flag "english": what they said, in Spanish
 };
 
 type TargetWord = { lemma: string; article?: string; english: string; source: "hovered" | "due" };
@@ -199,13 +203,14 @@ type TurnTimeline = {
 // ---- endpoints ----
 // GET  /api/stt-token            → { token: string; model: string }
 // POST /api/stt-batch            body: audio/wav (16 kHz mono)        → { text: string }
-// POST /api/tts                  { text: string; lemma?: string }     → audio/mpeg
+// POST /api/tts                  { text: string; lemma?: string; level?: Level }  → audio/mpeg (level: tutor speech only; beginners get a slower voice)
 // GET  /api/tutor/context        → TutorContext
 // POST /api/tutor/correct        { sessionId; utteranceId; rawText; tutorPrevious?: string; sttPath }
 //                                → { correction: CorrectionResult; wordUpdates: WordUpdate[]; serverMs: number }
 // POST /api/tutor/reply          { sessionId; utteranceId: string | null; rawText: string | null;   // null = opener
 //                                  history: { role: "tutor" | "learner"; text: string }[] }
 //                                → text/plain stream (Spanish reply); header X-Turn-Id
+// POST /api/tutor/translate     { text: string }  (one finished tutor line) → { english: string }; 502 = show no English
 // POST /api/tutor/end            { sessionId } → Recap
 // POST /api/tutor/metrics        TurnTimeline → 204
 ```
@@ -219,6 +224,8 @@ type TurnTimeline = {
 | `TutorEventType` values | **Karthik:** `applyEvent` must accept them (correct → `known` + FSRS Easy; incorrect → `learning` + Again). |
 | `events.meta jsonb` holding the hover sentence (**agreed**) | **Karthik** (column) and **Naren** (send `meta.sentence` on hover). Feeds `hoveredWords[].sentence`. |
 | New routes `/api/stt-batch`, `/api/tutor/metrics` | Nobody; additive. |
+| `CorrectionResult.flag`, `.spanish_version` (optional) | **Shravan:** show a line per flag instead of "No mistakes found". Karthik's accuracy script can ignore them. |
+| New route `/api/tutor/translate`; the hook fills `turn.tutorEnglish` | **Shravan:** the field his page already reads; it arrives about a second after the reply text is complete. |
 | Learner updates applied in `/correct`, not `/end` | Karthik (matches architecture change #16). |
 | Model settings: Haiku `thinking: disabled`, Sonnet `thinking: between_tools`, both effort `low` | Architecture §10 text. |
 | Flash v2.5 for the demo too | `CLAUDE.md` and architecture §10 text. |
@@ -231,7 +238,7 @@ type TurnTimeline = {
 
 ### (a) Corrector: Haiku 5.5, `thinking: disabled`, effort `low`, `max_tokens` 1024
 
-Model output schema (the server adds `utterance_id`): `{ errors: CorrectionError[], target_words_used: { lemma, form, correct }[], overall_ok: boolean }`, with `type` as the six-value enum above so accent and punctuation types cannot be produced.
+Model output schema (the server adds `utterance_id`): `{ errors: CorrectionError[], target_words_used: { lemma, form, correct }[], overall_ok: boolean, answer: "answered" | "english" | "off_topic" | "unclear", spanish_version: string | null }`, with `type` as the six-value enum above so accent and punctuation types cannot be produced. `answer` comes last and its neutral value is not called "ok": asked for first, it made Haiku miss real errors on the eval set (10 of 15 caught instead of 11–12).
 
 ```
 You check one spoken sentence from an English speaker who is learning Latin American Spanish.
@@ -256,6 +263,20 @@ How to mark errors
 - A correct sentence gets an empty `errors` list and `overall_ok: true`. That is a common
   and good outcome.
 
+Last, decide `answer`: what kind of turn this was
+- `english`: most of what they said is English, not Spanish. Names do not count. Leave
+  `errors` empty and write `spanish_version`: what they said, in natural Latin American
+  Spanish that a {level} learner could say.
+- `unclear`: the words do not add up to something a listener could follow, such as stray
+  words or numbers with no sentence. Leave `errors` empty.
+- `off_topic`: clear Spanish that has nothing to do with what the tutor just said in
+  <tutor_said>. Use it only when <tutor_said> is given.
+- `answered`: everything else, with or without errors. A short answer, "no sé", a greeting
+  before the answer, a question back to the tutor, asking the tutor to repeat or to change
+  the subject, and a Spanish sentence with one or two English words in it are all
+  `answered`. When you are not sure, use `answered`.
+- `spanish_version` is null unless `answer` is `english`.
+
 Fields
 - explanation_en: one short plain-English sentence a {level} learner can follow.
 - severity: 1 small slip, 2 clear error, 3 the meaning is unclear.
@@ -266,7 +287,7 @@ Fields
 ```
 User turn: `<level>…</level> <target_words>casa (house); aprovechar (to make the most of)…</target_words> <tutor_said>…</tutor_said> <transcript>…</transcript>`. Targets are listed without their article, and the model is told to copy the lemma exactly as written: with the article, Haiku returned "la casa" as the lemma.
 
-Server checks after the model, in `validate.ts`: drop errors whose span is not in `rawText`; drop errors where span and correction match once case, accents and punctuation are stripped; show only confidence ≥0.7; recompute `overall_ok`.
+Server checks after the model, in `validate.ts`: drop errors whose span is not in `rawText`; drop errors where span and correction match once case, accents and punctuation are stripped; show only confidence ≥0.7; recompute `overall_ok`. Turn flags: `english` is kept only if the transcript has at least one plainly English word; `off_topic` is dropped when there was no tutor line; `english` and `unclear` turns carry no errors and earn no target-word credit; `off_topic` turns are graded and credited as usual.
 
 ### (b) Tutor: Sonnet 5.5, streaming, `thinking: between_tools`, effort `low`, `max_tokens` 300
 
@@ -289,7 +310,23 @@ About the learner's mistakes
 - Explain a mistake out loud only when <directive> gives you one to correct. Then say it in
   one short friendly sentence in simple Spanish (for example: Se dice "el problema", porque
   problema es masculino) and carry on with the conversation.
-- If you truly cannot understand them, ask briefly: ¿Quieres decir…?
+
+When they do not answer in Spanish, or you cannot follow them
+- You are their teacher: warm and patient, and you keep them speaking Spanish. Use English
+  yourself only as far as the rules for their level above allow.
+- If <learner_said> is mostly English, begin with "En español, por favor." Then help: give
+  them the Spanish for what they said as one short sentence they can repeat (for example:
+  Puedes decir "Me llamo Ana"), and invite them to try it, or ask your question again in
+  simpler words.
+- If they use only one or two English words inside a Spanish sentence, do not stop them.
+  Give the Spanish word in passing (for example: Ah, la huelga) and carry on.
+- If their turn before this one was in English too, they need more help. Still give the
+  Spanish for what they said, then make your next question easier: a yes-or-no or either-or
+  question, with the first words of an answer (for example: Puedes empezar con "Creo que…").
+- If what they said makes no sense, say in a few words that you did not follow, ask your
+  question again in simpler words, and offer the first words of an answer.
+- If they answer in clear Spanish about something else, respond to it in a few words, then
+  bring them back to your question in simpler words.
 
 About the words they are learning
 - <session> lists words the learner is working on. Ask questions whose natural answer needs

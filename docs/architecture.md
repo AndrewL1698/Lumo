@@ -150,6 +150,7 @@ settings     (user_id PK, data jsonb)
 | `GET /api/tutor/context` | Andrew | Session context (§8) |
 | `POST /api/tutor/correct` | Andrew | Correction lane |
 | `POST /api/tutor/reply` | Andrew | Conversation lane (streaming text; client chunks to TTS) |
+| `POST /api/tutor/translate` | Andrew | English for one finished tutor line (Haiku), shown under its bubble. Separate from `/reply` so first audio is never delayed |
 | `POST /api/tutor/end` | Andrew | Recap + commit learner updates |
 | `GET /api/vocab` | Karthik | Learning / Your vocabulary / Mastered + streak |
 | `GET/DELETE /api/data` | Karthik | Privacy page: list + delete one + delete everything |

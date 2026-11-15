@@ -81,6 +81,12 @@ function TurnView({ turn }: { turn: Turn }) {
                   ))}
                 </ul>
               )}
+              {c.flag && (
+                <p className="text-sm text-amber-700">
+                  flag: {c.flag}
+                  {c.spanish_version && <span lang="es"> · in Spanish: {c.spanish_version}</span>}
+                </p>
+              )}
               {c.overall_ok && <p className="text-sm text-green-700">✓ no errors</p>}
             </>
           )}
@@ -101,6 +107,7 @@ function TurnView({ turn }: { turn: Turn }) {
           <p className="whitespace-pre-wrap" lang="es">
             {turn.tutorText}
           </p>
+          {turn.tutorEnglish && <p className="text-sm text-gray-600">{turn.tutorEnglish}</p>}
         </div>
       )}
     </li>

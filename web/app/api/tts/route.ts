@@ -1,5 +1,5 @@
 import { TtsRequest, type ApiError } from "@parrot/shared";
-import { isTutorMock } from "@/lib/config";
+import { ELEVENLABS, isTutorMock } from "@/lib/config";
 import { ttsChunk } from "@/lib/elevenlabs";
 import { parseBody, preflight, withCors } from "@/lib/http";
 import { NextResponse } from "next/server";
@@ -20,7 +20,8 @@ export async function POST(req: Request) {
   if (body instanceof NextResponse) return withCors(body);
   if (isTutorMock()) return unavailable(); // no ElevenLabs calls in mock mode
   try {
-    const audio = await ttsChunk(body.text);
+    // Tutor speech sends the learner's level; hover-card words send none and play at the normal pace.
+    const audio = await ttsChunk(body.text, { speed: body.level ? ELEVENLABS.ttsSpeed[body.level] : 1 });
     return withCors(
       new NextResponse(audio, {
         status: 200,

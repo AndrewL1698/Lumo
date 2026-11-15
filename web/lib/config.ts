@@ -10,6 +10,12 @@ export const MODELS = {
 /** ElevenLabs models (voice-plan). */
 export const ELEVENLABS = {
   ttsModel: "eleven_flash_v2_5",
+  /**
+   * Tutor speaking speed by learner level (ElevenLabs accepts 0.7 to 1.2; 1 is the voice's normal pace).
+   * Measured on Flash v2.5 over four sentences: 0.9 changes nothing, 0.85 is about 19% longer,
+   * 0.8 about 25% longer, 0.75 about 36% longer.
+   */
+  ttsSpeed: { beginner: 0.8, intermediate: 1, upper_intermediate: 1 },
   /** Browser playback format, and the 16 kHz WAV the STT test reads (Pass A). */
   ttsOutputFormat: "mp3_44100_128",
   ttsWavFormat: "wav_16000",
@@ -39,6 +45,8 @@ export const TUTOR = {
   sttCommitTimeoutMs: 1500,
   correctTimeoutMs: 4000,
   replyFirstTokenTimeoutMs: 4000,
+  /** /api/tutor/translate: past this the tutor line simply shows no English. */
+  translateTimeoutMs: 4000,
   firstChunkCommaMinChars: 25,
   sampleRate: 16_000,
   cannedRepeat: "Perdón, ¿puedes repetirlo?",

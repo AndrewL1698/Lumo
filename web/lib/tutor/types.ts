@@ -13,6 +13,7 @@ import type {
   SttPath,
   TargetWord,
   TargetWordUse,
+  TurnFlag,
   TurnTimeline,
   TutorContext,
   WordUpdate,
@@ -31,6 +32,10 @@ export type ModelCorrectionError = {
   lemma: string | null;
 };
 export type ModelCorrection = {
+  /** What kind of turn this was; "answered" or absent = a normal Spanish answer. */
+  answer?: "answered" | TurnFlag;
+  /** With answer "english": what the learner said, in Spanish. */
+  spanish_version?: string | null;
   errors: ModelCorrectionError[];
   target_words_used: { lemma: string; form: string; correct: boolean }[];
   overall_ok: boolean;
@@ -43,8 +48,11 @@ export type ValidatedCorrection = {
   /** Everything valid with confidence >= KEEP (superset of `shown`); feeds policy and target-word checks. */
   kept: CorrectionError[];
   target_words_used: TargetWordUse[];
-  /** Recomputed: true iff `shown` is empty. */
+  /** Recomputed: true iff `shown` is empty and there is no `flag`. */
   overall_ok: boolean;
+  /** Set only when the turn is English, off topic or unclear. English and unclear turns carry no errors. */
+  flag?: TurnFlag;
+  spanish_version?: string;
 };
 
 /** validate.ts: validateTargetWords(args) → TargetWordVerdict[] (voice-plan §1.6; applied in task 12). */
@@ -207,6 +215,7 @@ export type Turn = {
   correction?: CorrectionResult; // undefined while the correction lane is pending
   wordUpdates?: WordUpdate[];
   tutorText?: string; // streamed Spanish reply for this turn (captions)
+  tutorEnglish?: string; // English for tutorText, from /api/tutor/translate; unset if that call failed
   // --- extras his UI may ignore ---
   sttPath?: SttPath;
   /** true if the correction lane failed or timed out; `correction` is then an empty, overall_ok result. */

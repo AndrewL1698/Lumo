@@ -2,7 +2,7 @@
  * Server checks after the corrector model (voice-plan §1.6, §5a). Pure functions, no I/O.
  * The raw transcript and the spans are never modified here.
  */
-import type { CorrectionError, TargetWord, TargetWordUse } from "@parrot/shared";
+import type { CorrectionError, TargetWord, TargetWordUse, TurnFlag } from "@parrot/shared";
 import { TUTOR } from "../config";
 import type { ModelCorrection, TargetWordVerdict, ValidatedCorrection, ValidateTargetWordsArgs } from "./types";
 
@@ -26,7 +26,40 @@ function toSeverity(n: number): 1 | 2 | 3 {
   return r <= 1 ? 1 : r >= 3 ? 3 : 2;
 }
 
-export function validateCorrection(rawText: string, model: ModelCorrection): ValidatedCorrection {
+/** Common English words that are not also Spanish words ("no", "me", "a", "he", "has", "can" are left out). */
+const ENGLISH_WORDS = new Set(
+  (
+    "the is are am was were my your his her our their i you she we they it its this that these those " +
+    "and but because of to with for about from at on in not yes hi hello what when where why how " +
+    "think know want like have name very really good thanks thank please sorry"
+  ).split(" "),
+);
+
+/** At least one plainly English word: a guard against a false "that was in English" on a Spanish sentence. */
+function hasEnglishWord(rawText: string): boolean {
+  return normalize(rawText)
+    .split(" ")
+    .some((t) => ENGLISH_WORDS.has(t));
+}
+
+/** `tutorPrevious`: the tutor's last line, if any; without it a turn cannot be off topic. */
+export function validateCorrection(rawText: string, model: ModelCorrection, tutorPrevious?: string): ValidatedCorrection {
+  let flag: TurnFlag | undefined = model.answer && model.answer !== "answered" ? model.answer : undefined;
+  if (flag === "english" && !hasEnglishWord(rawText)) flag = undefined;
+  if (flag === "off_topic" && !tutorPrevious?.trim()) flag = undefined;
+  // English or unintelligible: nothing to grade against Spanish grammar, and no target-word credit.
+  if (flag === "english" || flag === "unclear") {
+    const spanish = flag === "english" ? model.spanish_version?.trim() : undefined;
+    return {
+      shown: [],
+      kept: [],
+      target_words_used: [],
+      overall_ok: false,
+      flag,
+      ...(spanish ? { spanish_version: spanish } : {}),
+    };
+  }
+
   const kept: CorrectionError[] = [];
   for (const e of model.errors ?? []) {
     if (typeof e.span !== "string" || e.span.length === 0 || !rawText.includes(e.span)) continue;
@@ -50,7 +83,8 @@ export function validateCorrection(rawText: string, model: ModelCorrection): Val
     correct: u.correct === true,
     form: u.form,
   }));
-  return { shown, kept, target_words_used, overall_ok: shown.length === 0 };
+  // Off topic: errors and target-word credit work as usual; only the "all good" verdict changes.
+  return { shown, kept, target_words_used, overall_ok: shown.length === 0 && !flag, ...(flag ? { flag } : {}) };
 }
 
 /** Every [start, end) where `needle` occurs in `hay`. */

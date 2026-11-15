@@ -52,3 +52,23 @@ Short entries. Newest at the bottom. Format: **ID · date · owner**, decision, 
 **Decision:** Luci polish. (1) The extension is renamed **Luci** in all visible text and uses the web app's firefly icon (16/32/48/128 px). (2) The hover card takes the Luci look: a warm card, firefly-amber accents, and a drawn speaker icon instead of the emoji. "Knew it" / "Didn't know" get a hover outline and a ~0.5 s "✓" confirmation before the card closes. The event is still sent on click, and the 500 ms rule is unchanged. (3) On What Luci knows, the Words list is split into **Learning / Known / Mastered** (plus "Seen" when there are any).
 **Why:** One look across the page, the card and the web app. Clicks felt like nothing happened. One mixed grid was hard to read on stage.
 **Alternatives:** Keep internal ids and console prefixes (`data-parrot`, `[parrot]`) as they are, to avoid breaking anything late.
+
+### D-011 · Nov 14 · Andrew
+**Decision:** `/api/tutor/correct` reports what kind of turn it was: `correction.flag` is `english`, `off_topic` or `unclear` (absent for a normal answer), with `spanish_version` for English turns. The tutor's "En español, por favor" behaviour is a system-prompt rule on the conversation lane, on top of D-004: the learner's level still decides how much English the tutor speaks.
+**Why:** Shravan's test showed "No mistakes found" for an English answer and for an answer that made no sense. On-stage, a wrong flag on a good answer is worse than a missed one, so the prompt leans to "answered" and the server drops an `english` flag when the transcript has no English word. English and unclear turns earn no target-word credit; off-topic turns are graded and credited as usual, so the "known" flip still fires.
+**Measured:** On `eval/sentences.json` the flags never fire, false alarms stay at 0 of 5, and recall is 11–12 of 15, the same as before. The corrector's median server time is about the same (1.26–1.35 s against 1.22–1.30 s).
+**Alternatives:** A fine-tune (no time before the freeze; the prompt is enough). Passing the corrector's flag to the tutor (not possible for the same turn: the two lanes run in parallel).
+
+### D-012 · Nov 14 · Andrew
+**Decision:** English for the tutor's lines comes from a separate Haiku call, `POST /api/tutor/translate`, fired by the client when the reply text is complete. The hook stores it as `turn.tutorEnglish`.
+**Why:** `/api/tutor/reply` is a plain-text stream that is spoken as it arrives, so it has nowhere to carry English, and adding it to the correction call would slow the 1.5 s correction. A separate call costs neither first audio nor the correction, and it also covers the opener and the last turn.
+**Alternatives:** Sonnet writes English after a delimiter in the stream (anything in the stream gets spoken; needs client stripping). Translate the previous tutor line inside `/correct` (adds output tokens to the latency-critical call and never covers the last line).
+
+### D-013 · Nov 14 · Andrew
+**Decision:** Keep `language_code: "es"` on both STT paths.
+**Why:** Checked with two English clips: Scribe wrote the English words down as spoken on both the realtime and the batch path (realtime puts them in quotation marks). It does not translate, so the verbatim rule (specs §7.3) holds and the corrector can see that a turn was English. The clips were synthetic voice; a real accented speaker has not been checked.
+
+### D-014 · Nov 14 · Andrew
+**Decision:** The tutor's voice is slower for beginners: ElevenLabs `voice_settings.speed` 0.8, which measured about 25% longer on Flash v2.5. Intermediate and upper-intermediate stay at the normal pace. The client sends the learner's level with each `/api/tts` call (`TtsRequest.level`, optional); the speeds are `ELEVENLABS.ttsSpeed` in `web/lib/config.ts`. Hover-card words send no level and are unchanged.
+**Why:** In testing the tutor spoke too fast for a beginner, though the pace suits upper-intermediate.
+**Measured:** Averages over four sentences: speed 0.9 changes nothing, 0.85 is about 19% longer, 0.8 about 25%, 0.75 about 36%. Single clips vary a lot.
