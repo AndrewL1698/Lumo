@@ -191,6 +191,7 @@ pairBtn.addEventListener("click", () => {
         return;
       }
       showPaired(true);
+      void initImmersion(); // the new-user demo may have just switched to Demo speed
       if (!sites.length) {
         pairResult.textContent = "Paired";
         return;

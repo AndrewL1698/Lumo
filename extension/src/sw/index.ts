@@ -15,7 +15,7 @@ import {
 } from "@parrot/shared";
 import type { Message, ResponseMap } from "../messages";
 import { neverListReason } from "../neverlist";
-import { DEFAULT_DIAL, IMMERSION_RATES, dialPercent, dialRaw, type Dial } from "../swapBudget";
+import { DEFAULT_DIAL, DEMO_RATE, IMMERSION_RATES, dialPercent, dialRaw, type Dial } from "../swapBudget";
 
 // HACK(demo): the web app runs on localhost for the demo. manifest host_permissions matches.
 const API_BASE = "http://localhost:3000";
@@ -58,6 +58,8 @@ interface StoredState {
   dial?: Dial;
   /** Lemmas whose latest verdict was "Knew it" (D-018): shown steady. Local only. */
   knewIt?: string[];
+  /** HACK(demo): set by Unpair (new-user demo); the next successful Pair switches immersion to Demo speed. */
+  demoSpeedOnPair?: boolean;
 }
 
 /** Percent never above 100 or below 0, unrounded (stored in `dial.peak` / `dial.base`). */
@@ -85,6 +87,7 @@ async function readState(): Promise<StoredState> {
     "autoGrow",
     "dial",
     "knewIt",
+    "demoSpeedOnPair",
   ])) as StoredState;
 }
 
@@ -128,6 +131,32 @@ async function pair(code: string): Promise<ResponseMap["PAIR"]> {
     return { ok: true };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "could not reach Lumo" };
+  }
+}
+
+/** Serialises enableSite: it read-modify-writes enabledOrigins, and the popup, Pair and onAdded can overlap. */
+let enableLock: Promise<unknown> = Promise.resolve();
+function enableSiteLocked(origin: string): Promise<ResponseMap["ENABLE_SITE"]> {
+  const run = enableLock.then(
+    () => enableSite(origin),
+    () => enableSite(origin),
+  );
+  enableLock = run.catch(() => undefined);
+  return run;
+}
+
+/**
+ * HACK(demo): turn on every saved site (onboarding's starter list, D-021) that Chrome already lets us run on, plus
+ * every site that was on before. Done here, not only in the popup, because the popup can close while Chrome's
+ * permission dialog is up, and reloading the extension clears registered content scripts.
+ */
+async function enableGrantedSites(): Promise<void> {
+  const { enabledOrigins = [], settings } = await readState();
+  const allowlist = (await fetchSettings())?.allowlist ?? settings?.allowlist ?? [];
+  for (const origin of new Set([...enabledOrigins, ...allowlist])) {
+    const pattern = normalizeOrigin(origin);
+    if (!pattern || !(await chrome.permissions.contains({ origins: [pattern + "/*"] }))) continue;
+    await enableSiteLocked(pattern).catch(() => undefined);
   }
 }
 
@@ -588,13 +617,24 @@ async function handle(message: Message): Promise<ResponseMap[Message["type"]]> {
       return { paired: Boolean(pairingToken), enabledOrigins };
     }
     case "ENABLE_SITE":
-      return enableSite(message.origin);
-    case "PAIR":
-      return pair(message.code);
+      return enableSiteLocked(message.origin);
+    case "PAIR": {
+      const res = await pair(message.code);
+      if (res.ok) {
+        // HACK(demo): new-user demo starts at Demo speed, set now so the level picked in onboarding is the anchor.
+        if ((await readState()).demoSpeedOnPair) {
+          await chrome.storage.local.remove("demoSpeedOnPair");
+          await setImmersion(DEMO_RATE);
+        }
+        void enableGrantedSites();
+      }
+      return res;
+    }
     case "UNPAIR":
       // HACK(demo): full extension reset between judge groups (token, immersion dial, Knew-it list, cached
       // settings, unsent events). Site access stays. Requests fall back to FALLBACK_TOKEN, as before pairing.
       await chrome.storage.local.remove(["pairingToken", "dial", "knewIt", "settings", "eventQueue"]);
+      await chrome.storage.local.set({ demoSpeedOnPair: true });
       candidatesCache = null;
       return { ok: true };
     case "GET_CANDIDATES":
@@ -638,8 +678,12 @@ chrome.commands.onCommand.addListener((command) => {
 chrome.runtime.onStartup.addListener(() => {
   void flush(); // anything stranded by a restart
   void syncDotRules(); // declarativeContent rules do not survive a browser restart
+  void enableGrantedSites();
 });
 chrome.runtime.onInstalled.addListener(() => {
   console.log("[parrot] service worker installed");
   void syncDotRules();
+  void enableGrantedSites(); // an extension reload/update clears registered content scripts
 });
+// HACK(demo): a grant from Pair's prompt (or chrome://extensions) switches the site on even if the popup closed.
+chrome.permissions.onAdded.addListener(() => void enableGrantedSites());
