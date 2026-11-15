@@ -47,3 +47,8 @@ Short entries. Newest at the bottom. Format: **ID · date · owner**, decision, 
 ### D-009 · Nov 14 · Karthik · **deferred (post-MVP)**
 **Decision:** Hint-first hover card. Hover shows the Spanish with **Knew it / Hint**. "Hint" shows a clue, then **Got it / Show me**, and "Show me" reveals the English. Scoring: knew it = strong (Good), needed a hint = medium (Hard), revealed = didn't know (Again).
 **Why deferred:** It changes the hover card (never-cut) and needs a new event type in `/shared`, too risky before the 3am freeze. Hint style is still to be decided (first letters, example sentence, or category).
+
+### D-010 · Nov 14 · Karthik (agreed with Naren and Shravan)
+**Decision:** Luci polish. (1) The extension is renamed **Luci** in all visible text and uses the web app's firefly icon (16/32/48/128 px). (2) The hover card takes the Luci look: a warm card, firefly-amber accents, and a drawn speaker icon instead of the emoji. "Knew it" / "Didn't know" get a hover outline and a ~0.5 s "✓" confirmation before the card closes. The event is still sent on click, and the 500 ms rule is unchanged. (3) On What Luci knows, the Words list is split into **Learning / Known / Mastered** (plus "Seen" when there are any).
+**Why:** One look across the page, the card and the web app. Clicks felt like nothing happened. One mixed grid was hard to read on stage.
+**Alternatives:** Keep internal ids and console prefixes (`data-parrot`, `[parrot]`) as they are, to avoid breaking anything late.
