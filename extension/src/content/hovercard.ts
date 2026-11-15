@@ -24,16 +24,23 @@ interface Handlers {
   onSpeak(t: HoverTarget): Promise<boolean>;
 }
 
-// Luci look (D-010): the web app's colours. Fonts stay system ones, since the host page can't load ours.
+// Luci look (D-010): the web app's night panel, straight from web/app/globals.css
+// (--color-panel, --color-ink, --color-muted, --color-line, --color-accent, --color-go).
+// Fonts stay system ones, since the host page can't load ours.
+//
+// The card is dark on purpose, so `muted` and `go` are the web app's LIGHT variants — the previous
+// dark-on-cream values (#5f6772, #1f7a45) would be unreadable on navy.
 const C = {
-  panel: "#fcfcf8",
-  ink: "#1a2028",
-  muted: "#5f6772",
-  line: "#e2e3da",
-  sunLine: "#f1e2a6",
-  glowSoft: "#ffe9a0",
-  accent: "#9a6a00",
-  go: "#1f7a45",
+  panel: "rgb(14 24 42 / .92)",
+  ink: "#f4efe3",
+  muted: "#b8c3d4",
+  line: "rgb(214 225 240 / .14)",
+  /** Amber hairline for the one accented control (the speaker). */
+  sunLine: "rgb(255 210 58 / .28)",
+  accent: "#f5c94a",
+  go: "#7fdca3",
+  /** Text sitting ON an amber or green fill: both are light, so it has to be the dark navy. */
+  onFill: "#0f1a2c",
 };
 /** How long the "✓" confirmation stays before the card closes. The event is already sent on click. */
 const CONFIRM_MS = 550;
@@ -61,10 +68,12 @@ function buildCard(): HTMLElement {
     borderRadius: "10px",
     background: C.panel,
     color: C.ink,
-    border: `1px solid ${C.sunLine}`,
+    border: `1px solid ${C.line}`,
+    // The page shows through the 8% gap in the panel, blurred — the web app's frosted night panel.
+    backdropFilter: "blur(8px)",
     font: "14px/1.4 system-ui, -apple-system, Segoe UI, sans-serif",
     // A firm shadow plus a faint amber halo, so the card reads on light and dark pages alike.
-    boxShadow: "0 8px 28px rgba(26,32,40,.28), 0 0 0 4px rgba(255,210,58,.14)",
+    boxShadow: "0 8px 28px rgba(0,0,0,.45), 0 0 0 4px rgba(245,201,74,.10)",
     pointerEvents: "auto",
   } satisfies Partial<CSSStyleDeclaration>);
   document.body.appendChild(el);
@@ -99,9 +108,11 @@ function render(el: HTMLElement, t: HoverTarget, handlers: Handlers): void {
     cursor: "pointer",
     transition: "background-color .15s, box-shadow .15s",
   } satisfies Partial<CSSStyleDeclaration>);
+  // Lit, the button fills with amber — so the icon has to flip to the dark navy to stay visible.
   const speakGlow = (on: boolean) => {
-    speak.style.background = on ? C.glowSoft : "transparent";
-    speak.style.boxShadow = on ? "0 0 0 3px rgba(255,210,58,.35)" : "none";
+    speak.style.background = on ? C.accent : "transparent";
+    speak.style.color = on ? C.onFill : C.accent;
+    speak.style.boxShadow = on ? "0 0 0 3px rgba(245,201,74,.3)" : "none";
   };
   speak.addEventListener("mouseenter", () => speakGlow(true));
   speak.addEventListener("mouseleave", () => {
@@ -138,8 +149,8 @@ function render(el: HTMLElement, t: HoverTarget, handlers: Handlers): void {
   const myRender = ++renderId;
   const buttons: HTMLButtonElement[] = [];
   for (const [label, done, verdict, tone, halo] of [
-    ["Knew it", "✓ Knew it", "knew_it", C.go, "rgba(31,122,69,.22)"],
-    ["Didn't know", "✓ Still learning", "didnt_know", C.accent, "rgba(255,210,58,.4)"],
+    ["Knew it", "✓ Knew it", "knew_it", C.go, "rgba(127,220,163,.26)"],
+    ["Didn't know", "✓ Still learning", "didnt_know", C.accent, "rgba(245,201,74,.3)"],
   ] as const) {
     const btn = document.createElement("button");
     btn.type = "button";
@@ -174,7 +185,8 @@ function render(el: HTMLElement, t: HoverTarget, handlers: Handlers): void {
       handlers.onVerdict(t, verdict); // sent right away, as before
       // Confirm on screen, then close.
       for (const b of buttons) b.disabled = true;
-      Object.assign(btn.style, { background: tone, borderColor: tone, color: "#fff", boxShadow: `0 0 0 3px ${halo}`, transform: "" });
+      // `tone` is a light amber or green, so the confirmed label reads in dark navy, not white.
+      Object.assign(btn.style, { background: tone, borderColor: tone, color: C.onFill, boxShadow: `0 0 0 3px ${halo}`, transform: "" });
       btn.textContent = done;
       for (const b of buttons) if (b !== btn) b.style.opacity = ".45";
       setTimeout(() => {
