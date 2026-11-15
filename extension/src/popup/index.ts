@@ -141,7 +141,7 @@ amountInput.addEventListener("change", () => {
       await reloadActiveTab();
     })
     .catch(() => {
-      amountNote.textContent = "not saved: Parrot isn't reachable";
+      amountNote.textContent = "not saved: Luci isn't reachable";
     });
 });
 
