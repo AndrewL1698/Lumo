@@ -220,8 +220,14 @@ export function determinerBefore(sentence: string, englishMatch: string): string
   return prev && DETERMINERS.has(prev.toLowerCase()) ? prev : undefined;
 }
 
-/** Words per Haiku call. Small groups run in parallel, so a page waits for the slowest group, not one big call. */
-const TRANSLATE_CHUNK = 8;
+/**
+ * Words per Haiku call. Small groups run in parallel, so a page waits for the slowest group, not one big call.
+ * Big immersion batches (D-018) use bigger groups so 150+ words don't queue behind the concurrency cap; a normal
+ * page (≤ 32 uncached words) keeps the original 4.
+ */
+const TRANSLATE_CHUNK = 4;
+const TRANSLATE_CHUNK_BIG = 8;
+const BIG_BATCH = 32;
 
 /** Haiku calls in flight at once, shared by word and sentence translation, so a big page can't burst past rate limits. */
 const TRANSLATE_CONCURRENCY = 8;
@@ -247,8 +253,9 @@ async function limited<T>(fn: () => Promise<T>): Promise<T> {
  * group failed.
  */
 export async function translateBatch(items: TranslateInput[]): Promise<(TranslateOutput | undefined)[]> {
+  const size = items.length > BIG_BATCH ? TRANSLATE_CHUNK_BIG : TRANSLATE_CHUNK;
   const chunks: TranslateInput[][] = [];
-  for (let i = 0; i < items.length; i += TRANSLATE_CHUNK) chunks.push(items.slice(i, i + TRANSLATE_CHUNK));
+  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
   const settled = await Promise.allSettled(chunks.map((c) => limited(() => translateChunk(c))));
   if (settled.every((r) => r.status === "rejected")) throw (settled[0] as PromiseRejectedResult).reason;
   return settled.flatMap((r, k) => (r.status === "fulfilled" ? r.value : chunks[k].map(() => undefined)));
