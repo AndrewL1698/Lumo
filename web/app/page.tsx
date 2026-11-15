@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { correctResponseFixture, rawTextFixture } from "@parrot/shared";
 import { Greeting } from "@/components/Greeting";
+import { SetupLink } from "@/components/home/SetupLink";
 import { CorrectionCards } from "@/components/tutor/CorrectionCards";
 import { TranscriptView } from "@/components/tutor/TranscriptView";
 import { btn } from "@/components/ui/PageHeader";
@@ -44,12 +45,7 @@ export default function Home() {
             <Link href="/tutor" className={`${btn.primary} h-12 w-full px-6 text-lg sm:w-auto`}>
               Start a lesson
             </Link>
-            <Link
-              href="/onboarding"
-              className="text-lg text-muted underline decoration-line underline-offset-4 transition-colors duration-150 hover:text-ink hover:decoration-ink"
-            >
-              Set up Luci
-            </Link>
+            <SetupLink />
           </div>
         </div>
 

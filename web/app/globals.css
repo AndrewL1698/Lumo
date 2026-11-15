@@ -797,3 +797,18 @@ html[data-theme="light"] .nav-link[aria-current="page"]::after {
 .nav-home:focus-visible svg {
   filter: drop-shadow(0 0 6px rgb(255 210 58 / 0.7));
 }
+/* "Setup not finished" dot on the Settings nav link */
+.setup-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 6px;
+  vertical-align: 0.55em;
+  border-radius: 9999px;
+  background: var(--color-glow);
+  box-shadow: 0 0 6px 2px rgb(255 210 58 / 0.6);
+}
+html[data-theme="light"] .setup-dot {
+  background: #e09a00;
+  box-shadow: 0 0 6px 2px rgb(224 154 0 / 0.5);
+}

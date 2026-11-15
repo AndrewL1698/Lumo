@@ -3,6 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LuciMark } from "@/components/LuciMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useSetupStatus } from "@/components/settings/useSetupStatus";
 
 const LINKS = [
   { href: "/tutor", label: "Tutor" },
@@ -13,6 +14,8 @@ const LINKS = [
 
 export function Nav() {
   const path = usePathname();
+  const setup = useSetupStatus();
+  const needsSetup = setup !== null && !setup.complete;
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-panel">
       <nav className="mx-auto flex max-w-5xl items-center gap-x-5 px-4 py-4 sm:gap-x-8">
@@ -31,6 +34,12 @@ export function Nav() {
                   className={`nav-link ${active ? "text-ink" : "text-muted hover:text-ink focus-visible:text-ink"}`}
                 >
                   {l.label}
+                  {l.href === "/settings" && needsSetup && (
+                    <>
+                      <span className="setup-dot" aria-hidden="true" />
+                      <span className="sr-only"> (setup not finished)</span>
+                    </>
+                  )}
                 </Link>
               </li>
             );
