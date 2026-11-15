@@ -9,10 +9,15 @@
  * createChunker(), POST /api/tts for the first chunk and read the whole MP3 (the client buffers it).
  * Never calls /api/tutor/context, so these sessions never write the demo user's learner events.
  * Writes eval/latency/probe-results/<ISO timestamp>.json (timings only, no audio).
+ *
+ * Reads a little optimistic against the real page: every turn is a fresh session (no history, no
+ * tutorPrevious, fixture context), TTS gets no level (normal speed), later chunks and decodeAudioData are
+ * not timed, and failed corrections still count. Use it to compare server changes, and the browser's
+ * eval/latency/turns.jsonl (summarize.ts) for the pitch numbers.
  */
 import { randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CorrectRequest, CorrectResponse, ReplyRequest, TtsRequest } from "@parrot/shared";
 import { createChunker } from "../../web/lib/tutor/chunker";
@@ -197,5 +202,5 @@ const ranAt = new Date().toISOString();
 const outDir = join(HERE, "probe-results");
 mkdirSync(outDir, { recursive: true });
 const out = join(outDir, `${ranAt.replace(/:/g, "-")}.json`);
-writeFileSync(out, JSON.stringify({ ranAt, url: URL, file: FILE, n: N, noTts: NO_TTS, cachedTtsExcluded: cachedCount, stats, turns }, null, 2) + "\n");
+writeFileSync(out, JSON.stringify({ ranAt, url: URL, file: relative(process.cwd(), FILE), n: N, noTts: NO_TTS, cachedTtsExcluded: cachedCount, stats, turns }, null, 2) + "\n");
 console.log(`\nWrote ${out}`);

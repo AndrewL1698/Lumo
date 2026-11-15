@@ -200,7 +200,8 @@ export function buildTutorPrompt(args: TutorPromptArgs): {
 // ---------- (c) recap ----------
 
 export const RECAP_SYSTEM = `Here is a summary of one Spanish practice conversation: the learner's most frequent
-mistakes with examples, the words they used correctly, and the words they got wrong.
+mistakes with examples, the words they used correctly, and the target words they have not used
+correctly yet (most of those they simply did not say; never call them mistakes).
 Write \`summary_en\`: two encouraging sentences in plain English about what went well and
 what to practise next. Write one \`tips\` entry per mistake listed: a one-line rule in plain
 English with a correct Spanish example. Refer only to what is in the data.`;

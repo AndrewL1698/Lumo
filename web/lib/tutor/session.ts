@@ -39,10 +39,10 @@ export function findSession(sessionId: string): SessionState | undefined {
 }
 
 /** Replace the session's context (and its target lemmas); policy counters are kept. */
-export function setSessionContext(sessionId: string, context: TutorContext): void {
+export function setSessionContext(sessionId: string, context: TutorContext, opts: { credit?: boolean } = {}): void {
   const s = getSession(sessionId);
   s.context = context;
-  s.fromContext = true;
+  s.fromContext = opts.credit ?? true;
   s.policy.targetLemmas = context.targetWords.map((w) => w.lemma);
 }
 

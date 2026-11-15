@@ -1,7 +1,7 @@
 {
   "ranAt": "2026-11-15T00:48:46.234Z",
   "url": "http://localhost:3000",
-  "file": "/Users/andrew/Documents/hackP/eval/sentences.json",
+  "file": "eval/sentences.json",
   "n": 20,
   "noTts": false,
   "cachedTtsExcluded": 0,
