@@ -1,7 +1,7 @@
 "use client";
 import { useState, type ReactNode } from "react";
 import type { DataDeleteRequest, DataResponse } from "@parrot/shared";
-import { btn, EmptyState } from "@/components/ui/PageHeader";
+import { btn } from "@/components/ui/PageHeader";
 
 const fmt = (iso: string) => new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
@@ -18,31 +18,49 @@ const EVENT_LABEL: Record<string, string> = {
   spoken_incorrect: "Used a word incorrectly in speech",
 };
 
-const STATE_TONE: Record<string, string> = { learning: "text-wait", known: "text-go", mastered: "text-ink" };
+// Word state as a glow: dim (seen), medium (learning), bright (known / mastered). Same lights as the jar.
+type Glow = "seen" | "learning" | "known";
+const GLOW: Record<string, Glow> = { new: "seen", seen: "seen", learning: "learning", known: "known", known_assumed: "known", mastered: "known" };
+const GLOW_NAME: Record<Glow, string> = { seen: "Seen", learning: "Learning", known: "Known" };
 
-const deleteLink =
-  "shrink-0 font-mono text-xs uppercase tracking-wider text-muted transition-colors duration-150 hover:text-stop disabled:opacity-40";
-
-function Section({ title, count, children }: { title: string; count: number; children: ReactNode }) {
+function GlowDot({ glow, size = "h-6 w-6" }: { glow: Glow; size?: string }) {
   return (
-    <section className="mb-10">
-      <h2 className="mb-3 flex items-baseline gap-3 border-b border-line pb-3">
-        <span className="text-xl font-bold text-ink">{title}</span>
-        <span className="font-mono text-muted">{count}</span>
-      </h2>
-      {children}
-    </section>
+    <span className={`jar-legend grid shrink-0 place-items-center rounded-full bg-[#1d2b44] ${size}`} data-level={glow} aria-hidden="true">
+      <span className="jar-light" />
+    </span>
   );
 }
 
-function Row({ children, onDelete, busy, label }: { children: ReactNode; onDelete: () => void; busy: boolean; label: string }) {
+// Drawn trash can (no icon library). The button carries the words for screen readers.
+function TrashIcon() {
   return (
-    <li className="flex items-center justify-between gap-4 border-b border-line py-3">
-      <div className="min-w-0">{children}</div>
-      <button type="button" disabled={busy} aria-label={`Delete ${label}`} onClick={onDelete} className={deleteLink}>
-        Delete
-      </button>
-    </li>
+    <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3.5 5.5h13M8 5.5V3.8h4v1.7M5.2 5.5l.8 11h8l.8-11M8.6 8.5v5.5M11.4 8.5v5.5" />
+    </svg>
+  );
+}
+
+// Shows on hover or keyboard focus of its row; always visible on touch screens (no hover there).
+function DeleteButton({ label, busy, onClick }: { label: string; busy: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      disabled={busy}
+      aria-label={`Delete ${label}`}
+      title={`Delete ${label}`}
+      onClick={onClick}
+      className="grid h-8 w-8 shrink-0 place-items-center rounded-sm text-muted opacity-0 transition-[opacity,color] duration-150 hover:text-stop focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100 disabled:opacity-30 [@media(hover:none)]:opacity-100"
+    >
+      <TrashIcon />
+    </button>
+  );
+}
+
+function Heading({ children, count }: { children: ReactNode; count: number }) {
+  return (
+    <h2 className="mb-5 font-display text-2xl font-extrabold">
+      {children} <span className="font-sans text-lg font-normal text-muted">{count}</span>
+    </h2>
   );
 }
 
@@ -60,102 +78,118 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
   }
 
   const total = data.words.length + data.events.length + data.articles.length;
+  const n = (k: number, one: string, many: string) => `${k} ${k === 1 ? one : many}`;
 
   return (
-    <div>
-      <p className="mb-8 max-w-3xl text-lg text-ink">
-        Luci stores the words you look up and practise, a short log of those actions, the title and website of articles
-        you read, and your tutor conversations (what you said, plus the corrections).{" "}
-        <span className="text-muted">It never stores full page text or what you type on other sites.</span>
-      </p>
-
-      <p className="mb-10 font-mono text-muted">
-        <span className="text-ink">{data.words.length}</span> words, <span className="text-ink">{data.events.length}</span> activity{" "}
-        {data.events.length === 1 ? "entry" : "entries"}, <span className="text-ink">{data.articles.length}</span>{" "}
-        {data.articles.length === 1 ? "article" : "articles"}
-      </p>
+    <div className="space-y-16">
+      <div className="max-w-3xl">
+        <p className="font-display text-3xl font-extrabold leading-snug tracking-tight">
+          Luci knows {n(data.words.length, "word", "words")}, {n(data.events.length, "moment", "moments")} of activity and{" "}
+          {n(data.articles.length, "article", "articles")}.
+        </p>
+        <p className="mt-4 text-lg text-muted">
+          That is the words you look up and practise, a short log of those actions, the title and website of articles you
+          read, and your tutor conversations. It never stores full page text or what you type on other sites.
+        </p>
+      </div>
 
       {failed && (
-        <p role="alert" className="mb-6 rounded-sm border border-stop/60 px-4 py-3 text-ink">
+        <p role="alert" className="text-lg font-semibold text-stop">
           That did not work. Nothing was removed. Try again.
         </p>
       )}
 
-      <Section title="Words" count={data.words.length}>
-        {data.words.length === 0 ? (
-          <EmptyState>No words stored yet.</EmptyState>
-        ) : (
-          // A dense grid so words, activity and articles fit in one glance during the demo.
-          <ul className="grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
-            {data.words.map((w) => (
-              <li
-                key={w.lemma}
-                title={w.lastHoverAt ? `Last looked up ${fmt(w.lastHoverAt)}` : undefined}
-                className="flex items-baseline justify-between gap-3 border-b border-line py-2"
-              >
-                <span>
-                  <span className="font-bold text-ink">{w.lemma}</span>
-                  <span className={`ml-2 font-mono text-xs ${STATE_TONE[w.state] ?? "text-muted"}`}>{w.state}</span>
-                </span>
-                <button
-                  type="button"
-                  disabled={busy}
-                  aria-label={`Delete ${w.lemma}`}
-                  onClick={() => void run({ kind: "word", lemma: w.lemma })}
-                  className={deleteLink}
-                >
-                  Delete
-                </button>
+      <section>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <Heading count={data.words.length}>Words</Heading>
+          <ul className="mb-5 flex flex-wrap gap-x-6 gap-y-2 text-muted" aria-label="What the glow means">
+            {(["seen", "learning", "known"] as const).map((g) => (
+              <li key={g} className="flex items-center gap-2">
+                <GlowDot glow={g} size="h-5 w-5" />
+                {GLOW_NAME[g]}
               </li>
             ))}
           </ul>
-        )}
-      </Section>
-
-      <Section title="Activity log" count={data.events.length}>
-        {data.events.length === 0 ? (
-          <EmptyState>No activity stored yet.</EmptyState>
+        </div>
+        {data.words.length === 0 ? (
+          <p className="text-muted">No words stored yet.</p>
         ) : (
-          <ul>
-            {data.events.map((e) => (
-              <Row key={e.id} busy={busy} label={`${EVENT_LABEL[e.type] ?? e.type} entry`} onDelete={() => void run({ kind: "event", id: e.id })}>
-                <span className="mr-4 font-mono text-sm text-muted">{fmt(e.ts)}</span>
-                <span className="text-ink">{EVENT_LABEL[e.type] ?? e.type}</span>
-                {e.lemma && <span className="ml-2 font-bold text-ink">{e.lemma}</span>}
-              </Row>
-            ))}
+          <ul className="flex flex-wrap gap-x-2 gap-y-2">
+            {data.words.map((w) => {
+              const glow = GLOW[w.state] ?? "seen";
+              return (
+                <li
+                  key={w.lemma}
+                  className="group flex items-center gap-2 rounded-full py-1 pl-1.5 pr-1 transition-colors duration-150 hover:bg-line/60 focus-within:bg-line/60"
+                  title={w.lastHoverAt ? `Last looked up ${fmt(w.lastHoverAt)}` : undefined}
+                >
+                  <GlowDot glow={glow} />
+                  <span className="text-lg font-bold">{w.lemma}</span>
+                  <span className="sr-only">, {GLOW_NAME[glow]}</span>
+                  <DeleteButton label={w.lemma} busy={busy} onClick={() => void run({ kind: "word", lemma: w.lemma })} />
+                </li>
+              );
+            })}
           </ul>
         )}
-      </Section>
+      </section>
 
-      <Section title="Articles" count={data.articles.length}>
-        {data.articles.length === 0 ? (
-          <EmptyState>No articles stored yet.</EmptyState>
-        ) : (
-          <ul>
-            {data.articles.map((a) => (
-              <Row key={a.id} busy={busy} label={a.title} onDelete={() => void run({ kind: "article", id: a.id })}>
-                <span className="text-ink">{a.title}</span>
-                <span className="ml-3 font-mono text-sm text-muted">
-                  {a.domain} {fmt(a.ts)}
-                </span>
-              </Row>
-            ))}
-          </ul>
-        )}
-      </Section>
+      <div className="grid gap-16 lg:grid-cols-[3fr_2fr]">
+        <section>
+          <Heading count={data.events.length}>Activity</Heading>
+          {data.events.length === 0 ? (
+            <p className="text-muted">No activity stored yet.</p>
+          ) : (
+            // A timeline: one line, one small light per moment.
+            <ol className="relative ml-1.5 border-l-2 border-line">
+              {data.events.map((e) => (
+                <li key={e.id} className="group relative flex items-center justify-between gap-3 py-2 pl-6">
+                  <span className="absolute -left-[5px] top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-accent" aria-hidden="true" />
+                  <span className="min-w-0">
+                    <span className="text-ink">{EVENT_LABEL[e.type] ?? e.type}</span>
+                    {e.lemma && <span className="ml-2 font-bold">{e.lemma}</span>}
+                    <span className="ml-3 text-sm text-muted">{fmt(e.ts)}</span>
+                  </span>
+                  <DeleteButton label={`${EVENT_LABEL[e.type] ?? e.type} entry`} busy={busy} onClick={() => void run({ kind: "event", id: e.id })} />
+                </li>
+              ))}
+            </ol>
+          )}
+        </section>
 
-      <div className="rounded-sm border border-line bg-panel px-5 py-5">
+        <section>
+          <Heading count={data.articles.length}>Articles</Heading>
+          {data.articles.length === 0 ? (
+            <p className="text-muted">No articles stored yet.</p>
+          ) : (
+            <ul className="space-y-5">
+              {data.articles.map((a) => (
+                <li key={a.id} className="group flex items-start justify-between gap-3">
+                  <span className="min-w-0">
+                    <span className="block font-display text-xl font-semibold leading-snug">{a.title}</span>
+                    <span className="mt-1 block text-sm text-muted">
+                      {a.domain}, {fmt(a.ts)}
+                    </span>
+                  </span>
+                  <DeleteButton label={a.title} busy={busy} onClick={() => void run({ kind: "article", id: a.id })} />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+
+      <section className="border-t border-line pt-8">
         {!confirming ? (
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <p className="text-muted">Remove everything Luci has stored. Your settings are kept.</p>
+            <p className="text-muted">Start over: remove everything Luci has stored. Your settings are kept.</p>
             <button type="button" disabled={busy || total === 0} onClick={() => setConfirming(true)} className={btn.danger}>
               Delete everything
             </button>
           </div>
         ) : (
           <div className="space-y-4">
-            <p className="text-ink">
+            <p className="max-w-2xl text-lg text-ink">
               This deletes every word Luci has tracked, your activity, the articles you&apos;ve read, and your tutor sessions and
               transcripts. Your settings are kept. This can&apos;t be undone.
             </p>
@@ -169,7 +203,7 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
             </div>
           </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }
