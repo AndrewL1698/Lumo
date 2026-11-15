@@ -31,7 +31,7 @@ export async function PUT(req: Request) {
   if (body instanceof NextResponse) return withCors(body);
   const forbidden = body.allowlist.filter(isNeverListed);
   if (forbidden.length) {
-    return withCors(json({ error: `Parrot never runs on: ${forbidden.join(", ")}` }, ApiError, { status: 400 }));
+    return withCors(json({ error: `Lumo never runs on: ${forbidden.join(", ")}` }, ApiError, { status: 400 }));
   }
   try {
     await putSettings(DEMO_USER_ID, body);
