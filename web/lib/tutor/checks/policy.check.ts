@@ -1,7 +1,7 @@
 /** Run: npx tsx web/lib/tutor/checks/policy.check.ts */
 import assert from "node:assert/strict";
 import { correctResponseFixture } from "@parrot/shared";
-import { errorKey, nextDirective } from "../policy";
+import { errorKey, nextDirective, WHY } from "../policy";
 import { getSession, noteSpokenCorrection, recordCorrection, resetSessions, setSessionContext } from "../session";
 import type { PolicyState } from "../types";
 
@@ -64,6 +64,33 @@ for (const t of [0, 1, 3, 5]) assert.equal(nextDirective(base({ turnIndex: t }))
 assert.equal(nextDirective(base({ turnIndex: 2 })).steerLemma, "huelga");
 assert.equal(nextDirective(base({ turnIndex: 4, usedLemmas: ["huelga"] })).steerLemma, "aprovechar");
 assert.equal(nextDirective(base({ turnIndex: 4, usedLemmas: ["huelga", "aprovechar", "casa"] })).steerLemma, null);
+
+// J1 why: set in every branch, short, and correction > steer > repeated-but-waiting > seen once > talking
+const whyOf = (over: Partial<PolicyState>) => nextDirective(base(over)).why;
+assert.equal(whyOf({}), WHY.opener);
+assert.equal(
+  whyOf({ turnIndex: 4, ...repeated }), // turn 4 also steers: correction wins
+  "Explained out loud: 'la problema' has come up 2 times",
+);
+assert.equal(whyOf({ turnIndex: 2 }), "Steering toward 'huelga'");
+assert.equal(whyOf({ turnIndex: 2, ...repeated }), "Steering toward 'huelga'"); // too early to correct, so steer
+assert.equal(whyOf({ turnIndex: 1, ...repeated }), "Recasting quietly: Luci spaces out spoken corrections");
+assert.equal(
+  whyOf({ turnIndex: 5, lastSpokenCorrectionTurn: 3, ...repeated }),
+  "Recasting quietly: Luci spaces out spoken corrections",
+);
+assert.equal(
+  whyOf({ turnIndex: 3, errorCounts: { "agreement:problema": 1 }, errorExamples: repeated.errorExamples }),
+  "Not correcting out loud yet: Luci waits until a mistake repeats",
+);
+assert.equal(whyOf({ turnIndex: 3 }), WHY.talking);
+assert.equal(whyOf({ turnIndex: 4, usedLemmas: ["huelga", "aprovechar", "casa"] }), WHY.talking);
+for (let t = 0; t < 10; t++) {
+  for (const over of [{}, repeated, { lastSpokenCorrectionTurn: 1, ...repeated }]) {
+    const w = whyOf({ turnIndex: t, ...over });
+    assert.ok(w.length > 0 && w.length <= 80, `why too long or empty: "${w}"`);
+  }
+}
 
 // session round-trip
 resetSessions();

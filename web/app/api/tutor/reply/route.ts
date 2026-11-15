@@ -2,9 +2,11 @@ import { ReplyRequest, replyTextFixture } from "@parrot/shared";
 import { ClaudeRefusalError, streamTutorReply } from "@/lib/claude";
 import { isTutorMock, TUTOR } from "@/lib/config";
 import { parseBody } from "@/lib/http";
-import { nextDirective } from "@/lib/tutor/policy";
+import { nextDirective, WHY } from "@/lib/tutor/policy";
 import { buildTutorPrompt } from "@/lib/tutor/prompts";
 import { getSession, noteSpokenCorrection } from "@/lib/tutor/session";
+import type { TurnDirective } from "@/lib/tutor/types";
+import type { TutorContext } from "@parrot/shared";
 import { NextResponse } from "next/server";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -12,6 +14,32 @@ const encoder = new TextEncoder();
 
 const describe = (err: unknown) =>
   err instanceof ClaudeRefusalError ? "refusal" : err instanceof Error ? err.message : String(err);
+
+/** J1: sample line in mock mode so the UI can be built against it. */
+const MOCK_WHY = "Steering toward 'huelga': you hovered it while reading";
+
+/**
+ * J1: the final "why" line. `policyOpener` is what the policy thought; the route trusts rawText instead because
+ * the policy's turn counter can lag behind (see below). Never throws.
+ */
+function finalWhy(directive: TurnDirective & { why: string }, policyOpener: boolean, context: TutorContext): string {
+  try {
+    if (directive.isOpener) return context.articleTitles.length ? WHY.opener : WHY.openerEveryday;
+    if (policyOpener) return WHY.talking; // counter lagged on the first answer: nothing earlier to point at
+    if (directive.correction === "none" && directive.steerLemma) {
+      const lemma = directive.steerLemma.toLowerCase();
+      const source = context.targetWords.find((w) => w.lemma.toLowerCase() === lemma)?.source;
+      if (source === "hovered") return `${directive.why}: you hovered it while reading`;
+      if (source === "due") return `${directive.why}: it's due for review`;
+    }
+    return directive.why;
+  } catch {
+    return WHY.talking;
+  }
+}
+
+/** Header-safe: raw header values throw on non-Latin-1 characters (accents, ¿). The client decodes. */
+const whyHeader = (why: string) => ({ "X-Parrot-Why": encodeURIComponent(why) });
 
 export async function POST(req: Request) {
   const body = await parseBody(req, ReplyRequest);
@@ -40,7 +68,7 @@ export async function POST(req: Request) {
         cancelled = true;
       },
     });
-    return new Response(mock, { headers });
+    return new Response(mock, { headers: { ...headers, ...whyHeader(MOCK_WHY) } });
   }
 
   // Barge-in: the client aborting its fetch must stop the upstream Claude call.
@@ -57,10 +85,13 @@ export async function POST(req: Request) {
   let iterator: AsyncIterator<string>;
   let first: string | null;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  let why: string;
   try {
     const session = getSession(body.sessionId);
     // /reply runs in parallel with /correct, so the policy's turn counter can lag: don't trust its opener flag.
-    const directive = { ...nextDirective(session.policy), isOpener: body.rawText === null };
+    const policy = nextDirective(session.policy);
+    const directive = { ...policy, isOpener: body.rawText === null };
+    directive.why = why = finalWhy(directive, policy.isOpener, session.context);
     if (directive.correction !== "none") noteSpokenCorrection(body.sessionId);
     console.log(`[tutor/reply] ${turnId} directive ${JSON.stringify(directive)}`);
 
@@ -122,5 +153,5 @@ export async function POST(req: Request) {
     },
   });
 
-  return new Response(stream, { headers });
+  return new Response(stream, { headers: { ...headers, ...whyHeader(why) } });
 }

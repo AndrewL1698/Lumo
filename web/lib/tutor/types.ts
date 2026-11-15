@@ -92,6 +92,11 @@ export type TurnDirective = {
   correction: "none" | { span: string; correction: string; reason: string };
   steerLemma: string | null;
   isOpener: boolean;
+  /**
+   * One short English line saying why the tutor does what it does this turn (J1). Sent as X-Parrot-Why.
+   * Optional only so older hand-built directives (prompts.check.ts) still typecheck; nextDirective always sets it.
+   */
+  why?: string;
 };
 
 // ---------- session store (session.ts, server memory on globalThis) ----------
@@ -225,6 +230,8 @@ export type Turn = {
   sttPath?: SttPath;
   /** true if the correction lane failed or timed out; `correction` is then an empty, overall_ok result. */
   correctionFailed?: boolean;
+  /** J1: one grey English line under the tutor reply saying why it did what it did; unset if not sent. */
+  why?: string;
 };
 
 export type UseTutorSession = {

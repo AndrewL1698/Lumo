@@ -318,6 +318,14 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
       });
       if (!res.ok || !res.body) throw new Error(`/api/tutor/reply ${res.status}`);
       // X-Reply-Fallback: 1 means the body is the canned line; it is handled like any reply.
+      // J1: X-Parrot-Why is URI-encoded (header values can't carry accents); a bad value just leaves `why` unset.
+      try {
+        const rawWhy = res.headers.get("X-Parrot-Why");
+        const why = rawWhy ? decodeURIComponent(rawWhy) : "";
+        if (why && live()) updateTurn(args.turnId, (t) => ({ ...t, why }));
+      } catch {
+        // malformed header: no why line for this turn
+      }
       const reader = res.body.getReader();
       const decoder = new TextDecoder("utf-8");
       for (;;) {
