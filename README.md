@@ -1,11 +1,12 @@
-# Parrot
+# Luci
 
 > **Your morning reading becomes tonight's conversation lesson.**
-> Parrot swaps a few English words into Spanish on sites you choose, learns which ones you don't know yet,
+> Luci swaps a few English words into Spanish on sites you choose, learns which ones you don't know yet,
 > and then a voice tutor chats with you about what you read, correcting you instantly like a fluent friend.
 > A word only counts as learned once you use it correctly out loud.
 
 Built for HackPrinceton Fall 2026 · Amazon track: Best Practical AI Innovation.
+The name comes from *luciérnaga* (firefly): every word you learn glows a little brighter. (Parrot was the working name, and the code still uses it.)
 
 <!-- TODO(demo): hero screenshot of the tutor page (docs/img/tutor.png) -->
 
@@ -19,22 +20,22 @@ English news every day but never find time to study.
   conversation is generic and nothing you read gets practised.
 
 ## What's different
-Parrot connects reading and speaking in one loop:
-1. **Read:** on a news site you've enabled, a few English words become Spanish (*the strike → la huelga*). Hover one for
-   the meaning and pronunciation. Parrot notes which words you looked up.
-2. **Talk:** the tutor opens with the article you just read and steers the chat toward the words you struggled with.
-   You hold Space and answer in Spanish.
+Luci connects reading and speaking in one loop:
+1. **Read:** on a news site you've enabled, a few English words become Spanish (*the strike → la huelga*). Hover or click one
+   for the meaning and pronunciation. Luci notes which words you looked up.
+2. **Talk:** a *Tonight's lesson* card shows what the tutor planned from your reading: the article, the words it will
+   steer toward and why, and one mistake to watch. The tutor opens with that article. You hold Space and answer in Spanish.
 3. **Get corrected, instantly:** your words appear on screen with mistakes struck through, the fix in green, and a
    one-line English reason. The tutor keeps talking; it doesn't stop to lecture you.
-4. **Prove it:** use a target word correctly out loud and it moves to "Your vocabulary". Seeing or hovering a word is never
-   enough.
+4. **Prove it:** use a target word correctly out loud and it lights up in your jar, from *Still faint* to *Glowing steady*.
+   Seeing or hovering a word is never enough.
 
 UI and explanations are in English; the Spanish is Latin American.
 
 ## How it works
 ```
 Chrome extension (MV3)                 Web app (Next.js)
-  swaps words on allowed sites           Tutor · Vocabulary · What Parrot knows · Settings
+  swaps words on allowed sites           Tutor · Your jar · What Luci knows · Settings
   hover cards, reading events            push-to-talk, live corrections, recap
           │  pairing token                        │
           ▼                                       ▼
@@ -67,7 +68,10 @@ The tutor decides how to teach on every turn instead of following a script:
 - **Steers the conversation** toward a target word you haven't used yet, every other turn.
 - **Acts on the outcome.** A target word used correctly in speech updates your learner model and moves to "known".
 
-<!-- TODO(demo): if J1/J2 ship, mention the on-screen "why" line and the "Today's lesson" card here. -->
+You can watch it decide. The *Tonight's lesson* card lists each target word with its reason ("you hovered it this
+morning", "due for review"), and each word lights up as you use it. A small grey **why** line under every tutor reply
+says what it chose and why, e.g. *"Recast only: first time you've made this mistake"*. Neither adds an extra Claude
+call: both come from decisions the tutor already makes in code.
 
 ### Adaptive intelligence
 - **Learner model with evidence levels.** Hovering a word can move it to *learning*, but only active evidence (correct use in
@@ -77,34 +81,46 @@ The tutor decides how to teach on every turn instead of following a script:
   what the tutor watches for.
 
 ## Results
-<!-- TODO(demo): fill from eval/README.md once the scripts have run. Don't invent numbers. -->
+Correction accuracy on 50 Spanish sentences (35 with one planted learner mistake, 15 correct), run three times through
+the same `/api/tutor/correct` endpoint the tutor uses; the middle run is reported. All three runs agreed on the
+accuracy numbers.
+
 | Metric | Target | Measured |
 |---|---|---|
-| Correction precision | | _TBD_ |
-| Correction recall | | _TBD_ |
-| False-alarm rate on correct sentences | | _TBD_ |
-| Time to correction (median) | ≤ 1.5 s | _TBD_ |
-| Time to tutor voice (median) | ≤ 2 s | _TBD_ |
+| Correction precision (flags that were real mistakes) | | **100%** (32/32) |
+| Correction recall (planted mistakes caught) | | **91%** (32/35) |
+| False alarms on correct sentences | | **0%** (0/15) |
+| Correction time, server (median / p90) | ≤ 1.5 s | **1.08 s** / 1.75 s |
+| Correction time, in the browser from releasing the talk button (median) | ≤ 1.5 s | **1.31 s** (n=8) |
+| Tutor voice starts, in the browser from releasing the talk button (median) | ≤ 2 s | **1.86 s** (n=8) |
 
-Method: [`eval/README.md`](eval/README.md).
+Browser timings are from voiced turns on a laptop over wifi, measured before the latency tuning pass.
+<!-- TODO(demo): replace the browser rows with the "after tuning" numbers once eval/README.md has them. -->
+
+Speech-to-text keeps the learner's mistakes in 73% of cases (11/15) and never invented one on clean sentences (5/5),
+which is why the grader only ever sees the raw transcript.
+
+Method and per-mistake-type breakdown: [`eval/README.md`](eval/README.md).
 
 ## Screenshots
 <!-- TODO(demo): add docs/img/tutor.png once the tutor uses the real reading context. -->
-**Vocabulary:** words move from *Learning now* to *Your vocabulary* only after correct use in speech.
+<!-- TODO(demo): retake vocabulary.png and privacy.png. They are from before the Luci redesign (Sat 4:27pm). -->
+**Your jar:** every word is a firefly. It glows *Still faint* while you're learning it, *Glowing steady* once you've
+used it correctly out loud, and *Shining bright* when you've kept remembering it for weeks.
 
-![Vocabulary page](docs/img/vocabulary.png)
+![Your jar page](docs/img/vocabulary.png)
 
-**What Parrot knows:** everything stored, with a delete button on each item.
+**What Luci knows:** everything stored about you, with a delete button on each item.
 
-![What Parrot knows page](docs/img/privacy.png)
+![What Luci knows page](docs/img/privacy.png)
 
 ## Privacy
 - **Off by default.** The extension has no site access until you turn it on for a site; Chrome asks you to confirm each one.
-- **Hard never-list.** Parrot never runs on email, chat, banking, health, school and work tools (Google Docs, Canvas,
+- **Hard never-list.** Luci never runs on email, chat, banking, health, school and work tools (Google Docs, Canvas,
   GitHub), or login and form pages, even if you allow them. This is enforced in code.
 - **Minimal data.** It never sends full page text, your browsing history, or anything you type on other sites. It stores
   the words you look up, a short activity log, article titles and websites, and your tutor transcripts.
-- **You can see and delete everything.** The "What Parrot knows" page lists every stored item with a delete button, plus
+- **You can see and delete everything.** The "What Luci knows" page lists every stored item with a delete button, plus
   "Delete everything".
 - **No keys in the browser.** All Claude and ElevenLabs calls go through server routes; the extension and the web page
   never hold an API key.
@@ -138,7 +154,7 @@ npm run seed-demo -w scripts    # reset the demo account to the demo state
 **Chrome extension:**
 1. `npm run build:ext`
 2. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and pick `extension/dist`.
-3. Open the Parrot popup, enter the pairing code shown on the web app's onboarding page, then enable a news site.
+3. Open the Luci popup, enter the pairing code shown on the web app's onboarding page, then enable a news site.
 
 ## Credits
 - Word frequencies: **FrequencyWords** by Hermit Dave, derived from [OpenSubtitles 2018](http://www.opensubtitles.org/),
