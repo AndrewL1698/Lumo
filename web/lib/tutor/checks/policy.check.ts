@@ -74,14 +74,14 @@ assert.equal(
 );
 assert.equal(whyOf({ turnIndex: 2 }), "Steering toward 'huelga'");
 assert.equal(whyOf({ turnIndex: 2, ...repeated }), "Steering toward 'huelga'"); // too early to correct, so steer
-assert.equal(whyOf({ turnIndex: 1, ...repeated }), "Not explaining out loud yet: Luci spaces out spoken corrections");
+assert.equal(whyOf({ turnIndex: 1, ...repeated }), "Not explaining out loud yet: Lumo spaces out spoken corrections");
 assert.equal(
   whyOf({ turnIndex: 5, lastSpokenCorrectionTurn: 3, ...repeated }),
-  "Not explaining out loud yet: Luci spaces out spoken corrections",
+  "Not explaining out loud yet: Lumo spaces out spoken corrections",
 );
 assert.equal(
   whyOf({ turnIndex: 3, errorCounts: { "agreement:problema": 1 }, errorExamples: repeated.errorExamples }),
-  "Not correcting out loud yet: Luci waits until a mistake comes up in two turns",
+  "Not correcting out loud yet: Lumo waits until a mistake comes up in two turns",
 );
 assert.equal(whyOf({ turnIndex: 3 }), WHY.talking);
 assert.equal(whyOf({ turnIndex: 4, usedLemmas: ["huelga", "aprovechar", "casa"] }), WHY.talking);

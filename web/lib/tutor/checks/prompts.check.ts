@@ -172,7 +172,7 @@ assert.ok(RECAP_SYSTEM.includes("summary_en") && RECAP_SYSTEM.includes("tips"));
 // ---------- onboarding level check (D-020) ----------
 {
   // The line for each step: question 1 with a greeting, then 2, then 3, then the closing.
-  assert.ok(placementLine(0).startsWith("¡Hola! Soy Luci. ¿Cómo te llamas"));
+  assert.ok(placementLine(0).startsWith("¡Hola! Soy Lumo. ¿Cómo te llamas"));
   assert.ok(placementLine(1).startsWith(PLACEMENT_QUESTIONS[1].es) && placementLine(1).endsWith(PLACEMENT_QUESTIONS[1].en));
   assert.ok(placementLine(2).includes("¿adónde irías y por qué?"));
   assert.ok(placementLine(3).includes("Your result is on the screen") && placementLine(3) === placementLine(9));

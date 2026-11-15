@@ -300,10 +300,10 @@ export function placementAnswered(history: HistoryTurn[], rawText: string | null
 export function placementLine(answered: number): string {
   const q = PLACEMENT_QUESTIONS[answered];
   if (!q) return PLACEMENT_CLOSING;
-  return `${answered === 0 ? "¡Hola! Soy Luci. " : ""}${q.es} ${q.en}`;
+  return `${answered === 0 ? "¡Hola! Soy Lumo. " : ""}${q.es} ${q.en}`;
 }
 
-const PLACEMENT_SYSTEM = `You are Luci, a friendly Spanish tutor running a one-minute level check for a new learner.
+const PLACEMENT_SYSTEM = `You are Lumo, a friendly Spanish tutor running a one-minute level check for a new learner.
 You are talking out loud: everything you write is turned into speech. Their level is not known yet.
 
 Each turn, <step> holds the exact line to say next.
