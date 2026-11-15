@@ -92,6 +92,8 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
   /** The learner's level from the session context; sets the tutor's speaking speed. */
   let level: Level | undefined;
   let turns: Turn[] = [];
+  /** Correction requests still in flight; end() waits for them so the recap includes the last turn. */
+  const pendingCorrections = new Set<Promise<void>>();
 
   let queue: AudioQueue | null = null;
   let recorder: PttRecorder | null = null; // null = no mic (denied or not started)
@@ -377,6 +379,8 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
     setTurns([...turns, { id, rawText, sttPath }]); // rawText is verbatim: never trimmed or edited
     set.status("checking");
     const correctionDone = correctLane(id, rawText, sttPath, tutorPrevious, timeline);
+    pendingCorrections.add(correctionDone);
+    void correctionDone.finally(() => pendingCorrections.delete(correctionDone));
     void replyLane({ turnId: id, utteranceId: id, rawText, history, timeline, correctionDone });
   }
 
@@ -616,10 +620,15 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
     async end() {
       if (!started) return;
       const id = sessionId;
+      // Grab the in-flight corrections before teardown; the server must record the last turn before it
+      // builds the recap, or a word credited a moment later would show under "Review tomorrow".
+      const pending = [...pendingCorrections];
       teardown();
       set.partial("");
       set.status("idle");
       try {
+        if (pending.length)
+          await Promise.race([Promise.all(pending), new Promise((r) => setTimeout(r, TUTOR.correctTimeoutMs))]);
         const res = await fetch("/api/tutor/end", {
           method: "POST",
           headers: JSON_HEADERS,
