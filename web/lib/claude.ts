@@ -205,12 +205,37 @@ Return one result per item with the same i:
 - match: false if englishMatch in this sentence does not carry one of the lemma's senses (e.g. "river bank" for banco, which means a financial bank or a bench). When false, span and replacement are "".
 - span: the exact English text to replace, copied character-for-character from the sentence. If the item has a determiner, span is exactly "<determiner> <englishMatch>" and replacement includes the Spanish determiner ("the strike" → "la huelga", "Our house" → "Nuestra casa", "my friends" → "mis amigos"). Without one, span is just englishMatch. Never include adjectives or other words.
 - replacement: the Spanish for span, inflected to fit: article, gender, number, verb person and tense ("la huelga", "unas casas", "mis amigos", "trabajaba"). Keep the original capitalization if span starts the sentence.
+Without a determiner in span, the replacement must not start with an article ("a smear campaign": span "campaign" → "campaña", never "una campaña").
 Never translate any other words.`;
 
 export type TranslateInput = { sentence: string; lemma: string; englishMatch: string; senses?: string[] };
 export type TranslateOutput = { span: string; replacement: string } | null;
 
 const DETERMINERS = new Set("the a an this that these those my your his her its our their".split(" "));
+
+const ES_ARTICLE = /^(el|la|los|las|un|una|unos|unas)\s+/i;
+const fold = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+
+/**
+ * Last check on a word swap before it reaches the page (D-018 update). Applied when serving, so it also fixes
+ * entries already in the translate cache. Returns the replacement to show, or null = don't swap.
+ * - No English determiner in span → no Spanish article either ("a smear campaign" must not become "a smear una campaña").
+ * - A replacement identical to the English is a no-op ("Popular" → "Popular").
+ * - For non-verb lemmas the replacement must contain the lemma's stem, so a different word filed under this lemma
+ *   ("still" → "todavía" for quieto) is dropped. Verbs are exempt (fue, tuvo, hizo).
+ */
+export function cleanSwap(lemma: string, span: string, replacement: string): string | null {
+  let out = replacement.trim();
+  const firstWord = span.trim().split(/\s+/)[0]?.toLowerCase() ?? "";
+  const article = ES_ARTICLE.exec(out);
+  if (!DETERMINERS.has(firstWord) && article && out.length > article[0].length) {
+    const rest = out.slice(article[0].length);
+    out = /^[A-ZÁÉÍÓÚÑ]/.test(out) ? rest.charAt(0).toUpperCase() + rest.slice(1) : rest;
+  }
+  if (!out || out.toLowerCase() === span.trim().toLowerCase()) return null;
+  if (lemma.length >= 3 && !/(ar|er|ir)$/.test(lemma) && !fold(out).includes(fold(lemma).slice(0, 3))) return null;
+  return out;
+}
 
 /** The determiner/possessive directly before englishMatch in the sentence, as written ("The", "my"), or undefined. */
 export function determinerBefore(sentence: string, englishMatch: string): string | undefined {

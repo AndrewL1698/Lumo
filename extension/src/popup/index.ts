@@ -186,11 +186,17 @@ function renderImmersion(): void {
   for (const { rate, b } of rateButtons) b.classList.toggle("active", rate === immersion.rate);
   immNote.textContent = autoBox.checked
     ? "Grows as you hover and answer on the page."
-    : "The slider sets words per page; the dial is paused.";
+    : "Slider mode: the dial is off. Tap a dial button to switch it back on.";
 }
 
 async function setImmersion(change: { rate?: number; percent?: number; reset?: boolean }): Promise<void> {
   try {
+    // The page ignores the dial in slider mode, so any dial button switches "Grow automatically" back on.
+    if (!autoBox.checked) {
+      await send({ type: "SET_SWAP_AMOUNT", autoGrow: true });
+      autoBox.checked = true;
+      renderAmount();
+    }
     await send({ type: "SET_IMMERSION", ...change });
     const s = await send({ type: "GET_SETTINGS" });
     if (s?.immersion) immersion = s.immersion;
