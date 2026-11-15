@@ -1,4 +1,4 @@
-# Shravan's plan: Parrot web app UI (HackPrinceton Fall 2026)
+# Shravan's plan: Lumo web app UI (HackPrinceton Fall 2026)
 
 ## Context
 Shravan owns the **web app UI** (React/Next.js pages under `/web`, not `/web/app/api`). Andrew owns the scaffold, `/shared` and the tutor pipeline. Karthik owns the data APIs. Naren owns the extension. The goal is the UI needed for the 2-minute demo (specs §11), built on mock data so nothing waits on teammates, then wired to real APIs in Phase 3. Once approved, this plan is saved to `docs/plan-shravan.md` and committed on branch `shravan` (a new file; no shared docs are edited).
@@ -19,15 +19,15 @@ All on `main`. Build and lint pass. Plain-language running log: kept outside the
 | 4 Tutor page | ✅ on Andrew's real `useTutorSession` (PR #15); Start lesson button, notice bar, type-instead box, pinned controls + auto-scroll |
 | 5 "Now known" toast + recap | ✅ UI. Andrew's task 12 (target-word credit in `/api/tutor/correct`) and the real `/api/tutor/end` recap are on main; confirm both live in the full run. |
 | 6 Vocabulary | ✅ real data; "just learned" highlight + banner |
-| 7 What Parrot knows | ✅ real data; compact chips, summary line, English event names |
+| 7 What Lumo knows | ✅ real data; compact chips, summary line, English event names |
 | 8 Onboarding | ✅ (pairing code 482913 accepted by `/api/pair`) |
 | 9 Hand-off to Andrew | ✅ (his task 11 done by us) |
 | 10–12 Wire vocab, data, settings | ✅ real routes; settings save merges onto fresh GET (allowlist never overwritten); delete refetches |
 | 13 Polish | ✅ mostly: loading placeholders, error states, projector fixes, English hints after the learner answers |
-| 14 README + screenshots | 🟡 final text merged (PRs #46, #47): Luci name, J1/J2, eval numbers. Pending: `tutor.png`, retake `vocabulary.png` + `privacy.png` (pre-redesign), Andrew's after-tuning latency |
+| 14 README + screenshots | 🟡 final text merged (PRs #46, #47): Lumo name, J1/J2, eval numbers. Pending: `tutor.png`, retake `vocabulary.png` + `privacy.png` (pre-redesign), Andrew's after-tuning latency |
 | J1 why line + J2 lesson card | ✅ merged (PR #43) |
 
-Added beyond the plan: rehearsal mode `/tutor?mock=1` (stage backup, no API calls), bigger "now known" pop-up, Luci/firefly design pass (Your jar, What Luci knows, night tutor), Show English button.
+Added beyond the plan: rehearsal mode `/tutor?mock=1` (stage backup, no API calls), bigger "now known" pop-up, Lumo/firefly design pass (Your jar, What Lumo knows, night tutor), Show English button.
 
 **Waiting on teammates:** Andrew's after-tuning latency numbers; Karthik's demo URL (NPR article) and reseed before judging.
 **Next:** full end-to-end run on real APIs (screenshots + exact why lines for Naren's script), then commit screenshots.
@@ -39,7 +39,7 @@ Added beyond the plan: rehearsal mode `/tutor?mock=1` (stage backup, no API call
 | **P0, ~2:30am Sat** (~1.5h) | Page shells, nav, layout, design tokens for all web pages |
 | **P1, Sat late morning (~11am)** | Onboarding (level pick, reading-in-lessons toggle, pairing-code display) + vocabulary page on mock data |
 | **P2, Sat ~4pm** | Tutor page UI: push-to-talk button, live transcript with inline correction highlights, tutor captions, recap panel, all driven by a mock `CorrectionResult` stream (Andrew wires the audio) |
-| **P3, Sat ~9pm** | Wire vocabulary + settings to real APIs. "What Parrot knows" page (list, per-item delete, delete everything) |
+| **P3, Sat ~9pm** | Wire vocabulary + settings to real APIs. "What Lumo knows" page (list, per-item delete, delete everything) |
 | **P4, Sun 3:00am freeze** | Polish, empty states, English explanations visible everywhere, recap styling |
 | **Ship, Sun 3–7:30am** | README + screenshots; rehearse the demo |
 
@@ -55,7 +55,7 @@ All calls are same-origin `/web/app/api/*` routes. My code holds no keys and mak
 | Onboarding | `Settings` {level, intensity, perPageCap, allowlist[], pausedSites[], useReadingInLessons} | `GET/PUT /api/settings` (Karthik); pairing code: **no endpoint defined** ⚠️ | `settings`, `pair_codes`, `user_words` (known_assumed) |
 | Tutor | `CorrectionResult` (specs §7.5), `TutorContext`, recap: **no type** ⚠️ | `GET /api/tutor/context` → TutorContext; `POST /api/tutor/correct` {raw utterance} → CorrectionResult; `POST /api/tutor/reply` → streamed text; `POST /api/tutor/end` → recap; `GET /api/stt-token` (all Andrew; he wires them) | `tutor_sessions`, `utterances` (raw_text vs display_text) |
 | Vocabulary | `UserWord`, `WordState`; response: **no type** ⚠️ | `GET /api/vocab` → Learning / Your vocabulary / Mastered + streak (Karthik) | `user_words` ⋈ `words` |
-| What Parrot knows | **no type** ⚠️ | `GET /api/data`, `DELETE /api/data` (one item / everything) (Karthik) | `user_words`, `events`, `articles` (+ sessions/utterances?) |
+| What Lumo knows | **no type** ⚠️ | `GET /api/data`, `DELETE /api/data` (one item / everything) (Karthik) | `user_words`, `events`, `articles` (+ sessions/utterances?) |
 | Settings | `Settings` | `GET/PUT /api/settings` | `settings` |
 
 ### ⚠️ Gaps and contradictions to settle with the team
@@ -64,7 +64,7 @@ All calls are same-origin `/web/app/api/*` routes. My code holds no keys and mak
 3. **Casing:** specs §7.5 uses snake_case (`explanation_en`, `target_words_used`); arch §4 uses camelCase (`fsrsCard`, `articleKey`). Andrew should pick one so I match the actual zod.
 4. **Highlight positioning:** `span` has no offset, so a repeated phrase is ambiguous. → I'll highlight the first not-yet-used occurrence; optional additive `start` field later.
 5. **Which text the transcript shows:** spans are validated against `raw_text`. → I render **raw_text** (it's what's graded); `display_text` isn't shown.
-6. **Onboarding site picking:** specs §4.3 has it in the web app; arch #4 moves it to the extension popup (arch wins). → Onboarding shows suggested sites + "add them from the Parrot popup" text only.
+6. **Onboarding site picking:** specs §4.3 has it in the web app; arch #4 moves it to the extension popup (arch wins). → Onboarding shows suggested sites + "add them from the Lumo popup" text only.
 7. **Level → `known_assumed`:** nothing says who seeds those rows when level is saved (side effect of `PUT /api/settings`?). Karthik.
 8. **Streak:** undefined. Propose: consecutive days with ≥1 event.
 9. **"Delete everything" scope:** user_words, events, articles only, or also tutor_sessions/utterances/settings? plan.md DoD #4 says "tables are empty."
@@ -97,17 +97,17 @@ Steps run in schedule order (above). Each one ends with: build, test the "done w
 | # | Step | Tag | ~Time | Done when… |
 |---|---|---|---|---|
 | 0 | **Preflight:** confirm Andrew's scaffold + `/shared` are on `main` (or agree I start in `/web/app` only), `.gitignore` covers `.env*`, post gaps 1–5 and 10 in chat | MUST | 15m | `npm run dev` serves `/web`; `git check-ignore web/.env.local` prints the path |
-| 1 | **Shell:** root layout, nav (Tutor · Vocabulary · What Parrot knows · Settings · Onboarding), Tailwind tokens (colors, type scale big enough for a projector), shared `EmptyState`/`ErrorState`/`Card` | MUST | 45m | `npm run build` passes; all 5 routes render; nav works at 375px and desktop |
+| 1 | **Shell:** root layout, nav (Tutor · Vocabulary · What Lumo knows · Settings · Onboarding), Tailwind tokens (colors, type scale big enough for a projector), shared `EmptyState`/`ErrorState`/`Card` | MUST | 45m | `npm run build` passes; all 5 routes render; nav works at 375px and desktop |
 | 2 | **Mocks + typed fetch layer:** fixtures for CorrectionResult (incl. "la problema", a 0.5-confidence error, a span not in the text), TutorContext, vocab, data, recap, settings; `api.ts` fetchers | MUST | 30m | `tsc` passes; fixtures parse with `/shared` zod (or local mirror types marked `// TODO(demo): use @parrot/shared`) |
 | 3 | **Riskiest: transcript + inline correction highlights:** filter `confidence ≥ 0.7`, locate verbatim span in raw text, highlight with correction + `explanation_en` shown inline (not hover-only, for judges); skip unfound spans; multiple/overlapping errors | MUST | 60m | "Creo que la problema es grande" highlights "la problema" → "el problema" + English reason; low-confidence and not-found errors don't render; no crash |
 | 4 | **Tutor page + mock driver:** PTT (hold Space or button; idle/listening/checking/speaking states), opener caption from TutorContext, utterance list, streaming caption, built on Andrew's `useTutorSession` interface (#10) | MUST | 60m | Holding Space on `/tutor` plays a full scripted turn from mocks: transcript → corrections at ~1.2s → caption streams; no mic or API calls |
 | 5 | **"Now known" toast + recap panel:** toast from `wordUpdates` (`to === "known"`); End session → recap (top 3 errors, words now known, review tomorrow) | MUST | 45m | Mock turn using "aprovechar" correctly shows toast; End shows styled recap from mock |
 | 6 | **Vocabulary page (mock):** 3 lists with counts, article + English meaning, streak, per-list empty states, refetch on window focus (for demo step 4) | MUST | 45m | Renders mock with items in every list; empty mock shows 3 empty states |
-| 7 | **What Parrot knows (mock):** words / events / article titles sections, per-item delete (optimistic), "Delete everything" with confirm | MUST | 45m | Deleting one row removes it; delete-all empties all sections with empty states |
+| 7 | **What Lumo knows (mock):** words / events / article titles sections, per-item delete (optimistic), "Delete everything" with confirm | MUST | 45m | Deleting one row removes it; delete-all empties all sections with empty states |
 | 8 | **Onboarding (mock):** 3 level cards with specs §4 descriptions, reading-in-lessons toggle + one-sentence explanation, pairing code display, "add sites in the popup" text → `PUT /api/settings` | Pairing code: MUST (setup); rest NICE | 45m | Finishing onboarding sends a valid `Settings` payload (logged under mocks) and shows the code |
 | 9 | **Hand off tutor UI to Andrew:** walk him through the seam; fix mismatches when the real pipeline plugs in | MUST | 30m | Speaking a scripted sentence shows the real Haiku correction in my UI |
 | 10 | **Wire vocab to `GET /api/vocab`** | MUST | 30m | With mocks off, after Karthik's seed, Mastered/Learning show DB rows; a word flipped in the tutor appears in "Your vocabulary" after a refocus |
-| 11 | **Wire What Parrot knows to `GET/DELETE /api/data`** | MUST | 45m | Delete everything → Supabase tables empty for `DEMO_USER_ID`; reseed repopulates the page |
+| 11 | **Wire What Lumo knows to `GET/DELETE /api/data`** | MUST | 45m | Delete everything → Supabase tables empty for `DEMO_USER_ID`; reseed repopulates the page |
 | 12 | **Settings page + wire `GET/PUT /api/settings`** (level, intensity, per-page cap, paused sites, reading toggle) | NICE | 45m | A changed setting survives reload |
 | 13 | **Polish:** loading skeletons, graceful API failure (never blank, never stack trace), English everywhere, recap styling, projector check | MUST | 60m | Full §11 run on localhost; with `/api` down, every page shows a friendly state |
 | 14 | **README + screenshots** (setup commands, page screenshots, word-list CC-BY-SA attribution) | MUST (ship) | 45m | README renders on GitHub with 4 screenshots + run steps |

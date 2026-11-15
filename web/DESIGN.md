@@ -1,5 +1,5 @@
 ---
-name: Parrot
+name: Lumo
 description: Spanish speaking practice built from what you read today.
 colors:
   ink-ground: "#0e1013"
@@ -82,13 +82,13 @@ components:
     padding: "8px 12px"
 ---
 
-# Design System: Parrot
+# Design System: Lumo
 
 ## Overview
 
 **Creative North Star: "The Corrected Proof"**
 
-Parrot treats what a learner says the way an editor treats a manuscript: the words are kept exactly as spoken, and every
+Lumo treats what a learner says the way an editor treats a manuscript: the words are kept exactly as spoken, and every
 judgement is written onto them, never in place of them. A slip is struck through in red and the correct form is set
 directly above it, the way a teacher marks a page. Nothing else on screen competes with those marks.
 
@@ -206,7 +206,7 @@ Below the transcript, a hairline list repeats each fix with its error type label
 - **Focus:** the border brightens to slate.
 
 ### Navigation
-The wordmark "Parrot" in bold, then text links in slate. The active link is off-white with a 1px underline set well
+The wordmark "Lumo" in bold, then text links in slate. The active link is off-white with a 1px underline set well
 below the baseline. Hover changes colour only. On phones the links become one horizontal scroll strip beside the
 wordmark.
 

@@ -1,7 +1,7 @@
-// Reading sites Luci suggests (D-021). Plain data, no zod, so the extension can import it cheaply.
+// Reading sites Lumo suggests (D-021). Plain data, no zod, so the extension can import it cheaply.
 // `origin` is scheme + host exactly as the site lands (same format as Settings.allowlist and the
 // extension's enabledOrigins). `starter`: shown checked in onboarding. The rest only drive the
-// extension's "Luci reads well here" icon dot. None may be on the never-list.
+// extension's "Lumo reads well here" icon dot. None may be on the never-list.
 
 export type ReadingSiteGroup =
   "News" | "Reference" | "Sports, tech and culture" | "Food and travel";

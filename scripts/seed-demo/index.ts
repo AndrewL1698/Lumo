@@ -193,7 +193,7 @@ if (dry) process.exit(0);
 // ---- Writes ----
 
 // Full reset of the demo user: everyone's test hovers, clicks, articles and tutor sessions go too, so leftovers
-// never show up in Luci's lesson plan on stage. Settings are rewritten below. (Utterances cascade with sessions.)
+// never show up in Lumo's lesson plan on stage. Settings are rewritten below. (Utterances cascade with sessions.)
 for (const table of ["events", "articles", "tutor_sessions", "user_words"]) {
   await rest(`${table}?user_id=eq.${userId}`, { method: "DELETE" });
 }

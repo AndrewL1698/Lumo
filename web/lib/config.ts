@@ -73,12 +73,12 @@ export const TUTOR = {
     /** Quiet means below max(room noise x this, this share of how loud the learner just was). */
     silenceFloorFactor: 2,
     silencePeakShare: 0.25,
-    /** Luci's voice at the mic is learned for this long after she starts; no interrupting during it. */
+    /** Lumo's voice at the mic is learned for this long after Lumo starts talking; no interrupting during it. */
     echoLearnMs: 600,
-    /** Interrupting Luci needs this much more than her own echo. A headset has almost none. */
+    /** Interrupting Lumo needs this much more than Lumo's own echo. A headset has almost none. */
     bargeEchoFactor: 1.6,
     startMs: 200,
-    /** Real barge-in: this much steady speech over Luci. A short "sí" is shorter. */
+    /** Real barge-in: this much steady speech over Lumo. A short "sí" is shorter. */
     bargeMs: 300,
     /** Silence that ends a finished thought. */
     endSilenceMs: 800,

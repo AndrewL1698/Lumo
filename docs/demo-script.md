@@ -1,4 +1,4 @@
-# Luci: Demo Script (2 minutes)
+# Lumo: Demo Script (2 minutes)
 
 Owner: Naren. Locked after Phase 3. Only use sentences that passed ≥5 rehearsal runs. Setup: headset mic, phone hotspot, localhost, demo user seeded. **Immersion (D-019):** NPR set to **Always on for this site** in the popup (not "Try on this page", which ends on reload), then, after `seed-demo`, popup **Reset progress** → **Demo** speed. See "Immersion beat" below.
 
@@ -28,7 +28,7 @@ advances in `recordCorrection`, once per learner utterance.
 |---|---|---|---|
 | opener | — | 0 | _Opening with something you read today_ |
 | 1:05 | sentence 1 (planted error) | 0, overridden | _Just talking: keeping the conversation going_ |
-| 1:30 | sentence 2 (`empresa` used correctly) | 1 | _Not correcting out loud yet: Luci waits until a mistake comes up in two turns_ |
+| 1:30 | sentence 2 (`empresa` used correctly) | 1 | _Not correcting out loud yet: Lumo waits until a mistake comes up in two turns_ |
 
 At 1:05 the policy's counter is still on the opener, and `finalWhy` catches that case and returns
 `WHY.talking` — so there is nothing worth pointing at. By 1:30 the error from 1:05 is in
@@ -36,7 +36,7 @@ At 1:05 the policy's counter is still on the opener, and `finalWhy` catches that
 line. `steerLemma` does not pre-empt it, because that needs `turnIndex >= 2`.
 
 **So the beat belongs at 1:30, not 1:05** — say the error once, then at 1:30 read that line out as
-the point: Luci noticed and chose *not* to interrupt. A decision the judges can watch it make,
+the point: Lumo noticed and chose *not* to interrupt. A decision the judges can watch it make,
 which is what the "Agentic behavior" rubric wants, and it costs no extra turns.
 
 The **on-screen correction still appears at 1:05** — that is the correction lane, independent of

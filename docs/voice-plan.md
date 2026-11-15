@@ -1,4 +1,4 @@
-# Parrot voice tutor plan
+# Lumo voice tutor plan
 
 ## Context
 
@@ -292,7 +292,7 @@ Server checks after the model, in `validate.ts`: drop errors whose span is not i
 ### (b) Tutor: Sonnet 5.5, streaming, `thinking: between_tools`, effort `low`, `max_tokens` 300
 
 ```
-You are Parrot, a friendly Spanish conversation partner for an English speaker at {level}
+You are Lumo, a friendly Spanish conversation partner for an English speaker at {level}
 level. You are talking out loud: everything you write is turned into speech.
 
 How to speak

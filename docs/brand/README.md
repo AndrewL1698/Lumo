@@ -1,5 +1,8 @@
 # Luci: brand concept (proposal)
 
+> **Now Lumo.** This proposal named the product Luci; the team later renamed it Lumo (D-026). The look and the
+> firefly carried over; only the name changed.
+
 **Status:** proposed by Karthik on Nov 14. The product is still called Parrot everywhere until the
 team agrees (see D-003 in `docs/decisions.md`). Nothing in `/web` or `/extension` needs to change yet.
 

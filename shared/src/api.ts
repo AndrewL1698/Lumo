@@ -52,7 +52,7 @@ export const VocabResponse = z.object({
 });
 export type VocabResponse = z.infer<typeof VocabResponse>;
 
-/** GET /api/data — everything Parrot stores ("What Parrot knows" page). */
+/** GET /api/data — everything Lumo stores ("What Lumo knows" page). */
 export const StoredEvent = z.object({
   id: z.string(),
   type: LearnerEventType,

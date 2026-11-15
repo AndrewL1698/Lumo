@@ -23,7 +23,7 @@ const calib: [number, number] = [QUIET, 1100];
 const plain = (partial = "") => () => ({ tutorSpeaking: false, partial });
 /** A transcript that keeps changing until `endMs` (while the learner talks), then stops: like Scribe's partials. */
 const growing = (endMs: number, text: string) => (t: number) => ({ tutorSpeaking: false, partial: text + " ".repeat(Math.floor(Math.min(t, endMs) / 200)) });
-/** Luci starts talking at `from` ms. */
+/** Lumo starts talking at `from` ms. */
 const lucyFrom = (from: number) => (t: number) => ({ tutorSpeaking: t >= from, partial: "" });
 const kinds = (e: { ev: string }[]) => e.map((x) => x.ev);
 
@@ -66,18 +66,18 @@ assert.deepEqual(run([calib, [0.01, 2000], [0.014, 2000], [0.018, 2000]], plain(
   assert.equal(e[1].why, "end: cap");
 }
 
-// While Luci talks. She starts at 1.1 s.
+// While Lumo talks. She starts at 1.1 s.
 {
   const lucy = lucyFrom(1100);
   // A short "sí" (200 ms) is not a barge-in.
   assert.deepEqual(run([calib, [0.003, 1000], [SPEECH, 200], [0.003, 1500]], lucy), [], "backchannel ignored");
   // Headset: almost no echo, a normal voice interrupts.
   assert.deepEqual(kinds(run([calib, [0.003, 1500], [SPEECH, 400]], lucy)), ["start"], "headset barge-in");
-  // Speakers: her voice at the mic (0.05) is learned, so it doesn't interrupt her...
+  // Speakers: Lumo's voice at the mic (0.05) is learned, so it doesn't interrupt Lumo...
   assert.deepEqual(run([calib, [0.05, 4000]], lucy), [], "echo ignored");
   // ...but a louder learner over it does.
   assert.deepEqual(kinds(run([calib, [0.05, 2000], [0.25, 600]], lucy)), ["start"], "speaking up over echo");
-  // Her voice never raises the room-noise estimate: after she stops, a normal sentence still starts a turn.
+  // Lumo's voice never raises the room-noise estimate: after Lumo stops, a normal sentence still starts a turn.
   assert.deepEqual(kinds(run([calib, [0.05, 3000], [QUIET, 500], [SPEECH, 600]], (t) => ({ tutorSpeaking: t >= 1100 && t < 4100, partial: "" }))), ["start"]);
 }
 

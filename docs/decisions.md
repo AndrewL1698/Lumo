@@ -1,6 +1,9 @@
-# Parrot: Decision Log
+# Lumo: Decision Log
 
 Short entries. Newest at the bottom. Format: **ID · date · owner**, decision, why, alternatives.
+
+**Naming:** the product was called Parrot, then Luci (D-010), and is now **Lumo** (D-026). Older entries keep the
+name used at the time.
 
 ---
 
@@ -171,3 +174,8 @@ Short entries. Newest at the bottom. Format: **ID · date · owner**, decision, 
 **Decision:** Fixes to hands-free after the first real use: (1) **End session** is enabled as soon as the session starts (it needed two turns, and in hands-free no turn ever finished). (2) The listener's "quiet" is measured against how loud the learner just was, and the room-noise estimate follows the room (drops at once, rises slowly, resets when a turn ends), instead of a number learned once in the first second that Chrome's auto-gain made useless. (3) A second end-of-turn signal: if the live transcript stops changing for about 1.2 s while the level is clearly below speaking volume, the turn is over. (4) Interrupting Luci is echo-aware: her own voice at the mic is learned for 600 ms after she starts, and a barge-in needs 1.6x that (a headset has almost none) for 300 ms; a quick "sí" is shorter. (5) An **Interrupt** button and Space always stop her, and the mic button reads "Listening… tap to send" while you talk. (6) The take cap is 15 s. `/tutor?debug=1` shows a live strip of what the listener believes, and every start/end logs a line to the console. Push-to-talk is unchanged (the End button rule is the only shared change).
 **Why:** In real use the first version never decided the learner had stopped, could not be interrupted, and left no way to end the session.
 **Limits:** Still a level-based detector, tuned only by scripted sequences until a real-mic test; the numbers live in `TUTOR.handsFree`.
+
+### D-026 · Nov 15 · Karthik (heads-up to everyone)
+**Decision:** The product is **Lumo**, everywhere a person sees or reads it: the tutor's own name (its system prompt said "You are Parrot", so it sometimes introduced itself as Parrot), the hands-free status lines, the settings error, the README and docs, and code comments. Code names in identifiers stay as they are (`@parrot/shared`, `data-parrot*`, `[parrot]` logs, `X-Parrot-Why`, `parrot-hover-card`, `luci-ambience`, `LuciFirefly`, storage keys, DB), noted in the root `CLAUDE.md`.
+**Why:** Mixed names on stage (the tutor calling itself Parrot) undercut the product. Renaming identifiers after the freeze could break imports, saved browser data and the running extension, with no visible gain.
+**Not changed:** this log's older entries (they keep the name used at the time), the Luci brand proposal in `docs/brand/` (it gets a note), and one roadmap line recording Saturday's rename to Luci.

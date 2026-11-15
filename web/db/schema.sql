@@ -1,4 +1,4 @@
--- Parrot DB schema (architecture §5). Idempotent: paste into the Supabase SQL editor; safe to re-run.
+-- Lumo DB schema (architecture §5). Idempotent: paste into the Supabase SQL editor; safe to re-run.
 -- Single demo user: user_id = DEMO_USER_ID, no users table, no RLS (service key only, server side).
 
 create extension if not exists pgcrypto; -- gen_random_uuid()
