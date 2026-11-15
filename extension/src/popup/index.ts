@@ -1,5 +1,6 @@
 // Lumo popup: worker health, try / enable on this site, pairing, immersion. Look: popup.html.
 
+import "./theme"; // visual only: light/dark, applied before anything else renders
 import { send } from "../messages";
 import "./firefly"; // visual only: the wandering firefly
 import { READING_SITES } from "@parrot/shared";
