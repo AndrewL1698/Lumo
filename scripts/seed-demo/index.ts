@@ -42,11 +42,12 @@ if (process.argv.includes("--clean")) {
   await rest("settings?on_conflict=user_id", {
     method: "POST",
     headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
-    body: JSON.stringify({ user_id: userId, data: settingsFixture }),
+    // A new user starts as a Beginner. The returning-user demo below keeps Intermediate (its rehearsed beats need it).
+    body: JSON.stringify({ user_id: userId, data: { ...settingsFixture, level: "beginner" } }),
   });
   // Old one-time pairing codes (not per-user; the demo has one user).
   await rest(`pair_codes?code=neq.0`, { method: "DELETE" });
-  console.log("seed-demo --clean: wiped the demo user's words, events, articles and tutor sessions; settings reset");
+  console.log("seed-demo --clean: wiped the demo user's words, events, articles and tutor sessions; settings reset (level: beginner)");
   process.exit(0);
 }
 

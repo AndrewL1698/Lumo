@@ -3,12 +3,15 @@ import { Recap, Settings, settingsFixture, type Understanding } from "@parrot/sh
 import { getDb } from "../db";
 import type { LessonData } from "./curriculum";
 
-/** The user's settings row, or the fixture values if there is none (or it doesn't parse). */
+/** A brand-new learner (no settings row yet) starts as a Beginner: the course's Unit 0 and a gentle page. */
+export const NEW_USER_SETTINGS: Settings = { ...settingsFixture, level: "beginner" };
+
+/** The user's settings row, or the new-user defaults if there is none (or it doesn't parse). */
 export async function getSettings(userId: string): Promise<Settings> {
   const { data, error } = await getDb().from("settings").select("data").eq("user_id", userId).maybeSingle();
   if (error) throw error;
   const parsed = Settings.safeParse(data?.data);
-  return parsed.success ? parsed.data : settingsFixture;
+  return parsed.success ? parsed.data : NEW_USER_SETTINGS;
 }
 
 export async function putSettings(userId: string, settings: Settings): Promise<void> {
