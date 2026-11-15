@@ -1,38 +1,38 @@
-// The web app can't grant site access (architecture §11 #4): sites are added from the extension popup,
-// where Chrome shows its own permission prompt. So we only explain the steps and suggest sites.
-const SUGGESTED = [
-  { name: "A news site", example: "bbc.com" },
-  { name: "Wikipedia", example: "en.wikipedia.org" },
-  { name: "A recipe site", example: "any recipe blog" },
-];
+import { READING_SITES } from "@parrot/shared";
+
+// The web app can't grant site access (architecture §11 #4): Chrome only lets the extension ask, from its popup.
+// So this explains how to turn on the sites chosen in the previous step (D-021).
+const nameOf = (origin: string) =>
+  READING_SITES.find((s) => s.origin === origin)?.name ?? origin.replace(/^https?:\/\//, "");
 
 export function ReadingSites({ allowlist = [] }: { allowlist?: string[] }) {
   return (
     <section className="rounded-sm border border-line bg-panel p-5">
-      <h2 className="text-xl font-bold text-ink">Choose where Luci works</h2>
+      <h2 className="text-xl font-bold text-ink">Turn Luci on for your sites</h2>
       <p className="mt-1 text-sm text-muted">
-        Luci does nothing until you turn it on for a site, one site at a time. Chrome will ask you to confirm each one.
+        Luci does nothing on a site until you turn it on there. Chrome asks you to confirm, once.
       </p>
       <ol className="mt-3 list-decimal space-y-1 pl-5 text-ink">
-        <li>Open a site you like to read in Chrome.</li>
-        <li>Click the Luci icon in the toolbar to open the popup.</li>
-        <li>Click <strong>Enable</strong>, then allow it in Chrome&apos;s permission prompt.</li>
+        <li>Pair the extension with the code above.</li>
+        <li>Click the Luci icon in Chrome&apos;s toolbar.</li>
+        <li>
+          Click <strong>Turn on your sites</strong> (or <strong>Always on for this site</strong> on
+          each one), then allow Chrome&apos;s prompt.
+        </li>
       </ol>
-      <p className="mt-4 text-sm font-medium text-muted">Good places to start</p>
-      <ul className="mt-1 flex flex-wrap gap-2">
-        {SUGGESTED.map((s) => (
-          <li key={s.name} className="rounded-xs border border-line px-3 py-1 text-sm text-ink">
-            {s.name} <span className="text-muted">· {s.example}</span>
-          </li>
-        ))}
-      </ul>
+      <p className="mt-3 text-sm text-muted">
+        On other good reading sites, Luci&apos;s icon shows a small dot. Click it to add that site
+        too.
+      </p>
       {allowlist.length > 0 && (
         <p className="mt-4 text-sm text-muted">
-          Already enabled: <span className="font-medium text-ink">{allowlist.join(", ")}</span>
+          Your sites ({allowlist.length}):{" "}
+          <span className="font-medium text-ink">{allowlist.map(nameOf).join(", ")}</span>
         </p>
       )}
       <p className="mt-4 text-xs text-muted">
-        Luci never runs on email, chat, banking, health, school or work tools, or login pages, even if you enable them.
+        Luci never runs on email, chat, banking, health, school or work tools, or login pages, even
+        if you enable them.
       </p>
     </section>
   );

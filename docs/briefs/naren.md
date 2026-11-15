@@ -161,6 +161,25 @@ ElevenLabs takes the accent from the voice, not from a setting, so a person has 
 
 ---
 
+## Starter sites and new-site nudge (from Andrew, D-021)
+Onboarding now saves a list of reading sites to `settings.allowlist` (16 starter sites, all checked by default; the list is `READING_SITES` in `shared/src/readingSites.ts`). The web app can't grant access, so the extension needs to. About 1 to 1.5 h. Cut order: after the never-cut items; part 2 is the first to drop.
+
+1. **Popup: "Turn on your sites"** (`src/popup/index.ts`, `popup.html`).
+   - `pending` = `settings.allowlist` (from `GET_SETTINGS`, which already reads `/api/settings` fresh) minus `enabledOrigins` (from `GET_STATUS`) minus anything `neverListReason()` blocks.
+   - Show the button only when paired and `pending.length > 0`: "Turn on your N sites".
+   - In the click handler, call `chrome.permissions.request({ origins: pending.map((o) => o + "/*") })` **synchronously** (user gesture), the same pattern as the "Always on for this site" button. Chrome shows one prompt listing all of them.
+   - On `true`, send `ENABLE_SITE` for each origin (existing `enableSite` in `src/sw/index.ts`) and show "N sites on. Reload a page to start."
+2. **Icon dot on good sites that aren't on yet** (`src/sw/index.ts`, `manifest.json`).
+   - Add the `"declarativeContent"` permission. It has no install warning and the extension never sees the URL: Chrome does the matching.
+   - On `onInstalled`, `onStartup` and after each `ENABLE_SITE`: `chrome.declarativeContent.onPageChanged.removeRules(undefined, () => addRules([rule]))`, one rule whose `conditions` are a `new chrome.declarativeContent.PageStateMatcher({ pageUrl: { schemes: ["https"], hostEquals: host } })` per `READING_SITES` host not in `enabledOrigins`, and whose action is `new chrome.declarativeContent.SetIcon({ imageData })`.
+   - Build `imageData` in the service worker: `fetch(chrome.runtime.getURL("icons/icon32.png"))` → `createImageBitmap` → draw on an `OffscreenCanvas` with a small amber dot in a corner → `getImageData` (do 16 and 32).
+   - Test `SetIcon` first: if it misbehaves, skip the dot and ship only part 3.
+3. **Popup card on a suggested site.** The popup already reads the tab origin (`activeTab`). If that origin is in `READING_SITES` and not enabled, the "Always on for this site" area reads "Luci reads well on {name}. Turn it on here?"
+4. Import `READING_SITES` from `@parrot/shared` (`readingSites.ts` has no zod).
+5. Privacy check (non-negotiable 4): no new permissions with a warning, no URLs read or sent, never-list still checked in `enableSite`.
+
+---
+
 ## Hand-offs
 
 | Direction | What | When |
@@ -173,3 +192,4 @@ ElevenLabs takes the accent from the voice, not from a setting, so a person has 
 | ← Karthik | `wordindex.json` and its shape | Phase 1 |
 | ← Karthik | Real `/api/pair`, `/api/candidates`, `/api/translate`, `/api/events`, `/api/settings` | Phase 2–3 |
 | ← Andrew | Real `/api/tts` | Phase 2–3 |
+| ← Andrew | `READING_SITES` + onboarding saves `settings.allowlist` (D-021); popup button and icon dot are yours | Phase 4 |

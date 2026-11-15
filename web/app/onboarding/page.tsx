@@ -19,7 +19,7 @@ export default function Page() {
 
   return (
     <>
-      <PageHeader title="Welcome to Luci" subtitle="Three quick steps: tell us your level, let Luci check it, then pair the Chrome extension. No account needed." />
+      <PageHeader title="Welcome to Luci" subtitle="Four quick steps: tell us your level, let Luci check it, pick your reading sites, then pair the Chrome extension. No account needed." />
       {loading && <LoadingState shape="form" />}
       {error && !data && <ErrorState message={error} onRetry={() => void reload()} />}
       {data && <OnboardingForm initial={data} onSave={save} />}
