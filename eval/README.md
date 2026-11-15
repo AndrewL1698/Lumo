@@ -27,15 +27,19 @@ npx tsx eval/accuracy/run.ts --file <path.json>   # e.g. the 50-sentence accurac
 It prints the numbers and writes `eval/accuracy/results.json`, with every response, so misses can be inspected. The run creates throwaway session ids, and `/api/tutor/correct` doesn't record learner events for sessions it didn't start, so running the eval never changes the demo user's words.
 
 ### Results
-**Official (accuracy set, ~50 sentences):** _pending Naren's set_
+**Official: Naren's accuracy set (`eval/accuracy/sentences.json`), 50 sentences = 35 planted errors + 15 correct controls.** Three runs on Nov 14 evening, on main `31d8e85` (with turn flags and the eval guard), against `npm run dev:web` on localhost.
 
 | | Recall | Precision | False alarms | serverMs median / p90 |
 |---|---|---|---|---|
-| Run 1 | | | | |
-| Run 2 | | | | |
-| Run 3 | | | | |
+| Run 1 | 91% (32/35) | 100% (32/32) | 0% (0/15) | 1.14 s / 1.68 s |
+| Run 2 | 91% (32/35) | 100% (32/32) | 0% (0/15) | 1.05 s / 1.82 s |
+| Run 3 | 91% (32/35) | 100% (32/32) | 0% (0/15) | 1.08 s / 1.75 s |
+| **Reported (middle run)** | **91%** | **100%** | **0%** | **1.08 s / 1.75 s** |
 
-**Preliminary (Nov 14, the 20 STT-test sentences: 15 planted + 5 controls, one run):** recall 87% (13/15), precision 100% (13/13), false alarms 0% (0/5), serverMs median 1.0 s / p90 2.0 s.
-- Caught every agreement (5/5) and missing-word (2/2) mistake, 4/5 conjugation and 2/3 word choice.
-- Never flagged: *está mañana* (ser/estar) and *Fueron las once* (preterite vs. imperfect for telling the time).
-- These are not the pitch numbers: 20 sentences is a small sample.
+- **By type (run 3):** agreement 8/8, word order 4/4, missing word 5/5, conjugation 7/8, word choice 5/6, extra word 3/4.
+- **Missed in every run:** *y jugué* (a14, conjugation) and *está el sábado* (a21, ser/estar for events).
+- **Missed in some runs:** *Lo tengo el libro* (a35, extra word; runs 1 and 3) and *niños dormieron* (a16, conjugation; run 2).
+- **Never a false alarm:** no flag on any of the 15 correct sentences, and every flag raised was a real planted error.
+- The eval doesn't change the demo user's words: `/correct` only credits words for sessions started through `/api/tutor/context` (checked: no `spoken_*` events after all 150 requests).
+
+**Preliminary (Nov 14 afternoon, the 20 STT-test sentences, one run, before turn flags):** recall 87% (13/15), precision 100%, false alarms 0/5, serverMs median 1.0 s / p90 2.0 s. Superseded by the official set above.
