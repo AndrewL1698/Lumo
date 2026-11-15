@@ -8,6 +8,8 @@ import type { TargetWord } from "@parrot/shared";
 import type { TutorContextData } from "../learner/queries";
 
 const MAX_HOVERED_TARGETS = 3;
+const MAX_LESSON_HOVERED = 3; // hovered words that belong to today's unit
+const MAX_LESSON_DUE = 1;
 const MAX_DUE_TARGETS = 2;
 const MAX_TARGETS = 5;
 
@@ -17,6 +19,7 @@ type WordLike = { lemma: string; article: string | null; english: string; cognat
 export function pickTargetWords(data: TutorContextData): TargetWord[] {
   const out: TargetWord[] = [];
   const seen = new Set<string>();
+  const lesson = data.lesson ?? null;
   const take = (words: WordLike[], source: TargetWord["source"], max: number) => {
     let n = 0;
     for (const w of words) {
@@ -32,6 +35,18 @@ export function pickTargetWords(data: TutorContextData): TargetWord[] {
       n += 1;
     }
   };
+  if (lesson) {
+    // D-022: today's unit first, so the tutor teaches a logical set. Unit words the learner hovered, then due, then
+    // the rest of the unit that isn't known yet; then at most one outside hover, then outside due words as before.
+    const inUnit = new Set(lesson.unit.words);
+    const solid = new Set(lesson.words.filter((w) => w.state === "known" || w.state === "mastered").map((w) => w.lemma));
+    take(data.hoveredWords.filter((w) => inUnit.has(w.lemma)), "hovered", MAX_LESSON_HOVERED);
+    take(data.dueWords.filter((w) => inUnit.has(w.lemma)), "due", MAX_LESSON_DUE);
+    take(lesson.words.filter((w) => !solid.has(w.lemma)), "lesson", MAX_TARGETS);
+    take(data.hoveredWords.filter((w) => !inUnit.has(w.lemma)), "hovered", 1);
+    take(data.dueWords.filter((w) => !inUnit.has(w.lemma)), "due", MAX_DUE_TARGETS);
+    return out;
+  }
   take(data.hoveredWords, "hovered", MAX_HOVERED_TARGETS);
   take(data.dueWords, "due", MAX_DUE_TARGETS);
   return out;
@@ -46,6 +61,21 @@ export function buildTutorContext(data: TutorContextData, sessionId: string, now
     level: data.level,
     topErrors: data.topErrors,
     targetWords: pickTargetWords(data),
+    ...(data.lesson && {
+      lesson: {
+        unitId: data.lesson.unit.id,
+        title: data.lesson.unit.title,
+        canDo: data.lesson.unit.canDo,
+        concept: data.lesson.unit.concept.name,
+        teach: data.lesson.unit.concept.teach,
+        position: data.lesson.position,
+        prompts: data.lesson.unit.prompts,
+        ...(data.lesson.lastLesson && {
+          lastTime: data.lesson.lastLesson.summary_en,
+          nextStep: data.lesson.lastLesson.nextStep_en,
+        }),
+      },
+    }),
   });
   // J2 lesson card is optional: any problem building it just leaves `plan` off.
   try {
@@ -83,11 +113,12 @@ export function buildPlan(data: TutorContextData, targets: TargetWord[], now: Da
       const d = find(data.dueWords, t.lemma);
       if (d) reason = dueReason(d.dueAt, now);
     }
-    return { lemma: t.lemma, english: t.english, reason: reason ?? (t.source === "due" ? "Due for review" : "Hovered while reading") };
+    return { lemma: t.lemma, english: t.english, reason: reason ?? (t.source === "due" ? "Due for review" : t.source === "lesson" ? "Part of today's unit" : "Hovered while reading") };
   });
 
   const first = data.topErrors[0];
-  return { article, words, watchError: typeof first === "string" && first.trim() ? formatError(first) : null };
+  const unit = data.lesson ? { title: data.lesson.unit.title, canDo: data.lesson.unit.canDo, position: data.lesson.position } : undefined;
+  return { article, words, watchError: typeof first === "string" && first.trim() ? formatError(first) : null, ...(unit && { unit }) };
 }
 
 function hoverReason(h: TutorContextData["hoveredWords"][number], now: Date): string {

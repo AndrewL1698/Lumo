@@ -34,6 +34,49 @@ async function wordStates(userId: string, lemmas: string[]): Promise<Map<string,
   return new Map(data.map((r) => [r.lemma as string, r.state as WordState]));
 }
 
+/** Dictionary info for a unit word, in the shape pickTargetWords reads. */
+export type UnitWordInfo = { lemma: string; article: string | null; english: string; cognate: boolean; state: WordState };
+
+/** What the tutor needs about today's unit (D-022). Attached to TutorContextData by the context route. */
+export type LessonData = {
+  unit: Unit;
+  position: string; // "Intermediate · Unit 1 of 4"
+  words: UnitWordInfo[];
+  lastLesson: LessonMemory | null;
+};
+
+/** "Intermediate · Unit 1 of 4"; beginner's Unit 0 reads "Beginner · First words". */
+export function positionOf(unit: Unit, units: Unit[]): string {
+  const title = LEVEL_TITLE[unit.level];
+  if (unit.order === 0) return `${title} · First words`;
+  return `${title} · Unit ${unit.order} of ${units.filter((u) => u.order >= 1).length}`;
+}
+
+/** The current unit with dictionary info for its words, or null when the track is finished. Throws on a DB error. */
+export async function lessonData(userId: string): Promise<LessonData | null> {
+  const { units, progress } = await computeTrack(userId);
+  const unit = units.find((u) => u.id === progress.currentUnitId);
+  if (!unit) return null;
+  const { data, error } = await getDb().from("words").select("lemma, article, english, cognate").in("lemma", unit.words);
+  if (error) throw error;
+  const info = new Map(data.map((r) => [r.lemma as string, r]));
+  const states = new Map(progress.units.find((u) => u.id === unit.id)?.words.map((w) => [w.lemma, w.state]));
+  const words: UnitWordInfo[] = unit.words.flatMap((lemma) => {
+    const r = info.get(lemma);
+    if (!r) return [];
+    return [
+      {
+        lemma,
+        article: (r.article as string | null) ?? null,
+        english: ((r.english as string[])[0] ?? "").trim(),
+        cognate: Boolean(r.cognate),
+        state: states.get(lemma) ?? "new",
+      },
+    ];
+  });
+  return { unit, position: positionOf(unit, units), words, lastLesson: progress.lastLesson };
+}
+
 export type Track = { level: ProgressResponse["level"]; units: Unit[]; progress: ProgressResponse };
 
 /** Throws on a DB error: routes degrade to the fixture, the tutor context to "no lesson". */

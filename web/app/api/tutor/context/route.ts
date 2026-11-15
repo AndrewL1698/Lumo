@@ -2,6 +2,7 @@ import { TutorContext } from "@parrot/shared";
 import { warmUpCorrector } from "@/lib/claude";
 import { json } from "@/lib/http";
 import { DEMO_USER_ID, TUTOR, isTutorMock } from "@/lib/config";
+import { lessonData } from "@/lib/learner/curriculum";
 import { getTutorContextData } from "@/lib/learner/queries";
 import { fixtureContext, loadTutorContext, type LoadedContext } from "@/lib/tutor/context";
 import { getSession, setSessionContext } from "@/lib/tutor/session";
@@ -29,7 +30,12 @@ export async function GET(req?: Request) {
 
   const { context, source, reason }: LoadedContext = isTutorMock()
     ? { context: fixtureContext(), source: "fixture", reason: "TUTOR_MOCK" }
-    : await loadTutorContext(() => getTutorContextData(DEMO_USER_ID), TUTOR.contextTimeoutMs);
+    : await loadTutorContext(async () => {
+        const data = await getTutorContextData(DEMO_USER_ID);
+        // D-022: the course is optional. Any failure here means "no lesson", exactly today's tutor.
+        if (TUTOR.curriculum) data.lesson = await lessonData(DEMO_USER_ID).catch(() => null);
+        return data;
+      }, TUTOR.contextTimeoutMs);
 
   // /api/tutor/correct and /reply read this exact context by sessionId.
   // Only a real (DB) context may credit target words: fixture targets must never change the demo user's words.

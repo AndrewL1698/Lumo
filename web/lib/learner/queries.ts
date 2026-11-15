@@ -1,6 +1,7 @@
 // Read helpers for routes and Andrew's /api/tutor/context (brief 3.5). Relative imports only (tsx from /scripts, /eval).
 import { Recap, Settings, settingsFixture, type Understanding } from "@parrot/shared";
 import { getDb } from "../db";
+import type { LessonData } from "./curriculum";
 
 /** The user's settings row, or the fixture values if there is none (or it doesn't parse). */
 export async function getSettings(userId: string): Promise<Settings> {
@@ -87,6 +88,8 @@ export type TutorContextData = {
   topErrors: string[];
   /** One line for the tutor, e.g. "in the browser (last 24h): looked at 5 words; knew 2, looked up 1". */
   browserSummary?: string;
+  /** D-022: today's course unit. Attached by /api/tutor/context (not by this function), so a course failure never breaks the context. */
+  lesson?: LessonData | null;
 };
 
 export type HoverOutcome = "knew_it" | "didnt_know" | "looked";
@@ -104,6 +107,13 @@ export async function latestRecap(userId: string): Promise<Recap | null> {
   if (error) throw error;
   const parsed = Recap.safeParse(data[0]?.recap);
   return parsed.success ? parsed.data : null;
+}
+
+/** D-022: keep a finished session's recap (with its lesson memory) so the next session can open with "last time". */
+export async function saveSessionRecap(userId: string, recap: Recap): Promise<void> {
+  const now = new Date().toISOString();
+  const { error } = await getDb().from("tutor_sessions").insert({ user_id: userId, started_at: now, ended_at: now, recap });
+  if (error) throw error;
 }
 
 /** topErrors of the latest recap, formatted for the tutor prompt. */

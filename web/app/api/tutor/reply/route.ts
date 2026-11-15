@@ -31,6 +31,7 @@ function finalWhy(directive: TurnDirective & { why: string }, policyOpener: bool
       const source = context.targetWords.find((w) => w.lemma.toLowerCase() === lemma)?.source;
       if (source === "hovered") return `${directive.why}: you hovered it while reading`;
       if (source === "due") return `${directive.why}: it's due for review`;
+      if (source === "lesson") return `${directive.why}: it's part of today's lesson`;
     }
     return directive.why;
   } catch {
