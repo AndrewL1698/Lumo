@@ -85,7 +85,11 @@ export async function POST(req: Request) {
   recordCorrection(sessionId, v.kept, v.target_words_used);
 
   // Never throws; each DB write is capped at TUTOR.recordTimeoutMs.
-  const wordUpdates = failed
+  // Only sessions /api/tutor/context started may write learner events: an eval run or a session that
+  // outlived a server restart runs on the fixture targets and must not change the demo user's words.
+  const credit = !failed && getSession(sessionId).fromContext;
+  if (!failed && !credit) console.log(`[correct] ${utteranceId} no word credit: session not started by /context`);
+  const wordUpdates = !credit
     ? []
     : await creditTargetWords({
         sessionId,

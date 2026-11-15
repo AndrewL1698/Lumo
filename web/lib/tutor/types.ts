@@ -101,6 +101,11 @@ export type SessionState = {
   context: TutorContext;
   policy: PolicyState;
   creditedLemmas: string[];
+  /**
+   * true once /api/tutor/context set this session's context. Sessions it never started (eval runs,
+   * a server restart mid-session) run on the fixture context and must never write learner events.
+   */
+  fromContext: boolean;
   /** For the recap (task 14). */
   allErrors: CorrectionError[];
 };
