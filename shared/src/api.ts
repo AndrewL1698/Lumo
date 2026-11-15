@@ -13,6 +13,14 @@ export type PairRequest = z.infer<typeof PairRequest>;
 export const PairResponse = z.object({ token: z.string() });
 export type PairResponse = z.infer<typeof PairResponse>;
 
+/** GET /api/pair: a fresh one-time pairing code for onboarding to show (HACK(demo): one demo user). */
+export const PairCodeResponse = z.object({ code: z.string().regex(/^\d{6}$/), expiresAt: z.string() });
+export type PairCodeResponse = z.infer<typeof PairCodeResponse>;
+
+/** GET /api/pair?code=X: true once the extension has used that code. */
+export const PairStatusResponse = z.object({ paired: z.boolean() });
+export type PairStatusResponse = z.infer<typeof PairStatusResponse>;
+
 /** POST /api/tts — hover-card pronunciation and tutor speech. Response is audio/mpeg. */
 export const TtsRequest = z.object({
   text: z.string().min(1).max(500),
