@@ -86,7 +86,8 @@ export async function POST(req: Request) {
   const fallback = (why: unknown) => {
     upstream.abort();
     console.error(`[tutor/reply] ${turnId} fallback: ${describe(why)}`);
-    return new Response(TUTOR.cannedRepeat, { headers: { ...headers, "X-Reply-Fallback": "1" } });
+    const canned = body.rawText === null ? TUTOR.cannedOpener : TUTOR.cannedRepeat;
+    return new Response(canned, { headers: { ...headers, "X-Reply-Fallback": "1" } });
   };
 
   let iterator: AsyncIterator<string>;

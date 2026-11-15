@@ -55,10 +55,12 @@ async function main() {
   assert.ok(r.summary_en.length > 0);
   assert.equal(findSession("nope"), undefined);
 
-  // session /context never started → empty recap even with errors
-  recordCorrection("eval", [err({})], []);
-  r = await post("eval");
-  assert.deepEqual(r.topErrors, []);
+  // fixture context (DB down at session start): no word credit, but the recap still shows the session's mistakes
+  setSessionContext("fx", { ...tutorContextFixture, sessionId: "fx" }, { credit: false });
+  recordCorrection("fx", [err({})], []);
+  r = await post("fx");
+  assert.equal(r.topErrors.length, 1);
+  assert.deepEqual(r.wordsNowKnown, []);
 
   // started by /context, nothing happened → no model call, review = all targets
   setSessionContext("clean", { ...tutorContextFixture, sessionId: "clean" });

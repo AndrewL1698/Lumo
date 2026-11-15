@@ -93,7 +93,7 @@ async function main() {
     assert.equal(res.headers.get("X-Turn-Id"), turnId);
     assert.equal(res.headers.get("X-Parrot-Why"), null); // canned line: no why
     assert.equal(res.headers.get("Content-Type"), "text/plain; charset=utf-8");
-    assert.equal(await res.text(), TUTOR.cannedRepeat);
+    assert.equal(await res.text(), turnId === "opener" ? TUTOR.cannedOpener : TUTOR.cannedRepeat);
     assert.ok(Date.now() - t0 <= TUTOR.replyFirstTokenTimeoutMs + 500, "fallback did not hang");
   }
 
