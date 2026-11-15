@@ -10,14 +10,46 @@ const TYPE_LABEL: Record<string, string> = {
   extra_word: "Extra word",
 };
 
+// A turn the corrector flagged (D-011) gets a plain line instead of "No mistakes". Never a scolding tone.
+function FlagLine({ result }: { result: CorrectionResult }) {
+  if (result.flag === "english") {
+    return (
+      <div className="space-y-1">
+        <p className="text-lg font-semibold text-wait">That was English.</p>
+        {result.spanish_version && (
+          <p className="text-lg text-ink">
+            In Spanish: <span lang="es" className="font-display font-semibold text-go">{result.spanish_version}</span>
+          </p>
+        )}
+        <p className="text-muted">Say it in Spanish to light up your words.</p>
+      </div>
+    );
+  }
+  if (result.flag === "unclear") {
+    return <p className="text-lg font-semibold text-wait">Luci couldn&apos;t quite follow that. Try saying it again?</p>;
+  }
+  if (result.flag === "off_topic") {
+    return <p className="text-lg font-semibold text-wait">Good Spanish, but a bit off topic.</p>;
+  }
+  return null;
+}
+
 // English explanations always visible (most judges don't speak Spanish).
 export function CorrectionCards({ raw, result }: { raw: string; result?: CorrectionResult }) {
   if (!result) return null;
   const errors = visibleErrors(raw, result);
+  // English and unclear turns carry no errors: the flag line replaces "No mistakes".
+  if (result.flag === "english" || result.flag === "unclear") return <FlagLine result={result} />;
   if (errors.length === 0) {
-    return <p className="text-lg font-semibold text-go">No mistakes. Nicely said.</p>;
+    return result.flag === "off_topic" ? (
+      <FlagLine result={result} />
+    ) : (
+      <p className="text-lg font-semibold text-go">No mistakes. Nicely said.</p>
+    );
   }
   return (
+    <div className="space-y-3">
+    {result.flag === "off_topic" && <FlagLine result={result} />}
     <ul className="divide-y divide-line border-y border-line">
       {errors.map((e, i) => (
         <li key={i} className="grid gap-1 py-3 sm:grid-cols-[9rem_1fr] sm:gap-4">
@@ -35,5 +67,6 @@ export function CorrectionCards({ raw, result }: { raw: string; result?: Correct
         </li>
       ))}
     </ul>
+    </div>
   );
 }

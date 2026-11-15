@@ -27,6 +27,9 @@ export function TutorPage({ session }: { session: TutorSession }) {
 
   // Browsers only allow mic access and audio playback after a click, so the session starts from a button.
   const [begun, setBegun] = useState(false);
+  // Between "End session" and the recap arriving: a recap-shaped placeholder. `notice` is remembered at the
+  // click so a new notice afterwards means the recap failed (the hook reports it as a notice).
+  const [ending, setEnding] = useState<{ notice: string | null } | null>(null);
 
   // Queue a toast for each word that just flipped to "known" (once per turn).
   useEffect(() => {
@@ -84,7 +87,8 @@ export function TutorPage({ session }: { session: TutorSession }) {
       if (!t.rawText || !t.correction || reacted.current.has(t.id)) continue;
       reacted.current.add(t.id);
       const learned = newlyKnown(t.wordUpdates).length > 0;
-      const clean = visibleErrors(t.rawText, t.correction).length === 0;
+      const flagged = t.correction.flag === "english" || t.correction.flag === "unclear";
+      const clean = !flagged && visibleErrors(t.rawText, t.correction).length === 0;
       setReaction((r) => ({ kind: learned ? "loop" : clean ? "good" : "oops", n: r.n + 1 }));
       if (learned) setTimeout(sparkToJar, 350);
     }
@@ -103,6 +107,54 @@ export function TutorPage({ session }: { session: TutorSession }) {
     return (
       <div className="mx-auto max-w-3xl">
         <RecapPanel recap={recap} onClose={() => window.location.reload()} />
+      </div>
+    );
+  }
+
+  if (ending) {
+    const failed = !!notice && notice !== ending.notice;
+    const bar = "animate-pulse rounded-xs bg-line";
+    return (
+      <div className="mx-auto max-w-3xl" role="status" aria-live="polite">
+        <div className="flex items-center gap-5 border-b border-line pb-6">
+          <LuciFirefly mood={failed ? "idle" : "checking"} className="h-20 w-20" />
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight">{failed ? "Couldn't load your recap" : "Writing your recap…"}</h2>
+            <p className="mt-2 text-lg text-muted">
+              {failed
+                ? "Your progress from this session is already saved. You can start a new session any time."
+                : "Luci is looking back over what you said."}
+            </p>
+          </div>
+        </div>
+        {failed ? (
+          <button type="button" onClick={() => window.location.reload()} className={`${btn.primary} mt-8`}>
+            Start a new session
+          </button>
+        ) : (
+          // shaped like the recap: mistakes, tips, then the two word lists
+          <div className="mt-8 space-y-8" aria-hidden="true">
+            <div className="space-y-3">
+              <div className={`${bar} h-5 w-44`} />
+              <div className={`${bar} h-12 w-full`} />
+              <div className={`${bar} h-12 w-5/6`} />
+            </div>
+            <div className="space-y-2">
+              <div className={`${bar} h-5 w-20`} />
+              <div className={`${bar} h-4 w-3/4`} />
+            </div>
+            <div className="grid gap-8 border-t border-line pt-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <div className={`${bar} h-5 w-48`} />
+                <div className={`${bar} h-6 w-32`} />
+              </div>
+              <div className="space-y-2">
+                <div className={`${bar} h-5 w-36`} />
+                <div className={`${bar} h-6 w-28`} />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -258,7 +310,15 @@ export function TutorPage({ session }: { session: TutorSession }) {
       <div className="sticky bottom-0 -mx-4 space-y-3 border-t border-line bg-panel px-4 pb-4 pt-4">
         <div className="flex items-center justify-between gap-3 sm:gap-4">
           <PushToTalk status={status} onPress={pressTalk} onRelease={releaseTalk} />
-          <button type="button" onClick={() => void end()} disabled={turns.length < 2} className={btn.secondary}>
+          <button
+            type="button"
+            onClick={() => {
+              setEnding({ notice: notice ?? null });
+              void end();
+            }}
+            disabled={turns.length < 2}
+            className={btn.secondary}
+          >
             End session
           </button>
         </div>
