@@ -221,7 +221,25 @@ export function determinerBefore(sentence: string, englishMatch: string): string
 }
 
 /** Words per Haiku call. Small groups run in parallel, so a page waits for the slowest group, not one big call. */
-const TRANSLATE_CHUNK = 4;
+const TRANSLATE_CHUNK = 8;
+
+/** Haiku calls in flight at once, shared by word and sentence translation, so a big page can't burst past rate limits. */
+const TRANSLATE_CONCURRENCY = 8;
+let translateInFlight = 0;
+const translateWaiting: (() => void)[] = [];
+
+/** Runs fn once a slot is free (so its timeout only starts then). A finished call hands its slot to the next waiter. */
+async function limited<T>(fn: () => Promise<T>): Promise<T> {
+  if (translateInFlight < TRANSLATE_CONCURRENCY) translateInFlight++;
+  else await new Promise<void>((resolve) => translateWaiting.push(resolve));
+  try {
+    return await fn();
+  } finally {
+    const next = translateWaiting.shift();
+    if (next) next();
+    else translateInFlight--;
+  }
+}
 
 /**
  * Translate a page's batch. Results are in input order: null = sense mismatch or unusable output (don't swap),
@@ -231,7 +249,7 @@ const TRANSLATE_CHUNK = 4;
 export async function translateBatch(items: TranslateInput[]): Promise<(TranslateOutput | undefined)[]> {
   const chunks: TranslateInput[][] = [];
   for (let i = 0; i < items.length; i += TRANSLATE_CHUNK) chunks.push(items.slice(i, i + TRANSLATE_CHUNK));
-  const settled = await Promise.allSettled(chunks.map(translateChunk));
+  const settled = await Promise.allSettled(chunks.map((c) => limited(() => translateChunk(c))));
   if (settled.every((r) => r.status === "rejected")) throw (settled[0] as PromiseRejectedResult).reason;
   return settled.flatMap((r, k) => (r.status === "fulfilled" ? r.value : chunks[k].map(() => undefined)));
 }
@@ -260,5 +278,60 @@ async function translateChunk(items: TranslateInput[]): Promise<TranslateOutput[
     // A dropped determiner would leave "the la huelga" / "the huelga" on the page: don't swap.
     if (dets[i] && !r.span.startsWith(`${dets[i]} `)) return null;
     return { span: r.span, replacement: r.replacement };
+  });
+}
+
+// ---- Sentence translate (/api/translate-sentences, D-018 immersion dial) ----
+
+const SentenceOut = z.object({
+  items: z.array(z.object({ i: z.number().int(), spanish: z.string() })),
+});
+
+const SENTENCE_SYSTEM = `You translate English text for a language learner reading a news article in English.
+Each item has i and text: a sentence or a short paragraph from the article.
+Return one item per input with the same i, where spanish is the text in natural, fluent Latin American Spanish at the same register.
+- Translate everything. Never summarize, shorten, add, or explain.
+- Keep names, numbers, and quotation marks as they are.`;
+
+/** Texts per Haiku call: a text can be a whole paragraph, so groups stay small and run in parallel. */
+const SENTENCE_CHUNK = 3;
+
+/**
+ * Translate whole sentences/paragraphs. Results are in input order: string = Spanish, null = unusable (missing,
+ * empty, or unchanged), undefined = that group's call failed (don't cache). Throws only if every group failed.
+ */
+export async function translateSentences(texts: string[]): Promise<(string | null | undefined)[]> {
+  const chunks: string[][] = [];
+  for (let i = 0; i < texts.length; i += SENTENCE_CHUNK)
+    chunks.push(texts.slice(i, i + SENTENCE_CHUNK));
+  const settled = await Promise.allSettled(
+    chunks.map((c) => limited(() => translateSentenceChunk(c))),
+  );
+  if (settled.every((r) => r.status === "rejected"))
+    throw (settled[0] as PromiseRejectedResult).reason;
+  return settled.flatMap((r, k) =>
+    r.status === "fulfilled" ? r.value : chunks[k].map(() => undefined),
+  );
+}
+
+async function translateSentenceChunk(texts: string[]): Promise<(string | null)[]> {
+  const res = await getClaude().messages.parse(
+    {
+      model: MODELS.correction, // Haiku, like word translate
+      max_tokens: 4000,
+      system: SENTENCE_SYSTEM,
+      thinking: { type: "disabled" },
+      output_config: { effort: "low", format: zodOutputFormat(SentenceOut) },
+      messages: [{ role: "user", content: JSON.stringify(texts.map((text, i) => ({ i, text }))) }],
+    },
+    { timeout: 20_000, maxRetries: 1 },
+  );
+  if (res.stop_reason !== "end_turn" || !res.parsed_output)
+    throw new Error(`translate-sentences stop_reason=${res.stop_reason}`);
+  const byIndex = new Map(res.parsed_output.items.map((r) => [r.i, r.spanish.trim()]));
+  return texts.map((text, i) => {
+    const es = byIndex.get(i);
+    if (!es || es.toLowerCase() === text.trim().toLowerCase()) return null;
+    return es;
   });
 }
