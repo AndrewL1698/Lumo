@@ -197,6 +197,7 @@ unpairBtn.addEventListener("click", () => {
       showPaired(false);
       codeInput.value = "";
       pairResult.textContent = "";
+      void initImmersion(); // back to 0%
     })
     .catch(() => undefined);
 });
