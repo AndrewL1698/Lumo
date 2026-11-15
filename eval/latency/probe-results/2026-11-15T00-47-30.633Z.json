@@ -1,0 +1,84 @@
+{
+  "ranAt": "2026-11-15T00:47:30.633Z",
+  "url": "http://localhost:3000",
+  "file": "/Users/andrew/Documents/hackP/eval/sentences.json",
+  "n": 3,
+  "noTts": false,
+  "cachedTtsExcluded": 0,
+  "stats": {
+    "correction": {
+      "n": 3,
+      "median": 1156.84475,
+      "p90": 3344.1746669999998
+    },
+    "serverMs": {
+      "n": 3,
+      "median": 1146,
+      "p90": 3337
+    },
+    "replyFirstByte": {
+      "n": 3,
+      "median": 712.8704159999998,
+      "p90": 807.7398749999998
+    },
+    "firstChunk": {
+      "n": 3,
+      "median": 1124.8735419999998,
+      "p90": 1296.1935
+    },
+    "ttsMs": {
+      "n": 3,
+      "median": 222.526292,
+      "p90": 223.90708300000006
+    },
+    "audioReady": {
+      "n": 3,
+      "median": 1348.7806249999999,
+      "p90": 1518.719792
+    }
+  },
+  "turns": [
+    {
+      "index": 1,
+      "text": "El periodista explicó que la problema del tráfico no tiene solución fácil.",
+      "correction": 1156.84475,
+      "serverMs": 1146,
+      "replyFirstByte": 638.6894580000001,
+      "firstChunk": 1296.1935,
+      "firstChunkText": "Sí, el problema del tráfico es muy difícil.",
+      "ttsMs": 222.526292,
+      "ttsCached": false,
+      "audioReady": 1518.719792,
+      "flags": [],
+      "errors": []
+    },
+    {
+      "index": 2,
+      "text": "Según el artículo, la crisis económica es muy complicado.",
+      "correction": 3344.1746669999998,
+      "serverMs": 3337,
+      "replyFirstByte": 807.7398749999998,
+      "firstChunk": 1124.8735419999998,
+      "firstChunkText": "Sí, la crisis es muy complicada,",
+      "ttsMs": 223.90708300000006,
+      "ttsCached": false,
+      "audioReady": 1348.7806249999999,
+      "flags": [],
+      "errors": []
+    },
+    {
+      "index": 3,
+      "text": "Los noticias de esta semana fueron bastante tristes.",
+      "correction": 1125.8730409999998,
+      "serverMs": 1117,
+      "replyFirstByte": 712.8704159999998,
+      "firstChunk": 1014.5028329999996,
+      "firstChunkText": "Sí, las noticias han estado muy tristes.",
+      "ttsMs": 207.7036249999992,
+      "ttsCached": false,
+      "audioReady": 1222.2064579999987,
+      "flags": [],
+      "errors": []
+    }
+  ]
+}

@@ -8,7 +8,7 @@ import { SpokenErrorType } from "@parrot/shared";
 import type { Level, TargetWord } from "@parrot/shared";
 import { z } from "zod";
 import { CLAUDE_FALLBACKS, MODELS } from "./config";
-import { buildCorrectorPrompt } from "./tutor/prompts";
+import { buildCorrectorPrompt, RECAP_SYSTEM } from "./tutor/prompts";
 import type { ModelCorrection } from "./tutor/types";
 
 /** Thrown by either lane when the model returns stop_reason "refusal". */
@@ -140,9 +140,29 @@ export async function* streamTutorReply(args: {
   if (final.stop_reason === "refusal") throw new ClaudeRefusalError("tutor refused");
 }
 
-// TODO(andrew): end-of-session recap prose.
-export async function writeRecap(_input: unknown): Promise<{ summary_en: string; tips: string[] }> {
-  throw new Error("not implemented");
+const RecapProseSchema = z.object({ summary_en: z.string(), tips: z.array(z.string()) });
+
+/** End-of-session recap prose: Haiku, thinking off, structured output. `user` is buildRecapUserMessage's output. */
+export async function writeRecap(
+  user: string,
+  signal?: AbortSignal,
+): Promise<{ summary_en: string; tips: string[] }> {
+  const response = await getClaude().messages.parse(
+    {
+      model: MODELS.correction,
+      max_tokens: 600,
+      thinking: { type: "disabled" },
+      output_config: { effort: "low", format: zodOutputFormat(RecapProseSchema) },
+      system: RECAP_SYSTEM,
+      messages: [{ role: "user", content: user }],
+    },
+    { signal },
+  );
+  if (response.stop_reason === "refusal") throw new ClaudeRefusalError("recap refused");
+  if (response.parsed_output === null) {
+    throw new Error(`recap returned no parsable output (stop_reason: ${response.stop_reason})`);
+  }
+  return response.parsed_output;
 }
 
 // ---- In-context translate (/api/translate) — owner: Karthik ----

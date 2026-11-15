@@ -33,6 +33,11 @@ export function getSession(sessionId: string): SessionState {
   return s;
 }
 
+/** The session if it exists; never creates one. */
+export function findSession(sessionId: string): SessionState | undefined {
+  return sessions.get(sessionId);
+}
+
 /** Replace the session's context (and its target lemmas); policy counters are kept. */
 export function setSessionContext(sessionId: string, context: TutorContext): void {
   const s = getSession(sessionId);

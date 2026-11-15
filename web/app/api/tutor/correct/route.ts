@@ -46,6 +46,8 @@ export async function POST(req: Request) {
 
   let v: ValidatedCorrection;
   let failed = false;
+  let modelMs = 0;
+  let outChars = 0;
   const ac = new AbortController();
   let timedOut = false;
   const timer = setTimeout(() => {
@@ -54,13 +56,17 @@ export async function POST(req: Request) {
   }, TUTOR.correctTimeoutMs);
   try {
     const session = getSession(sessionId);
+    const tModel = Date.now();
     const model = await correctUtterance({
       rawText,
       level: session.context.level,
       targetWords: session.context.targetWords,
       tutorPrevious,
       signal: ac.signal,
+    }).finally(() => {
+      modelMs = Date.now() - tModel;
     });
+    outChars = JSON.stringify(model).length;
     v = validateCorrection(rawText, model, tutorPrevious);
     // "la casa" / "Casa" → the session's exact lemma, for the policy, the response and the learner model.
     const targets = session.context.targetWords;
@@ -89,6 +95,7 @@ export async function POST(req: Request) {
   // outlived a server restart runs on the fixture targets and must not change the demo user's words.
   const credit = !failed && getSession(sessionId).fromContext;
   if (!failed && !credit) console.log(`[correct] ${utteranceId} no word credit: session not started by /context`);
+  const tDb = Date.now();
   const wordUpdates = !credit
     ? []
     : await creditTargetWords({
@@ -100,10 +107,11 @@ export async function POST(req: Request) {
         used: v.target_words_used,
         record: recordTutorEvent,
       });
+  const dbMs = credit ? Date.now() - tDb : 0;
 
   const serverMs = Date.now() - t0;
   console.log(
-    `[correct] ${utteranceId} stt=${sttPath} shown=${v.shown.length} kept=${v.kept.length} words=${wordUpdates.length} serverMs=${serverMs}${v.flag ? ` flag=${v.flag}` : ""}${failed ? " FAILED" : ""}`,
+    `[correct] ${utteranceId} stt=${sttPath} shown=${v.shown.length} kept=${v.kept.length} words=${wordUpdates.length} serverMs=${serverMs} modelMs=${modelMs} dbMs=${dbMs} outChars=${outChars}${v.flag ? ` flag=${v.flag}` : ""}${failed ? " FAILED" : ""}`,
   );
   return json(
     {
