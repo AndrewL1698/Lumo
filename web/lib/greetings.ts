@@ -30,11 +30,14 @@ export function homeGreeting(opts: { hour: number; day: number; streakDays?: num
   return parts.join(" · ");
 }
 
-/** One line for the tutor's session info, e.g. "late night, Saturday 1:12am — call them a night owl…". */
+/**
+ * One line for the tutor's session info, e.g. "late night, Sunday; it's the weekend (greeting idea: …)".
+ * No minutes on purpose: the tutor's instructions are re-sent every turn, and a line that changes each minute would
+ * make every reply slower (it breaks the prompt cache). This only changes when the part of the day does.
+ */
 export function tutorTimeLine(date: Date): string {
   const part = PARTS[partOfDay(date.getHours())];
   const day = date.toLocaleDateString("en-US", { weekday: "long" });
-  const time = date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }).toLowerCase().replace(" ", "");
   const weekend = isWeekend(date.getDay()) ? "; it's the weekend" : "";
-  return `${part.label}, ${day} ${time}${weekend} (greeting idea: ${part.tutorHint})`;
+  return `${part.label}, ${day}${weekend} (greeting idea: ${part.tutorHint})`;
 }
