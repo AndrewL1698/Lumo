@@ -60,28 +60,35 @@ export const TUTOR = {
   placementTimeoutMs: 8000,
   /** D-022 course: unit words as targets, a lesson block in the prompt, lesson memory at session end. false = exactly today's tutor. */
   curriculum: true,
-  /** Hands-free listening (D-023). Levels are RMS of a 16 kHz block in [0, 1]; times in ms. Tuned in one place. */
+  /** Hands-free listening (D-023, fixes D-025). Levels are RMS of a 16 kHz block in [0, 1]; times in ms. Tuned in one place. */
   handsFree: {
-    /** Quiet period at the start to learn the room's noise level. */
-    calibMs: 1000,
+    /** Warm-up at the start before any turn can begin. */
+    calibMs: 800,
     /** Never treat anything below this as speech, however quiet the room. */
     minStart: 0.02,
-    /** Speech level = room noise x this. */
+    /** Speech starts above (room noise x this). The room noise follows the room: it drops at once, rises slowly. */
     startFactor: 3,
-    /** While Luci is talking the bar is this much higher, so her own voice or a quick "sí" doesn't stop her. */
-    bargeFactor: 1.8,
+    /** How fast the room-noise estimate rises toward a louder room, per block (auto-gain, a fan switching on). */
+    floorRise: 0.01,
+    /** Quiet means below max(room noise x this, this share of how loud the learner just was). */
+    silenceFloorFactor: 2,
+    silencePeakShare: 0.25,
+    /** Luci's voice at the mic is learned for this long after she starts; no interrupting during it. */
+    echoLearnMs: 600,
+    /** Interrupting Luci needs this much more than her own echo. A headset has almost none. */
+    bargeEchoFactor: 1.6,
     startMs: 200,
-    /** Real barge-in: this much steady speech over Luci. A short backchannel is shorter. */
-    bargeMs: 450,
+    /** Real barge-in: this much steady speech over Luci. A short "sí" is shorter. */
+    bargeMs: 300,
     /** Silence that ends a finished thought. */
     endSilenceMs: 800,
     /** Silence that ends an unfinished one ("ayer fui al… eh…"). */
     thinkSilenceMs: 1800,
-    /** Speech must fall below startLevel x this to count as silence. */
-    endHysteresis: 0.6,
+    /** If the live transcript stops changing this long after the end silence, the turn is over whatever the meter says. */
+    partialStallExtraMs: 400,
     /** Audio kept from before the detector fired, so the first syllable isn't lost. */
     preRollMs: 600,
     /** A take never runs past this (the recorder's own cap is TUTOR.maxHoldMs). */
-    maxTurnMs: 28_000,
+    maxTurnMs: 15_000,
   },
 } as const;
