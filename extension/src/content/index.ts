@@ -385,8 +385,7 @@ interface SwapOp {
  * Where the server's `span` sits in the node: the occurrence that contains the matched token. The server may
  * widen the span (a determiner, "the company"), so search from just before the token. -1 = not in this node.
  */
-function locateSpan(m: Match, span: string): number {
-  const text = m.node.nodeValue ?? "";
+function locateSpan(m: Match, span: string, text = m.node.nodeValue ?? ""): number {
   if (!span) return -1;
   const tokenEnd = m.offset + m.englishMatch.length;
   for (let s = text.indexOf(span, Math.max(0, m.offset - span.length)); s >= 0 && s <= m.offset; s = text.indexOf(span, s + 1)) {
@@ -421,8 +420,14 @@ function wordOp(m: Match, start: number, span: string, replacement: string): Swa
 }
 
 /**
+ * An original text node's pieces left after our splits, each with its offset in the original text. Op offsets are
+ * always in original-node coordinates, so word and block batches can land in any order (D-018 Part B).
+ */
+const pieces = new WeakMap<Text, { node: Text; at: number }[]>();
+
+/**
  * Apply many replacements, several per text node. Overlaps are dropped (higher rank first, then earlier start).
- * Each node is cut from its end backwards, so the earlier offsets stay valid. Returns how many were applied.
+ * Each op is cut out of whichever piece of its original node still holds its range. Returns how many were applied.
  */
 function applyOps(ops: SwapOp[]): number {
   const byNode = new Map<Text, SwapOp[]>();
@@ -434,14 +439,18 @@ function applyOps(ops: SwapOp[]): number {
   }
 
   let applied = 0;
-  for (const [node, kept] of byNode) {
-    if (!node.parentNode) continue;
+  for (const [origin, kept] of byNode) {
+    const list = pieces.get(origin) ?? [{ node: origin, at: 0 }];
+    pieces.set(origin, list);
     for (const op of kept.sort((a, b) => b.start - a.start)) {
-      if (op.end > node.length) continue;
-      if (node.data.slice(op.start, op.end) !== op.expect) continue; // the page changed this text meanwhile
-      const after = node.splitText(op.end);
+      const piece = list.find((p) => op.start >= p.at && op.end <= p.at + p.node.length);
+      if (!piece?.node.parentNode) continue;
+      const [start, end] = [op.start - piece.at, op.end - piece.at];
+      if (piece.node.data.slice(start, end) !== op.expect) continue; // the page changed this text meanwhile
+      const after = piece.node.splitText(end);
       seenNodes.add(after); // our own split: the MutationObserver's re-sweep must not reprocess it
-      const mid = node.splitText(op.start);
+      list.push({ node: after, at: op.end });
+      const mid = piece.node.splitText(start);
       mid.replaceWith(op.el);
       op.onApplied();
       applied++;
@@ -525,13 +534,18 @@ function pickBlocks(nodes: Text[], byLemma: Map<string, Candidate>): Block[] {
   const wantSentences = Math.max(0, rules.sentenceBlocks - sentenceBlocksDone);
   if (!wantParagraphs && !wantSentences) return [];
   const hasMain = Boolean(document.querySelector("article, main"));
+  /** Body text only: a <p> (so not an <em> inside one), in article/main when the page has one, no boilerplate. */
+  const bodyP = (el: Element | null): el is Element =>
+    el?.tagName === "P" &&
+    !el.closest(BLOCK_SKIP) &&
+    (!hasMain || Boolean(el.closest("article, main"))) &&
+    !inBoilerplate(el);
 
   const paragraphs: Block[] = [];
   if (wantParagraphs) {
     for (const node of nodes) {
       const p = node.parentElement;
-      if (p?.tagName !== "P" || p.childNodes.length !== 1) continue;
-      if (p.closest(BLOCK_SKIP) || (hasMain && !p.closest("article, main"))) continue;
+      if (!bodyP(p) || p.childNodes.length !== 1) continue;
       const [block, words] = makeBlock("paragraph", node, 0, node.length, byLemma);
       if (words >= 25) paragraphs.push(block);
     }
@@ -542,29 +556,63 @@ function pickBlocks(nodes: Text[], byLemma: Map<string, Candidate>): Block[] {
   const sentences: Block[] = [];
   if (wantSentences) {
     for (const node of nodes) {
-      if (inParagraph.has(node) || node.parentElement?.closest(BLOCK_SKIP)) continue;
-      const text = node.nodeValue ?? "";
-      // Complete inside this node: starts at a boundary (or the node start with nothing before it in the
-      // element), ends at a terminator (or the node end with nothing after it).
-      const bounds: [number, number][] = [];
-      let from = 0;
-      for (const t of text.matchAll(/[.!?]+(?=\s|$)/g)) {
-        const to = t.index + t[0].length;
-        if (from > 0 || !node.previousSibling) bounds.push([from, to]);
-        from = to;
-      }
-      if (from < text.length && (from > 0 || !node.previousSibling) && !node.nextSibling) bounds.push([from, text.length]);
-
+      if (inParagraph.has(node) || !bodyP(node.parentElement)) continue;
       let best: Block | undefined;
-      for (const [a, b] of bounds) {
+      for (const [a, b] of sentenceBounds(node.data, !node.previousSibling, !node.nextSibling)) {
         const [block, words] = makeBlock("sentence", node, a, b, byLemma);
-        if (words < 6 || words > 60 || block.inForms < 0.4) continue;
+        if (words < 6 || words > 60 || block.inForms < 0.4 || !quotesBalanced(block.english)) continue;
         if (!best || byBlockScore(block, best) < 0) best = block;
       }
       if (best) sentences.push(best);
     }
   }
-  return [...pickedParagraphs, ...sentences.sort(byBlockScore).slice(0, wantSentences)];
+  const pickedSentences = sentences.sort(byBlockScore).slice(0, wantSentences);
+  // Counted when picked, so an overlapping sweep can't pick a second set while this one's translation is out.
+  paragraphBlocksDone += pickedParagraphs.length;
+  sentenceBlocksDone += pickedSentences.length;
+  return [...pickedParagraphs, ...pickedSentences];
+}
+
+const BOILERPLATE = /caption|credit|byline|promo|newsletter|cookie|banner/i;
+function inBoilerplate(el: Element): boolean {
+  for (let e: Element | null = el; e && e !== document.body; e = e.parentElement) {
+    if (BOILERPLATE.test(e.getAttribute("class") ?? "")) return true;
+  }
+  return false;
+}
+
+/** Periods after these don't end a sentence ("Sen. Smith", "Jan. 6"). */
+const ABBREVIATIONS = new Set(
+  "mr mrs ms dr sen rep gov gen lt col st no vs inc corp co jr sr jan feb mar apr aug sept sep oct nov dec".split(" "),
+);
+
+/**
+ * Complete sentences in one text node's text, as [start, end) ranges. A terminator only ends a sentence when the
+ * token before it isn't a single letter ("J."), a dotted capital abbreviation ("U.S.") or a listed abbreviation, and
+ * the next non-space character is uppercase, a digit or an opening quote. The node's first sentence counts only if
+ * nothing precedes the node in its element (`openStart`), its last unterminated one only if nothing follows it.
+ */
+function sentenceBounds(text: string, openStart: boolean, openEnd: boolean): [number, number][] {
+  const bounds: [number, number][] = [];
+  let from = 0;
+  for (const t of text.matchAll(/[.!?]+(?=\s|$)/g)) {
+    const to = t.index + t[0].length;
+    if (/^\.+$/.test(t[0])) {
+      const before = (/(\S*)$/.exec(text.slice(0, t.index))?.[1] ?? "").replace(/^[^A-Za-z0-9]+/, "");
+      if (/^[A-Za-z]$/.test(before) || /^([A-Z]\.)+[A-Z]$/.test(before) || ABBREVIATIONS.has(before.toLowerCase())) continue;
+    }
+    const next = /\S/.exec(text.slice(to))?.[0];
+    if (next && !/[A-Z0-9“"‘'(]/.test(next)) continue;
+    if (from > 0 || openStart) bounds.push([from, to]);
+    from = to;
+  }
+  if (from < text.length && (from > 0 || openStart) && openEnd) bounds.push([from, text.length]);
+  return bounds;
+}
+
+function quotesBalanced(s: string): boolean {
+  const count = (ch: string) => s.split(ch).length - 1;
+  return count("“") === count("”") && count('"') % 2 === 0;
 }
 
 function blockOp(b: Block, spanish: string): SwapOp {
@@ -580,8 +628,7 @@ function blockOp(b: Block, spanish: string): SwapOp {
     el,
     rank: 1, // a block wins over any word swap inside it
     onApplied() {
-      if (b.kind === "paragraph") paragraphBlocksDone++;
-      else sentenceBlocksDone++;
+      /* counted when picked (pickBlocks); blocks send no events */
     },
   };
 }
@@ -617,52 +664,60 @@ async function sweepImmersive(root: Node): Promise<void> {
     return;
   }
 
-  // ONE word batch plus ONE sentence batch, in parallel. Swaps appear only after they return; load is never blocked.
-  const [res, blockRes] = await Promise.all([
-    chosen.length
-      ? send({
-          type: "TRANSLATE",
-          articleKey,
-          items: chosen.map((m) => ({ sentence: m.sentence, lemma: m.lemma, englishMatch: m.englishMatch })),
-        }).catch(() => null)
-      : null,
-    blocks.length
-      ? send({ type: "TRANSLATE_SENTENCES", articleKey, sentences: blocks.map((b) => b.english) }).catch(() => null)
-      : null,
-  ]);
+  // The original text of every node, before either batch splits anything: word spans are located against it.
+  const original = new Map(nodes.map((n) => [n, n.data]));
 
-  if (chosen.length && !res) console.log("[parrot] translate unavailable, no word swaps this time");
-  if (blocks.length && !blockRes) console.log("[parrot] sentence translate unavailable, no blocks this time");
+  // ONE word batch and ONE sentence batch, sent together, each applied as soon as it returns: slow sentence
+  // calls never hold up the words. Load is never blocked.
+  const words = chosen.length
+    ? send({
+        type: "TRANSLATE",
+        articleKey,
+        items: chosen.map((m) => ({ sentence: m.sentence, lemma: m.lemma, englishMatch: m.englishMatch })),
+      })
+        .catch(() => null)
+        .then((res) => {
+          if (!res) return console.log("[parrot] translate unavailable, no word swaps this time");
+          const ops: SwapOp[] = [];
+          res.items.forEach((item, i) => {
+            const m = chosen[i];
+            if (!item || !m) return; // null = sense mismatch, don't swap
+            if (swappedLemmas.has(m.lemma)) return; // another sweep swapped it while this batch was out
+            const start = locateSpan(m, item.span, original.get(m.node));
+            if (start < 0) return; // span not in this node (crosses an inline element): skip rather than guess
+            // A span the server widened ("the ...") must not reach into a reserved sentence.
+            const r = sentenceRanges.get(m.node);
+            if (r && start < r.end && start + item.span.length > r.start) return;
+            ops.push(wordOp(m, start, item.span, item.replacement));
+          });
+          ops.splice(Math.max(0, pageCap - swapCount)); // a parallel sweep may have used some of the budget
+          const applied = applyOps(ops);
+          console.log(
+            `[parrot] step ${rules.step}: swapped ${applied} of ${chosen.length} chosen ` +
+              `(page total ${swapCount}), ≤${rules.perSentence} per sentence`,
+          );
+        })
+    : null;
 
-  const ops: SwapOp[] = [];
-  res?.items.forEach((item, i) => {
-    const m = chosen[i];
-    if (!item || !m) return; // null = sense mismatch, don't swap
-    if (swappedLemmas.has(m.lemma)) return; // another sweep swapped it while this batch was out
-    const start = locateSpan(m, item.span);
-    if (start < 0) return; // span not in this node (crosses an inline element): skip rather than guess
-    ops.push(wordOp(m, start, item.span, item.replacement));
-  });
-  ops.splice(Math.max(0, pageCap - swapCount)); // a parallel sweep may have used some of the budget
-  const wordOps = ops.length;
-  blockRes?.items.forEach((spanish, i) => {
-    const b = blocks[i];
-    if (spanish && b) ops.push(blockOp(b, spanish)); // null = leave that text English
-  });
+  const sentencesDone = blocks.length
+    ? send({ type: "TRANSLATE_SENTENCES", articleKey, sentences: blocks.map((b) => b.english) })
+        .catch(() => null)
+        .then((res) => {
+          if (!res) return console.log("[parrot] sentence translate unavailable, no blocks this time");
+          const ops: SwapOp[] = [];
+          res.items.forEach((spanish, i) => {
+            const b = blocks[i];
+            if (spanish && b) ops.push(blockOp(b, spanish)); // null = leave that text English
+          });
+          const applied = applyOps(ops);
+          const sentences = ops.filter((op) => op.el.isConnected && !paragraphNodes.has(op.node)).length;
+          console.log(
+            `[parrot] blocks: ${sentences} sentences + ${applied - sentences} paragraphs applied of ${blocks.length} chosen`,
+          );
+        })
+    : null;
 
-  const [sBefore, pBefore] = [sentenceBlocksDone, paragraphBlocksDone];
-  const applied = applyOps(ops);
-  const blocksApplied = sentenceBlocksDone - sBefore + paragraphBlocksDone - pBefore;
-  console.log(
-    `[parrot] step ${rules.step}: swapped ${applied - blocksApplied} of ${chosen.length} chosen ` +
-      `(${wordOps} translated, page total ${swapCount}), ≤${rules.perSentence} per sentence`,
-  );
-  if (blocks.length) {
-    console.log(
-      `[parrot] blocks: ${sentenceBlocksDone - sBefore} sentences + ${paragraphBlocksDone - pBefore} paragraphs ` +
-        `applied of ${blocks.length} chosen`,
-    );
-  }
+  await Promise.all([words, sentencesDone]);
 }
 
 async function sweep(root: Node): Promise<void> {
