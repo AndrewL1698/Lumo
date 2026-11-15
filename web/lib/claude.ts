@@ -139,10 +139,10 @@ export async function* streamTutorReply(args: {
     max_tokens: 300,
     thinking: { type: "between_tools" as const },
     output_config: { effort: "low" as const },
-    // System prompt + <session> block is fixed for a session: cache it. The top-level marker also caches
-    // the conversation so far, so the next turn reads its history from the cache (Sonnet 5.5 caches from 512 tokens).
+    // System prompt + <session> block is fixed for a session: cache it (Sonnet 5.5 caches from 512 tokens).
+    // No history marker: the last user turn carries the directive and is replayed as plain text next turn,
+    // so an entry written there would never be read.
     system: [{ type: "text" as const, text: args.system, cache_control: { type: "ephemeral" as const } }],
-    cache_control: { type: "ephemeral" as const },
     messages: args.messages,
   };
   const options = { signal: args.signal };

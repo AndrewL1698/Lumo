@@ -58,11 +58,15 @@ function whyLine(
   isOpener: boolean,
 ): string {
   if (isOpener) return WHY.opener;
-  if (correction !== "none") return `Explained out loud: '${correction.span}' has come up ${count} times`;
+  if (correction !== "none") {
+    const span = correction.span.length > 40 ? `${correction.span.slice(0, 39)}…` : correction.span;
+    return `Explaining out loud: '${span}' has come up ${count} times`;
+  }
   if (steerLemma) return `Steering toward '${steerLemma}'`;
   const counts = Object.values(state.errorCounts);
   if (counts.some((c) => c >= MIN_REPEATS))
-    return "Recasting quietly: Luci spaces out spoken corrections";
-  if (counts.some((c) => c >= 1)) return "Not correcting out loud yet: Luci waits until a mistake repeats";
+    return "Not explaining out loud yet: Luci spaces out spoken corrections";
+  if (counts.some((c) => c >= 1))
+    return "Not correcting out loud yet: Luci waits until a mistake comes up in two turns";
   return WHY.talking;
 }

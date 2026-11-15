@@ -70,18 +70,18 @@ const whyOf = (over: Partial<PolicyState>) => nextDirective(base(over)).why;
 assert.equal(whyOf({}), WHY.opener);
 assert.equal(
   whyOf({ turnIndex: 4, ...repeated }), // turn 4 also steers: correction wins
-  "Explained out loud: 'la problema' has come up 2 times",
+  "Explaining out loud: 'la problema' has come up 2 times",
 );
 assert.equal(whyOf({ turnIndex: 2 }), "Steering toward 'huelga'");
 assert.equal(whyOf({ turnIndex: 2, ...repeated }), "Steering toward 'huelga'"); // too early to correct, so steer
-assert.equal(whyOf({ turnIndex: 1, ...repeated }), "Recasting quietly: Luci spaces out spoken corrections");
+assert.equal(whyOf({ turnIndex: 1, ...repeated }), "Not explaining out loud yet: Luci spaces out spoken corrections");
 assert.equal(
   whyOf({ turnIndex: 5, lastSpokenCorrectionTurn: 3, ...repeated }),
-  "Recasting quietly: Luci spaces out spoken corrections",
+  "Not explaining out loud yet: Luci spaces out spoken corrections",
 );
 assert.equal(
   whyOf({ turnIndex: 3, errorCounts: { "agreement:problema": 1 }, errorExamples: repeated.errorExamples }),
-  "Not correcting out loud yet: Luci waits until a mistake repeats",
+  "Not correcting out loud yet: Luci waits until a mistake comes up in two turns",
 );
 assert.equal(whyOf({ turnIndex: 3 }), WHY.talking);
 assert.equal(whyOf({ turnIndex: 4, usedLemmas: ["huelga", "aprovechar", "casa"] }), WHY.talking);

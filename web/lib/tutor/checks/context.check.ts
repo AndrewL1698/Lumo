@@ -160,7 +160,7 @@ async function main() {
   assert.equal(b.source, "fixture");
   assert.deepEqual(a.context.articleTitles, tutorContextFixture.articleTitles);
   assert.ok(tutorContextFixture.plan, "fixture has a plan");
-  assert.deepEqual(a.context.plan, tutorContextFixture.plan, "fixture fallback carries the fixture's plan");
+  assert.equal(a.context.plan, undefined, "fixture fallback shows no lesson card (its reasons never happened)");
   assert.notEqual(a.context.sessionId, "sess_demo_1");
   assert.notEqual(a.context.sessionId, b.context.sessionId);
 
@@ -191,7 +191,7 @@ async function main() {
   let body = TutorContext.parse(await res.json());
   assert.notEqual(body.sessionId, "sess_demo_1");
   assert.deepEqual(body.articleTitles, tutorContextFixture.articleTitles);
-  assert.deepEqual(body.plan, tutorContextFixture.plan);
+  assert.equal(body.plan, undefined);
   assert.deepEqual(getSession(body.sessionId).context, body);
   assert.deepEqual(getSession(body.sessionId).policy.targetLemmas, body.targetWords.map((w) => w.lemma));
   const firstId = body.sessionId;

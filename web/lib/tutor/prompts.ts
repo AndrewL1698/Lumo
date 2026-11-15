@@ -131,7 +131,7 @@ About the words they are learning
 
 About their reading
 - The articles in <session> are things the learner read today in their browser. When
-  <directive> says this is the opening turn, greet them, mention one article by topic, say
+  <directive> says this is the opening turn, greet them, mention the first article by topic, say
   you saw they read it, and ask what they think. If no articles are listed, open with an
   everyday question.
 - Make that opening greeting fit the time of day in <session>, in one short warm phrase

@@ -1,6 +1,7 @@
 /** In-memory tutor session store (voice-plan §3). Lives on globalThis so Next dev hot reload keeps it. */
 import { tutorContextFixture } from "@parrot/shared";
 import type { CorrectionError, TargetWordUse, TutorContext } from "@parrot/shared";
+import { TUTOR } from "../config";
 import { errorKey } from "./policy";
 import type { SessionState } from "./types";
 
@@ -51,6 +52,8 @@ export function recordCorrection(sessionId: string, kept: CorrectionError[], use
   const s = getSession(sessionId);
   const p = s.policy;
   for (const e of kept) {
+    // Only mistakes the learner saw on screen count toward a spoken correction (and the why line that names it).
+    if (e.confidence < TUTOR.showConfidence) continue;
     const key = errorKey(e);
     p.errorCounts[key] = (p.errorCounts[key] ?? 0) + 1;
     p.errorExamples[key] = { span: e.span, correction: e.correction, reason: e.explanation_en };

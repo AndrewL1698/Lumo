@@ -50,7 +50,12 @@ export function buildTutorContext(data: TutorContextData, sessionId: string, now
   // J2 lesson card is optional: any problem building it just leaves `plan` off.
   try {
     const plan = TutorPlan.safeParse(buildPlan(data, context.targetWords, now));
-    if (plan.success) context.plan = plan.data;
+    if (plan.success) {
+      context.plan = plan.data;
+      // The card names one article; list it first so the opener ("mention the first article") talks about the same one.
+      const title = plan.data.article?.title;
+      if (title) context.articleTitles = [title, ...context.articleTitles.filter((t) => t !== title)];
+    }
   } catch {
     // no plan
   }
@@ -152,7 +157,9 @@ export function newSessionId(): string {
 
 /** The demo fixture with a fresh sessionId (a fixed id made every session share state). */
 export function fixtureContext(): TutorContext {
-  return { ...tutorContextFixture, sessionId: newSessionId() };
+  // No lesson card on the fallback: the fixture plan's "hovered 2h ago" lines never happened for this learner.
+  const { plan: _fixturePlan, ...rest } = tutorContextFixture;
+  return { ...rest, sessionId: newSessionId() };
 }
 
 export type LoadedContext = { context: TutorContext; source: "db" | "fixture"; reason?: string };

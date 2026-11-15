@@ -39,7 +39,13 @@ function finalWhy(directive: TurnDirective & { why: string }, policyOpener: bool
 }
 
 /** Header-safe: raw header values throw on non-Latin-1 characters (accents, ¿). The client decodes. */
-const whyHeader = (why: string) => ({ "X-Parrot-Why": encodeURIComponent(why) });
+const whyHeader = (why: string): Record<string, string> => {
+  try {
+    return { "X-Parrot-Why": encodeURIComponent(why) };
+  } catch {
+    return {}; // a lone surrogate makes encodeURIComponent throw: no why line beats a 500
+  }
+};
 
 export async function POST(req: Request) {
   const t0 = Date.now();

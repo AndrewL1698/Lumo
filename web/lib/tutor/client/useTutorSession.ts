@@ -628,7 +628,11 @@ function createController(set: Setters, forceBatch: () => boolean): Controller {
       set.status("idle");
       try {
         if (pending.length)
-          await Promise.race([Promise.all(pending), new Promise((r) => setTimeout(r, TUTOR.correctTimeoutMs))]);
+          await Promise.race([
+            Promise.all(pending),
+            // The server's cap: model timeout + one learner-model write + network.
+            new Promise((r) => setTimeout(r, TUTOR.correctTimeoutMs + TUTOR.recordTimeoutMs + 500)),
+          ]);
         const res = await fetch("/api/tutor/end", {
           method: "POST",
           headers: JSON_HEADERS,
