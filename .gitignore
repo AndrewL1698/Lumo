@@ -15,3 +15,4 @@ eval/**/audio/
 eval/latency/turns.jsonl
 
 .DS_Store
+.vercel
