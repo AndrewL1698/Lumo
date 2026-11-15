@@ -26,11 +26,12 @@ export const pairResponseFixture = PairResponse.parse({ token: "demo-extension-t
 export const candidatesResponseFixture = CandidatesResponse.parse({
   generatedAt: 1763132400000,
   candidates: [
-    { lemma: "casa", state: "learning", isDue: true, hoveredRecently: true, onWeakList: false, isNewInBand: false, isMastered: false },
+    { lemma: "casa", state: "learning", isDue: true, hoveredRecently: true, onWeakList: false, isNewInBand: false, isMastered: false, isKey: true },
     { lemma: "huelga", state: "new", isDue: false, hoveredRecently: false, onWeakList: false, isNewInBand: true, isMastered: false },
     { lemma: "aprovechar", state: "seen", isDue: false, hoveredRecently: true, onWeakList: true, isNewInBand: false, isMastered: false },
     { lemma: "tiempo", state: "mastered", isDue: false, hoveredRecently: false, onWeakList: false, isNewInBand: false, isMastered: true },
   ],
+  understanding: { points: 2, solid: 1, knewIt: 0 },
 });
 
 export const translateResponseFixture = TranslateResponse.parse({

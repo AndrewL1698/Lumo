@@ -22,7 +22,7 @@ export type Message =
   | { type: "TTS"; text: string; lemma: string }
   | { type: "GET_SETTINGS" }
   | { type: "SET_SWAP_AMOUNT"; perPageCap?: number; autoGrow?: boolean }
-  /** Immersion dial (D-018): set the popup rate, jump to a percent, or reset progress (points and knewIt). */
+  /** Immersion (D-019): set the speed, jump to a percent, or reset (back to the learner's real level; clears knewIt). */
   | { type: "SET_IMMERSION"; rate?: number; percent?: number; reset?: boolean }
   /** Whole sentences or paragraphs to natural Spanish (D-018). Same order as sent. */
   | { type: "TRANSLATE_SENTENCES"; articleKey: string; sentences: string[] }
@@ -49,16 +49,16 @@ export interface ResponseMap {
    */
   TTS: { dataUrl: string } | null;
   /**
-   * Server settings (cached copy if offline) plus local-only state: the popup's "Grow automatically" switch, the
-   * immersion dial (D-018), and the lemmas whose latest verdict was "Knew it" (shown steady, not flickering).
+   * Server settings (cached copy if offline), the immersion percent (D-019: from fresh understanding points, never
+   * below the stored peak), and the lemmas whose latest verdict was "Knew it" (shown steady, not flickering).
+   * `solid` = known + mastered words, for the popup line.
    */
   GET_SETTINGS: {
     settings: Settings;
-    autoGrow: boolean;
-    immersion: { points: number; rate: number; percent: number };
+    immersion: { percent: number; rate: number; points: number; solid: number };
     knewIt: string[];
   };
-  /** Saves perPageCap to the server (only that field) and/or autoGrow locally. */
+  /** Unused since D-019 (no slider). Saves perPageCap to the server (only that field) and/or autoGrow locally. */
   SET_SWAP_AMOUNT: { ok: boolean; error?: string };
   SET_IMMERSION: { ok: boolean };
   /** One entry per sentence, same order. `null` = unusable, leave that text English. `null` overall = call failed. */

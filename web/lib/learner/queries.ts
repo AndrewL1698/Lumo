@@ -1,5 +1,5 @@
 // Read helpers for routes and Andrew's /api/tutor/context (brief 3.5). Relative imports only (tsx from /scripts, /eval).
-import { Recap, Settings, settingsFixture } from "@parrot/shared";
+import { Recap, Settings, settingsFixture, type Understanding } from "@parrot/shared";
 import { getDb } from "../db";
 
 /** The user's settings row, or the fixture values if there is none (or it doesn't parse). */
@@ -123,6 +123,32 @@ export async function weakWords(userId: string): Promise<Set<string>> {
     for (const w of `${e.span} ${e.correction}`.toLowerCase().split(/[^\p{L}]+/u)) if (w) words.add(w);
   }
   return words;
+}
+
+/**
+ * D-019 key words, always Spanish on the page: latest 10 hovered + due + the latest recap's weak list.
+ * A superset of what the tutor targets (3 newest hovers + 2 most overdue), so the page and the tutor practise the same words.
+ */
+export async function keyLemmas(userId: string, now: Date = new Date()): Promise<Set<string>> {
+  const [hovers, due, weak] = await Promise.all([recentHovers(userId, 10), dueLemmas(userId, now, 20), weakWords(userId)]);
+  return new Set([...hovers.map((h) => h.lemma), ...due, ...weak]);
+}
+
+/**
+ * D-019 understanding points, which drive the immersion %: 2 per known/mastered word (needs active proof, §6.1),
+ * 1 per distinct "Knew it" lemma that isn't solid yet. Read-only: never changes a word's state. Throws on DB error.
+ */
+export async function understanding(userId: string): Promise<Understanding> {
+  const db = getDb();
+  const [solidRows, knewRows] = await Promise.all([
+    db.from("user_words").select("lemma").eq("user_id", userId).in("state", ["known", "mastered"]),
+    db.from("events").select("lemma").eq("user_id", userId).eq("type", "knew_it").not("lemma", "is", null),
+  ]);
+  if (solidRows.error) throw solidRows.error;
+  if (knewRows.error) throw knewRows.error;
+  const solidSet = new Set(solidRows.data.map((r) => r.lemma as string));
+  const knew = new Set(knewRows.data.map((r) => r.lemma as string).filter((l) => !solidSet.has(l)));
+  return { points: 2 * solidSet.size + knew.size, solid: solidSet.size, knewIt: knew.size };
 }
 
 /** Everything Andrew's /api/tutor/context needs from the DB, in one call. Throws on DB error. */

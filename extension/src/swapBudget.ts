@@ -1,71 +1,78 @@
-// How many words a page may swap, and how difficult never-met words may be (decisions D-005..D-007), plus the
-// immersion dial (D-018). Shared by the popup (to show the numbers) and the content script (to use them), so they
-// always agree.
+// How much Spanish a page shows (D-019, replacing D-018's two controls): ONE immersion percent, driven by what the
+// learner has proven (server-side understanding points), turned into page rules. Shared by the service worker (to
+// compute the percent), the popup (to show it) and the content script (to use it), so they always agree.
 
-import type { Candidate, Level, Settings } from "@parrot/shared";
+import type { Level, Settings } from "@parrot/shared";
 
+/** Top of the step-0 band: up to this many words, today's one-per-sentence spacing (D-005..D-007). */
 export const MAX_SWAPS = 25;
-/** The manual slider goes higher than the auto amount, for testing and the demo. Above 25 it borrows a higher
- *  step's spacing rules (words only, no Spanish blocks) so the number is actually reachable. */
-export const SLIDER_MAX = 200;
-/** "Grow automatically": a starting amount plus one per solid word (known + mastered), up to MAX_SWAPS. */
-export const AUTO_BASE = 5;
-
-export function solidCount(candidates: Candidate[]): number {
-  return candidates.filter((c) => c.state === "known" || c.state === "mastered").length;
-}
-
-export function autoSwaps(candidates: Candidate[]): number {
-  return Math.min(MAX_SWAPS, AUTO_BASE + solidCount(candidates));
-}
-
-/** The page budget: 0 when Parrot is off, else the auto amount or the slider's perPageCap. */
-export function swapBudget(settings: Settings, autoGrow: boolean, candidates: Candidate[]): number {
-  if (settings.intensity === "off") return 0;
-  const n = autoGrow ? autoSwaps(candidates) : settings.perPageCap;
-  return Math.max(0, Math.min(autoGrow ? MAX_SWAPS : SLIDER_MAX, n));
-}
 
 export const LEVEL_BAND: Record<Level, number> = { beginner: 1, intermediate: 2, upper_intermediate: 3 };
 
-// ---------------------------------------------------------------- immersion dial (D-018)
+// ---------------------------------------------------------------- the immersion percent (D-019)
 
-/** Progress points per learner event. Struggling still counts as engagement, just less. */
-export const IMMERSION_POINTS = { hover: 0.5, knew_it: 2, didnt_know: 1 } as const;
-/** Tune on the real page: at rate 3×, one round (4 hovers, 3 knew, 1 didn't = 9 points) is about 35%. */
-export const IMMERSION_PER_POINT = 1.3;
-/** Popup speed-up for a 2-minute demo. 1× is the honest default. */
-export const IMMERSION_RATES = [1, 3, 5] as const;
-/** Popup "jump to" buttons: pre-warm the cache, and the stage fallback. */
+/** Percent per understanding point at 1×: 200 known words (400 points) = 100%. */
+export const DIAL_K = 0.25;
+/**
+ * Demo speed. The scripted round is about 5 points (3 Knew it + empresa used correctly in the tutor), so from the
+ * seeded ~5% this lands near 90%. TODO(demo): tune on the NPR page.
+ */
+export const DEMO_RATE = 70;
+/** Popup speeds. 1× is the honest default; the others only compress time, and we say so. */
+export const IMMERSION_RATES = [1, 10, DEMO_RATE] as const;
+/** Popup "jump to" buttons: pre-warm the translate cache, and the stage fallback. */
 export const IMMERSION_JUMPS = [0, 35, 70, 100] as const;
 
-/** Kill switch for Part B (whole Spanish sentences and paragraphs). false = word swaps only at every step. */
+/** Kill switch for whole Spanish sentences and paragraphs. false = word swaps only at every percent. */
 export const BLOCKS_ENABLED = true;
 
-/** chrome.storage.local.immersion */
-export interface Immersion {
-  points: number;
+/**
+ * chrome.storage.local.dial. Speed only scales gains made after it was picked: on a speed change or jump, `base`
+ * becomes the current (or target) percent and `points0` the current points, so the number never jumps.
+ */
+export interface Dial {
   rate: number;
+  /** Percent at `points0`. */
+  base: number;
+  /** Understanding points when `base` was set. */
+  points0: number;
+  /**
+   * Highest percent reached since the last speed change, jump or reset. The percent never drops below it: a hover
+   * sends a known word back to learning (−2 points), and at Demo speed that alone would cost about 35%.
+   */
+  peak: number;
+  /** Last understanding points the server reported; used while the server is unreachable. */
+  points: number;
 }
 
-export function immersionPercent(i: Immersion): number {
-  return Math.max(0, Math.min(100, Math.round(i.points * i.rate * IMMERSION_PER_POINT)));
+export const DEFAULT_DIAL: Dial = { rate: 1, base: 0, points0: 0, peak: 0, points: 0 };
+
+/** Unrounded, unclamped percent from the dial alone (no peak). */
+export function dialRaw(d: Dial, points: number): number {
+  return d.base + (points - d.points0) * d.rate * DIAL_K;
 }
 
-/** Points that give exactly `percent` at `rate` (for the jump buttons). */
-export function pointsForPercent(percent: number, rate: number): number {
-  return percent / (Math.max(1, rate) * IMMERSION_PER_POINT);
+/** The percent shown and used, 0–100, never below the peak. */
+export function dialPercent(d: Dial, points: number): number {
+  return Math.max(0, Math.min(100, Math.round(Math.max(d.peak, dialRaw(d, points)))));
 }
+
+/** New/learning words per page at `percent`, on top of the known words (which are free): 5 at 0%, 200 at 100%. */
+export function budgetFor(percent: number): number {
+  return Math.round(5 + 1.95 * Math.max(0, Math.min(100, percent)));
+}
+
+// ---------------------------------------------------------------- page rules
 
 export interface StepRules {
   step: 0 | 1 | 2 | 3;
-  /** Lowest immersion % for this step. */
+  /** Lowest immersion % for this step's blocks. */
   from: number;
-  /** Words per page. Step 0 uses today's budget (swapBudget) instead. */
+  /** Budget words per page (known words don't count against it). */
   words: number;
-  /** Max word swaps per sentence. Infinity = no limit. */
+  /** Max budget swaps per sentence. Infinity = no limit. */
   perSentence: number;
-  /** Words that must sit between two swaps. Step 0 keeps today's computed gap. */
+  /** Words that must sit between two budget swaps. Step 0 uses the content script's computed gap instead. */
   minGap: number;
   /** Swap never-met words easier than the learner's level, and known_assumed ones. */
   includeEasy: boolean;
@@ -75,11 +82,7 @@ export interface StepRules {
   paragraphBlocks: number;
 }
 
-/**
- * Four fixed steps rather than a smooth curve, so picks depend on the step and not the exact point total:
- * the presenter has a wide margin per round, and pre-warming covers four configurations.
- * Step 0 is today's behaviour and runs today's code path unchanged.
- */
+/** D-018's four steps. In D-019 a step's `words` only chooses spacing; `from` only chooses blocks. */
 export const STEPS: readonly StepRules[] = [
   { step: 0, from: 0, words: MAX_SWAPS, perSentence: 1, minGap: 12, includeEasy: false, sentenceBlocks: 0, paragraphBlocks: 0 },
   { step: 1, from: 20, words: 40, perSentence: 2, minGap: 5, includeEasy: true, sentenceBlocks: 0, paragraphBlocks: 0 },
@@ -87,6 +90,7 @@ export const STEPS: readonly StepRules[] = [
   { step: 3, from: 85, words: 200, perSentence: Infinity, minGap: 2, includeEasy: true, sentenceBlocks: 8, paragraphBlocks: 4 },
 ];
 
+/** The step whose blocks apply at `percent`. */
 export function stepFor(percent: number): StepRules {
   let rules = STEPS[0]!;
   for (const s of STEPS) if (percent >= s.from) rules = s;
@@ -95,18 +99,13 @@ export function stepFor(percent: number): StepRules {
 }
 
 /**
- * The rules a page uses. Parrot off = step 0 with no words. "Grow automatically" off = the manual slider (0–200,
- * spacing from the lowest step that fits the number, no blocks). Otherwise the immersion dial picks the step.
+ * The one path from percent to page rules. Luci off = no words. Otherwise the budget is N(percent); spacing comes from
+ * the first step whose word count covers N; blocks come from the step for the percent.
  */
-export function pageRules(settings: Settings, autoGrow: boolean, immersion: Immersion, candidates: Candidate[]): StepRules {
+export function pageRules(settings: Settings, percent: number): StepRules {
   if (settings.intensity === "off") return { ...STEPS[0]!, words: 0 };
-  if (!autoGrow) {
-    // Slider: the lowest step whose word count covers the number, words only.
-    const words = swapBudget(settings, autoGrow, candidates);
-    const base = STEPS.find((s) => s.words >= words) ?? STEPS[STEPS.length - 1]!;
-    return { ...base, words, sentenceBlocks: 0, paragraphBlocks: 0 };
-  }
-  const rules = stepFor(immersionPercent(immersion));
-  if (rules.step === 0) return { ...rules, words: swapBudget(settings, autoGrow, candidates) };
-  return rules;
+  const words = budgetFor(percent);
+  const spacing = STEPS.find((s) => s.words >= words) ?? STEPS[STEPS.length - 1]!;
+  const blocks = stepFor(percent);
+  return { ...spacing, words, sentenceBlocks: blocks.sentenceBlocks, paragraphBlocks: blocks.paragraphBlocks };
 }

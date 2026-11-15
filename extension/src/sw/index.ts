@@ -14,7 +14,7 @@ import {
 } from "@parrot/shared";
 import type { Message, ResponseMap } from "../messages";
 import { neverListReason } from "../neverlist";
-import { IMMERSION_POINTS, IMMERSION_RATES, immersionPercent, pointsForPercent, SLIDER_MAX, type Immersion } from "../swapBudget";
+import { DEFAULT_DIAL, IMMERSION_RATES, dialPercent, dialRaw, type Dial } from "../swapBudget";
 
 // HACK(demo): the web app runs on localhost for the demo. manifest host_permissions matches.
 const API_BASE = "http://localhost:3000";
@@ -53,13 +53,14 @@ interface StoredState {
   eventQueue?: ExtensionEvent[];
   /** Popup "Grow automatically" switch (D-006). Local only; default on. */
   autoGrow?: boolean;
-  /** Immersion dial progress and popup rate (D-018). Local only. */
-  immersion?: Immersion;
+  /** Immersion percent state (D-019): speed, base, peak, last points. Local only. Replaces D-018's `immersion`. */
+  dial?: Dial;
   /** Lemmas whose latest verdict was "Knew it" (D-018): shown steady. Local only. */
   knewIt?: string[];
 }
 
-const DEFAULT_IMMERSION: Immersion = { points: 0, rate: 1 };
+/** Percent never above 100 or below 0, unrounded (stored in `dial.peak` / `dial.base`). */
+const clampPct = (p: number): number => Math.max(0, Math.min(100, p));
 
 /** Max sentences per /api/translate-sentences request (SentenceTranslateRequest). */
 const SENTENCES_PER_REQUEST = 40;
@@ -81,7 +82,7 @@ async function readState(): Promise<StoredState> {
     "settings",
     "eventQueue",
     "autoGrow",
-    "immersion",
+    "dial",
     "knewIt",
   ])) as StoredState;
 }
@@ -215,8 +216,9 @@ chrome.tabs.onUpdated.addListener((tabId, info) => {
 
 let candidatesCache: { at: number; data: CandidatesResponse } | null = null;
 
-async function getCandidates(): Promise<ResponseMap["GET_CANDIDATES"]> {
-  if (candidatesCache && Date.now() - candidatesCache.at < CANDIDATES_TTL_MS) {
+/** `fresh` skips the 60 s cache (GET_SETTINGS: a tutor word that just became known must show on the next reload). */
+async function getCandidates(fresh = false): Promise<ResponseMap["GET_CANDIDATES"]> {
+  if (!fresh && candidatesCache && Date.now() - candidatesCache.at < CANDIDATES_TTL_MS) {
     return candidatesCache.data;
   }
   try {
@@ -265,32 +267,49 @@ async function fetchSettings(): Promise<Settings | null> {
   }
 }
 
+/**
+ * Settings plus the immersion percent (D-019). Candidates are fetched fresh so the understanding points (and the
+ * known words the page shows) reflect the tutor right away. The peak only ever rises here; it falls only on a
+ * speed change, jump or reset (setImmersion).
+ */
 async function getSettings(): Promise<ResponseMap["GET_SETTINGS"]> {
-  const { settings: cached, autoGrow = true, immersion = DEFAULT_IMMERSION, knewIt = [] } = await readState();
-  const settings = (await fetchSettings()) ?? cached ?? DEFAULT_SETTINGS;
+  const { settings: cached, dial: stored = DEFAULT_DIAL, knewIt = [] } = await readState();
+  const [fetched, candidates] = await Promise.all([fetchSettings(), getCandidates(true)]);
+  const settings = fetched ?? cached ?? DEFAULT_SETTINGS;
+
+  const u = candidates?.understanding;
+  const points = u?.points ?? stored.points;
+  const dial: Dial = { ...stored, points, peak: clampPct(Math.max(stored.peak, dialRaw(stored, points))) };
+  // Only on change: the content script reloads its budget on storage changes.
+  if (dial.points !== stored.points || dial.peak !== stored.peak) await chrome.storage.local.set({ dial });
+
+  const solid =
+    u?.solid ?? candidates?.candidates.filter((c) => c.state === "known" || c.state === "mastered").length ?? 0;
   return {
     settings,
-    autoGrow,
-    immersion: { points: immersion.points, rate: immersion.rate, percent: immersionPercent(immersion) },
+    immersion: { percent: dialPercent(dial, points), rate: dial.rate, points, solid },
     knewIt,
   };
 }
 
-/** Immersion dial (D-018): popup rate, "jump to" percent, or reset progress. */
+/** Immersion (D-019): speed change, "jump to" percent, or reset to the learner's real level. */
 async function setImmersion(rate?: number, percent?: number, reset?: boolean): Promise<ResponseMap["SET_IMMERSION"]> {
-  const { immersion = DEFAULT_IMMERSION } = await readState();
-  const next: Immersion = { ...immersion };
+  const { dial: stored = DEFAULT_DIAL } = await readState();
+  const { points } = stored;
+  let next: Dial = { ...stored };
+  const cur = clampPct(Math.max(stored.peak, dialRaw(stored, points)));
   if (rate !== undefined && (IMMERSION_RATES as readonly number[]).includes(rate) && rate !== next.rate) {
-    // The rate only speeds up points earned from now on: keep the current percent (review A1).
-    next.points = (next.points * next.rate) / rate;
-    next.rate = rate;
+    // Speed only scales gains made from now on: keep the current percent.
+    next = { ...next, rate, base: cur, peak: cur, points0: points };
   }
   if (percent !== undefined && Number.isFinite(percent)) {
-    next.points = pointsForPercent(Math.max(0, Math.min(100, percent)), next.rate);
+    const target = clampPct(percent);
+    next = { ...next, base: target, peak: target, points0: points };
   }
-  const patch: Partial<StoredState> = { immersion: next };
+  const patch: Partial<StoredState> = { dial: next };
   if (reset) {
-    next.points = 0;
+    // Back to the learner's real level: points × 1 × DIAL_K.
+    patch.dial = { rate: 1, base: 0, points0: 0, peak: 0, points };
     patch.knewIt = [];
   }
   await chrome.storage.local.set(patch);
@@ -305,7 +324,8 @@ async function setSwapAmount(perPageCap?: number, autoGrow?: boolean): Promise<R
   if (perPageCap === undefined) return { ok: true };
   const fresh = await fetchSettings();
   if (!fresh) return { ok: false, error: "could not reach Luci" };
-  const next: Settings = { ...fresh, perPageCap: Math.max(0, Math.min(SLIDER_MAX, Math.round(perPageCap))) };
+  // HACK: unused since D-019 (no slider); 200 = Settings.perPageCap max.
+  const next: Settings = { ...fresh, perPageCap: Math.max(0, Math.min(200, Math.round(perPageCap))) };
   try {
     const res = await api("/api/settings", { method: "PUT", body: JSON.stringify(next) });
     if (!res.ok) return { ok: false, error: `server returned ${res.status}` };
@@ -389,31 +409,28 @@ async function tts(text: string, lemma: string): Promise<ResponseMap["TTS"]> {
 let flushTimer: ReturnType<typeof setTimeout> | undefined;
 
 async function queueEvents(events: ExtensionEvent[]): Promise<ResponseMap["QUEUE_EVENTS"]> {
-  const { eventQueue = [], immersion = DEFAULT_IMMERSION, knewIt = [] } = await readState();
+  const { eventQueue = [], knewIt = [] } = await readState();
   // Dedupe by id here too, so a content-script retry never double-queues.
   const byId = new Map(eventQueue.map((e) => [e.id, e]));
 
-  // Immersion dial (D-018): count only events not already queued, so retries never double-count.
-  let points = immersion.points;
+  // Knew it list for the steady glow (D-018). Immersion points now come from the server (D-019), not from here.
   const knew = new Set(knewIt);
-  let dialChanged = false;
+  let knewChanged = false;
   for (const e of events) {
-    if (byId.has(e.id)) continue;
-    if (e.type === "hover" || e.type === "knew_it" || e.type === "didnt_know") {
-      points += IMMERSION_POINTS[e.type];
-      dialChanged = true;
-      if (e.lemma && e.type === "knew_it") knew.add(e.lemma);
-      if (e.lemma && e.type === "didnt_know") knew.delete(e.lemma);
+    if (byId.has(e.id) || !e.lemma) continue;
+    if (e.type === "knew_it" && !knew.has(e.lemma)) {
+      knew.add(e.lemma);
+      knewChanged = true;
+    } else if (e.type === "didnt_know" && knew.has(e.lemma)) {
+      knew.delete(e.lemma);
+      knewChanged = true;
     }
   }
 
   for (const e of events) byId.set(e.id, e);
   const merged = [...byId.values()];
   const patch: Partial<StoredState> = { eventQueue: merged };
-  if (dialChanged) {
-    patch.immersion = { ...immersion, points };
-    patch.knewIt = [...knew];
-  }
+  if (knewChanged) patch.knewIt = [...knew];
   await chrome.storage.local.set(patch);
 
   if (events.some((e) => FLUSH_NOW.has(e.type))) {
