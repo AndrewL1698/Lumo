@@ -10,7 +10,7 @@ Source-only package (no build output). Import from `@parrot/shared`.
 | `src/words.ts` | `WordState`, `Level`, `Band`, `PartOfSpeech`, `Word`, `UserWord`, `IsoDate` |
 | `src/events.ts` | `ExtensionEventType`, `TutorEventType`, `LearnerEventType`, `ExtensionEvent`, `EventsRequest`, `EventsResponse` |
 | `src/candidates.ts` | `Candidate`, `CandidatesResponse` |
-| `src/translate.ts` | `TranslateRequest`, `TranslateItem`, `TranslateResponse` |
+| `src/translate.ts` | `TranslateRequest`, `TranslateItem`, `TranslateResponse`, `SentenceTranslateRequest`, `SentenceTranslateResponse` |
 | `src/tutor.ts` | `CorrectionResult`, `CorrectRequest`, `CorrectResponse`, `TutorContext`, `TargetWord`, `WordUpdate`, `ReplyRequest`, `Recap`, `TurnTimeline`, `SttTokenResponse`, `SttBatchResponse`, ... |
 | `src/settings.ts` | `Intensity`, `Settings` |
 | `src/api.ts` | `ApiError`, `PairRequest/Response`, `TtsRequest`, `VocabItem`, `VocabResponse`, `DataResponse`, `DataDeleteRequest/Response`, `StoredEvent`, `StoredArticle` |

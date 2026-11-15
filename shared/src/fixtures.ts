@@ -6,7 +6,7 @@ import { DataDeleteResponse, DataResponse, PairResponse, VocabResponse } from ".
 import { CandidatesResponse } from "./candidates";
 import { EventsResponse } from "./events";
 import { Settings } from "./settings";
-import { TranslateResponse } from "./translate";
+import { SentenceTranslateResponse, TranslateResponse } from "./translate";
 import { CorrectResponse, Recap, SttTokenResponse, TutorContext, TutorTranslateResponse } from "./tutor";
 
 const now = "2026-11-14T15:00:00.000Z";
@@ -38,6 +38,10 @@ export const translateResponseFixture = TranslateResponse.parse({
     { span: "the strike", replacement: "la huelga", lemma: "huelga" },
     null, // sense mismatch: no swap
   ],
+});
+
+export const sentenceTranslateResponseFixture = SentenceTranslateResponse.parse({
+  items: ["La huelga del transporte entró en su tercer día el viernes.", null],
 });
 
 export const eventsResponseFixture = EventsResponse.parse({ accepted: 3, duplicates: 0 });

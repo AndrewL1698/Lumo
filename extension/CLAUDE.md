@@ -23,11 +23,12 @@ Owner: **Naren**. Team rules: root `CLAUDE.md`. Design: `docs/architecture.md` Â
 - **Hard never-list in code**, checked even if the user allowlists the site: email, chat, banking/payments/checkout, health/insurance, Docs/Canvas/Overleaf/GitHub, login and form pages.
 - **The service worker does every fetch.** Content scripts message the SW. The token never enters the page.
 - **No API keys** in the extension. TTS goes through `/api/tts`.
-- **Never send** full page text, URLs, history or typed input. Send only chosen sentences, events, and title + domain. `articleKey = hash(domain + title)`.
+- **Never send** URLs, history or typed input, and never a page in one piece. Send only the sentences being translated (one per swapped word, plus whole sentences/paragraphs at high immersion, D-018), events, and title + domain. `articleKey = hash(domain + title)`.
 - **Never block page load.** Swaps appear only after the `/api/translate` batch returns.
 - **Only replace spans inside a single text node.** Skip matches that cross inline elements.
 - Skip `a, button, input, textarea, select, code, pre, script, style, [contenteditable]` and anything inside `form`.
-- Max one swap per sentence, never adjacent, per-page cap 25. A hover counts after 500 ms.
+- Swap amount comes from the **immersion dial** (D-018, `src/swapBudget.ts`): below 20% it's today's rules (one swap per sentence, cap 25, `5 + solid`); higher steps allow more words per sentence (never adjacent), easier words, and whole Spanish sentences/paragraphs (`[data-parrot-block]`). Step 0 must keep running the original code path. A hover counts after 500 ms.
+- *In progress (Andrew, Sat night, branch `andrew/immersion`):* D-018 touches `content/index.ts`, `content/hovercard.ts`, `sw/index.ts`, `messages.ts`, `popup/`. Ping Andrew before editing those.
 - Event ids are client-made uuids (`crypto.randomUUID()`), so retries are safe.
 - Only promise behaviour on the 2â€“3 demo sites. Don't chase layout bugs elsewhere.
 
