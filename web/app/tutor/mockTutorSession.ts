@@ -1,7 +1,9 @@
 "use client";
 import {
   correctResponseCleanFixture,
+  correctResponseEnglishFixture,
   correctResponseFixture,
+  correctResponseOffTopicFixture,
   rawTextFixture,
   recapFixture,
   replyTextFixture,
@@ -21,9 +23,34 @@ const OPENER_EN = "I saw that you read about the transit strike today. What do y
 // HACK: hand-written English for replyTextFixture (the shared fixture is Spanish only).
 const REPLY_EN = "Sure, I understand. The problem is that the strike goes on, right? How are you getting to work this week?";
 
-const SCRIPT: { raw: string; response: CorrectResponse }[] = [
+// HACK: no shared fixture for an unclear turn; same shape as the off-topic one.
+const correctResponseUnclear: CorrectResponse = {
+  ...correctResponseOffTopicFixture,
+  correction: { ...correctResponseOffTopicFixture.correction, utterance_id: "utt_demo_5", flag: "unclear" },
+};
+
+// Turns 1-2 are the stage demo (mistakes + "now known", then a clean answer); 3-5 show the turn flags.
+const SCRIPT: { raw: string; response: CorrectResponse; reply?: string; replyEn?: string }[] = [
   { raw: rawTextFixture, response: correctResponseFixture },
   { raw: "me gusta mucho la casa grande", response: correctResponseCleanFixture },
+  {
+    raw: "Hi, my name is Shravan",
+    response: correctResponseEnglishFixture,
+    reply: "¡En español, por favor! Puedes decir: «Hola, me llamo Shravan». ¿Cómo llegas al trabajo?",
+    replyEn: "In Spanish, please! You can say: 'Hola, me llamo Shravan.' How do you get to work?",
+  },
+  {
+    raw: "me gusta jugar al fútbol con mis amigos",
+    response: correctResponseOffTopicFixture,
+    reply: "¡Qué bien! Pero volvamos a la huelga: ¿cómo te afecta a ti?",
+    replyEn: "Nice! But let's get back to the strike: how does it affect you?",
+  },
+  {
+    raw: "eh la mesa sí no",
+    response: correctResponseUnclear,
+    reply: "No te entendí bien. ¿Puedes repetirlo, por favor?",
+    replyEn: "I didn't quite understand. Can you say it again, please?",
+  },
 ];
 
 const PARTIAL_MS = 220;
@@ -93,9 +120,9 @@ export function useMockTutorSession(): TutorSession {
     setStatus("checking");
     setTurns((ts) => [...ts, { id, rawText: step.raw }]);
     later(() => {
-      patchTurn(id, { correction: step.response.correction, wordUpdates: step.response.wordUpdates, tutorEnglish: REPLY_EN });
+      patchTurn(id, { correction: step.response.correction, wordUpdates: step.response.wordUpdates, tutorEnglish: step.replyEn ?? REPLY_EN });
       setStatus("speaking");
-      streamCaption(id, replyTextFixture);
+      streamCaption(id, step.reply ?? replyTextFixture);
     }, CHECK_MS);
   }, []);
 
@@ -107,7 +134,7 @@ export function useMockTutorSession(): TutorSession {
     clearAll();
     setStatus("idle");
     setPartial("");
-    setRecap(recapFixture);
+    later(() => setRecap(recapFixture), 1800); // like the real /api/tutor/end, the recap takes a moment
   }, []);
 
   return { status, partial, turns, targetWords: tutorContextFixture.targetWords, recap, start, pressTalk, releaseTalk, sendText, end };
