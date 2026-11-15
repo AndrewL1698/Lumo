@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LessonMemory } from "./progress";
 import { Level, WordState } from "./words";
 
 /** Error types graded in spoken mode. Accent/punctuation/spelling are never graded from speech (specs §7.2). */
@@ -148,6 +149,7 @@ export const Recap = z.object({
   reviewTomorrow: z.array(z.string()),
   summary_en: z.string(),
   tips: z.array(z.string()), // one-line rule + example per top error; [] if the model call fails
+  lesson: LessonMemory.optional(), // D-022: which unit this session worked on, checkpoint, next step
 });
 export type Recap = z.infer<typeof Recap>;
 

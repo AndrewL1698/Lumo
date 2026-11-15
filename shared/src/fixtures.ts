@@ -4,6 +4,7 @@
  */
 import { DataDeleteResponse, DataResponse, PairResponse, VocabResponse } from "./api";
 import { CandidatesResponse } from "./candidates";
+import { ProgressResponse } from "./progress";
 import { EventsResponse } from "./events";
 import { Settings } from "./settings";
 import { SentenceTranslateResponse, TranslateResponse } from "./translate";
@@ -227,3 +228,26 @@ export const dataResponseFixture = DataResponse.parse({
 });
 
 export const dataDeleteResponseFixture = DataDeleteResponse.parse({ deleted: 1 });
+
+export const progressResponseFixture = ProgressResponse.parse({
+  level: "intermediate",
+  levelTitle: "Intermediate",
+  currentUnitId: "int-1",
+  lastLesson: {
+    unitId: "int-1",
+    checkpointPassed: false,
+    summary_en: "Started talking about work; mixed up el/la with problema.",
+    nextStep_en: "Use empresa and mercado in sentences; say el problema.",
+  },
+  units: [
+    {
+      id: "int-1", order: 1, title: "Talking about work", canDo: "Say where you work, what a company does, and name a problem",
+      concept: "Noun gender and agreement", status: "current", wordsKnown: 1, wordsTotal: 7, checkpointPassed: false,
+      words: [{ lemma: "empresa", state: "learning" }, { lemma: "problema", state: "known" }],
+    },
+    {
+      id: "int-2", order: 2, title: "News and events", canDo: "Say what happened, using the past tense",
+      concept: "Preterite: finished past events", status: "locked", wordsKnown: 0, wordsTotal: 7, checkpointPassed: false, words: [],
+    },
+  ],
+});
