@@ -373,6 +373,11 @@ html.firefly-cursor
   border-radius: 9999px;
   transition: box-shadow 300ms ease, background-color 300ms ease;
 }
+[data-level="seen"] > .jar-light {
+  width: 5px;
+  height: 5px;
+  background: #8c7a45;
+}
 [data-level="learning"] > .jar-light {
   width: 6px;
   height: 6px;
