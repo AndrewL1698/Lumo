@@ -2,7 +2,7 @@
 // Andrew listed only the member names: { status, partial, turns, targetWords, start(), pressTalk(),
 // releaseTalk(), sendText(), end(), recap }. The member TYPES below are my guesses.
 // TODO(demo): confirm status values and Turn shape with Andrew.
-import type { CorrectionResult, Recap, TargetWord, WordUpdate } from "@parrot/shared";
+import type { CorrectionResult, Recap, TargetWord, TutorPlan, WordUpdate } from "@parrot/shared";
 
 export type TutorStatus = "idle" | "listening" | "checking" | "speaking";
 
@@ -14,6 +14,7 @@ export interface TutorTurn {
   tutorText?: string; // streamed Spanish reply for this turn
   correctionFailed?: boolean; // real hook sets this when the correction call failed
   tutorEnglish?: string; // English translation; the page hides it until the learner has answered (no peeking)
+  why?: string; // J1: one English line on why the tutor replied the way it did
   // TODO(demo): agree with Andrew where the real translation comes from.
 }
 
@@ -24,6 +25,7 @@ export interface TutorSession {
   targetWords: TargetWord[];
   recap: Recap | null;
   notice?: string | null; // real hook: ready-to-show English message when something degrades (mic blocked, etc.)
+  plan?: TutorPlan | null; // J2 "Tonight's lesson" card; absent or null = no card
   start: () => void | Promise<void>;
   pressTalk: () => void;
   releaseTalk: () => void;
