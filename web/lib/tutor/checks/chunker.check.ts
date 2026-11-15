@@ -66,6 +66,17 @@ assert.deepEqual(all('¿¡Qué!? Dijo "vale." Pues... cuesta 3.5 euros…  \n ¡
 ]);
 assert.deepEqual(run(["", "  ", "\n"]), []);
 
+// First chunk only: a sentence ending exactly at a delta boundary goes out without waiting for the next delta.
+const early = createChunker();
+assert.deepEqual(early.push("¡Qué bien!"), ["¡Qué bien!"]);
+assert.deepEqual(early.push(" ¿Y tú?"), []); // later chunks still wait for the next character
+assert.deepEqual(early.flush(), ["¿Y tú?"]);
+// ...but never after a digit, or inside an open ¿/¡.
+assert.deepEqual(run(["Cuesta 3.", "5 euros."]), ["Cuesta 3.5 euros."]);
+assert.deepEqual(run(["¿¡Qué!", "? Dijo"]), ["¿¡Qué!?", "Dijo"]);
+// An early "Bueno." leaves ".." behind: punctuation-only pieces are not spoken.
+assert.deepEqual(run(["Bueno.", "..", " Pues sí."]), ["Bueno.", "Pues sí."]);
+
 // 600 chars with no terminator: split at whitespace, every chunk under 500.
 const long =
   Array.from({ length: 100 }, () => "hola").join(" ") +
