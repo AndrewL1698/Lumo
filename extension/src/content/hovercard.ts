@@ -230,8 +230,12 @@ function place(el: HTMLElement, anchor: HTMLElement): void {
   el.style.top = `${top}px`;
 }
 
+/** Opened by a click: stays open when the mouse leaves the word, until a click elsewhere, Esc or a verdict (D-015). */
+let pinned = false;
+
 function hide(): void {
   clearTimeout(hoverTimer);
+  pinned = false;
   if (card) card.hidden = true;
 }
 
@@ -257,22 +261,48 @@ export function installHoverCard(markAttr: string, handlers: Handlers): void {
 
     clearTimeout(hideTimer);
     clearTimeout(hoverTimer);
-    hoverTimer = setTimeout(() => {
-      card ??= buildCard();
-      render(card, t, handlers);
-      place(card, el);
-      // The 500 ms rule has been met: this is a real hover.
-      if (!counted.has(t.lemma)) {
-        counted.add(t.lemma);
-        handlers.onHover(t);
-      }
-    }, HOVER_DELAY_MS);
+    if (pinned && card && !card.hidden) return; // a clicked-open card stays put until dismissed
+    // The 500 ms rule: only a deliberate hover opens the card and counts.
+    hoverTimer = setTimeout(() => show(el, t), HOVER_DELAY_MS);
   });
+
+  /** Open the card for `el` now, and count the look-up once per word (hover or click alike). */
+  function show(el: HTMLElement, t: HoverTarget): void {
+    card ??= buildCard();
+    render(card, t, handlers);
+    place(card, el);
+    if (!counted.has(t.lemma)) {
+      counted.add(t.lemma);
+      handlers.onHover(t);
+    }
+  }
+
+  // Click a swapped word: open its card right away (D-015). Click anywhere else: close it.
+  document.addEventListener(
+    "click",
+    (ev) => {
+      const target = ev.target as Element | null;
+      if (target?.closest(`#${CARD_ID}`)) return; // clicks inside the card are the card's own
+      const el = target?.closest<HTMLElement>(`[${markAttr}]`);
+      const t = el ? targetOf(el) : null;
+      if (el && t) {
+        ev.preventDefault(); // never follow a link the word might sit in
+        clearTimeout(hoverTimer);
+        clearTimeout(hideTimer);
+        show(el, t);
+        pinned = true;
+        return;
+      }
+      if (card && !card.hidden) hide();
+    },
+    true,
+  );
 
   document.addEventListener("mouseout", (ev) => {
     const el = (ev.target as Element | null)?.closest<HTMLElement>(`[${markAttr}]`);
     if (!el) return;
     clearTimeout(hoverTimer);
+    if (pinned) return;
     // Grace period so moving the pointer into the card itself does not dismiss it.
     hideTimer = setTimeout(hide, 220);
   });
