@@ -13,7 +13,12 @@ export interface HoverTarget {
   english: string;
   /** The sentence the word appeared in — Andrew's tutor uses this. */
   sentence: string;
+  /** A whole sentence or paragraph in Spanish (D-018): the card shows the English only, and nothing is counted. */
+  block?: boolean;
 }
+
+/** Same as BLOCK_ATTR in index.ts. */
+const BLOCK_ATTR = "data-parrot-block";
 
 type Verdict = "knew_it" | "didnt_know";
 
@@ -200,6 +205,25 @@ function render(el: HTMLElement, t: HoverTarget, handlers: Handlers): void {
   el.append(es, en, row);
 }
 
+/** Card for a whole Spanish sentence or paragraph: just the English it replaced. No audio, no verdicts. */
+function renderBlock(el: HTMLElement, t: HoverTarget): void {
+  el.textContent = "";
+  ++renderId; // a pending word-card close must not hide this card
+  const label = document.createElement("div");
+  label.textContent = "English";
+  Object.assign(label.style, {
+    color: C.muted,
+    fontSize: "11px",
+    fontWeight: "600",
+    letterSpacing: ".04em",
+    textTransform: "uppercase",
+    marginBottom: "4px",
+  } satisfies Partial<CSSStyleDeclaration>);
+  const en = document.createElement("div");
+  en.textContent = t.english;
+  el.append(label, en);
+}
+
 /** A drawn speaker (sound waves when audio works, a cross when it doesn't), in the button's colour. */
 function speakerIcon(sound: boolean): SVGSVGElement {
   const NS = "http://www.w3.org/2000/svg";
@@ -252,6 +276,10 @@ function hide(): void {
 }
 
 function targetOf(el: HTMLElement): HoverTarget | null {
+  if (el.hasAttribute(BLOCK_ATTR)) {
+    const english = el.dataset.parrotEn;
+    return english ? { lemma: "", spanish: el.textContent ?? "", english, sentence: "", block: true } : null;
+  }
   const lemma = el.dataset.parrotLemma;
   const english = el.dataset.parrotEn;
   if (!lemma || !english) return null;
@@ -265,8 +293,10 @@ function targetOf(el: HTMLElement): HoverTarget | null {
 
 /** Attach once per page; works for swaps added later because it is delegated. */
 export function installHoverCard(markAttr: string, handlers: Handlers): void {
+  /** Word swaps and whole-sentence blocks share the delegation; targetOf tells them apart. */
+  const selector = `[${markAttr}], [${BLOCK_ATTR}]`;
   document.addEventListener("mouseover", (ev) => {
-    const el = (ev.target as Element | null)?.closest<HTMLElement>(`[${markAttr}]`);
+    const el = (ev.target as Element | null)?.closest<HTMLElement>(selector);
     if (!el) return;
     const t = targetOf(el);
     if (!t) return;
@@ -281,6 +311,13 @@ export function installHoverCard(markAttr: string, handlers: Handlers): void {
   /** Open the card for `el` now, and count the look-up once per word (hover or click alike). */
   function show(el: HTMLElement, t: HoverTarget): void {
     card ??= buildCard();
+    if (t.block) {
+      Object.assign(card.style, { maxWidth: "420px", maxHeight: "240px", overflowY: "auto" });
+      renderBlock(card, t);
+      place(card, el);
+      return; // blocks send no events
+    }
+    Object.assign(card.style, { maxWidth: "260px", maxHeight: "", overflowY: "" });
     render(card, t, handlers);
     place(card, el);
     if (!counted.has(t.lemma)) {
@@ -295,7 +332,7 @@ export function installHoverCard(markAttr: string, handlers: Handlers): void {
     (ev) => {
       const target = ev.target as Element | null;
       if (target?.closest(`#${CARD_ID}`)) return; // clicks inside the card are the card's own
-      const el = target?.closest<HTMLElement>(`[${markAttr}]`);
+      const el = target?.closest<HTMLElement>(selector);
       const t = el ? targetOf(el) : null;
       if (el && t) {
         ev.preventDefault(); // never follow a link the word might sit in
@@ -311,7 +348,7 @@ export function installHoverCard(markAttr: string, handlers: Handlers): void {
   );
 
   document.addEventListener("mouseout", (ev) => {
-    const el = (ev.target as Element | null)?.closest<HTMLElement>(`[${markAttr}]`);
+    const el = (ev.target as Element | null)?.closest<HTMLElement>(selector);
     if (!el) return;
     clearTimeout(hoverTimer);
     if (pinned) return;
