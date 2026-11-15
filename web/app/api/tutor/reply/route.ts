@@ -123,6 +123,7 @@ export async function POST(req: Request) {
       rawText: body.rawText,
       directive,
       placementLine: fixedLine,
+      conversational: body.mode === "handsfree",
     });
     const it = streamTutorReply({ system, messages, signal: upstream.signal })[
       Symbol.asyncIterator

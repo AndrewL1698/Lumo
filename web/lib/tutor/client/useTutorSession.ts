@@ -18,7 +18,7 @@ import {
   type TargetWord,
   type TurnTimeline,
 } from "@parrot/shared";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { TUTOR } from "../../config";
 import { createChunker } from "../chunker";
 import type {
@@ -34,6 +34,7 @@ import { createAudioQueue } from "./audioQueue";
 import { createPttRecorder, encodeWav } from "./pttRecorder";
 import { createScribeClient } from "./scribeRealtime";
 import { createTimeline } from "./timeline";
+import { createVad, type Vad } from "./vad";
 
 const TOKEN_MAX_AGE_MS = 10 * 60_000; // tokens expire after 15 min; refetch well before that
 const JSON_HEADERS = { "Content-Type": "application/json" };
@@ -64,6 +65,9 @@ type Reply = {
 
 type Controller = Pick<UseTutorSession, "start" | "pressTalk" | "releaseTalk" | "sendText" | "end"> & {
   dispose: () => void;
+  /** Hands-free (D-023). Off = push-to-talk exactly as before. */
+  setHandsFree: (on: boolean) => void;
+  setMuted: (muted: boolean) => void;
 };
 
 function newId(): string {
@@ -84,7 +88,25 @@ function toHistory(turns: Turn[]): HistoryTurn[] {
 }
 
 /** All mutable machinery lives in this closure, so the functions it returns are stable for the hook's life. */
-function createController(set: Setters, forceBatch: () => boolean, placement: () => boolean): Controller {
+function createController(rawSet: Setters, forceBatch: () => boolean, placement: () => boolean): Controller {
+  // Hands-free (D-023) needs to know the status and the live partial transcript; everything else passes straight through.
+  let curStatus: TutorStatus = "idle";
+  let lastPartial = "";
+  const set: Setters = {
+    ...rawSet,
+    status: (s) => {
+      curStatus = s;
+      rawSet.status(s);
+    },
+    partial: (t) => {
+      lastPartial = t;
+      rawSet.partial(t);
+    },
+  };
+  let handsFree = false;
+  let micMuted = false;
+  let vad: Vad | null = null;
+
   /** Bumped by end() and dispose(): anything async started under an older epoch is dropped. */
   let epoch = 0;
   let started = false;
@@ -332,6 +354,8 @@ function createController(set: Setters, forceBatch: () => boolean, placement: ()
           utteranceId: args.utteranceId,
           rawText: args.rawText,
           history: args.history,
+          // Only hands-free says so; push-to-talk sends exactly the request it always did.
+          ...(handsFree && { mode: "handsfree" }),
         }),
         signal: reply.abort.signal,
       });
@@ -480,6 +504,7 @@ function createController(set: Setters, forceBatch: () => boolean, placement: ()
     listening = false;
     transcribing = false;
     take = null;
+    vad = null;
     try {
       stopReply(false);
       queue?.stopAll();
@@ -495,9 +520,59 @@ function createController(set: Setters, forceBatch: () => boolean, placement: ()
     recorder = null;
   }
 
+  // ---------- hands-free (D-023): a virtual finger on the talk button ----------
+
+  /** One mic level between takes. The detector decides; we only press and release the same buttons a finger does. */
+  function onLevel(rms: number) {
+    if (!vad || micMuted || !started) return;
+    if (transcribing) {
+      vad.reset(); // busy turning the last take into text
+      return;
+    }
+    const ev = vad.push(rms, performance.now(), { tutorSpeaking: curStatus === "speaking", partial: lastPartial });
+    if (ev === "start") {
+      api.pressTalk(); // also stops Luci: a real barge-in
+      if (!listening) vad.reset(); // the press was refused (no mic, busy)
+    } else if (ev === "end" && listening) {
+      api.releaseTalk();
+    }
+  }
+
+  function startMonitor() {
+    if (!recorder?.monitor) return;
+    vad = createVad(TUTOR.handsFree);
+    recorder.monitor(onLevel);
+  }
+
+  function stopMonitor() {
+    recorder?.monitor?.(null);
+    vad = null;
+  }
+
   // ---------- public ----------
 
-  return {
+  const api: Controller = {
+    setHandsFree(on) {
+      handsFree = on;
+      if (!recorder) return; // applied when the session starts
+      if (on) {
+        recorder.setMuted?.(micMuted);
+        startMonitor();
+      } else {
+        if (listening) api.releaseTalk(); // finish the take the detector had open
+        stopMonitor();
+        recorder.setMuted?.(false);
+        micMuted = false;
+      }
+    },
+
+    setMuted(muted) {
+      micMuted = muted;
+      recorder?.setMuted?.(muted);
+      if (muted && listening) api.releaseTalk(); // send what was said so far
+      vad?.reset();
+    },
+
     async start() {
       if (started || starting) return;
       starting = true;
@@ -536,8 +611,13 @@ function createController(set: Setters, forceBatch: () => boolean, placement: ()
         set.sessionId(sessionId);
         set.targetWords(context.targetWords);
         set.plan(context.plan ?? null);
-        if (micOk) recorder = rec;
-        else {
+        if (micOk) {
+          recorder = rec;
+          if (handsFree) {
+            recorder.setMuted?.(micMuted);
+            startMonitor();
+          }
+        } else {
           rec.dispose();
           recorder = null;
           set.notice("Microphone unavailable. You can type your answers instead.");
@@ -667,6 +747,7 @@ function createController(set: Setters, forceBatch: () => boolean, placement: ()
 
     dispose: teardown,
   };
+  return api;
 }
 
 export function useTutorSession(opts?: { forceBatch?: boolean; placement?: boolean }): UseTutorSession {
@@ -679,6 +760,8 @@ export function useTutorSession(opts?: { forceBatch?: boolean; placement?: boole
   const [lastTimeline, setLastTimeline] = useState<TurnTimeline | null>(null);
   const [plan, setPlan] = useState<UseTutorSession["plan"]>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [mode, setModeState] = useState<"ptt" | "handsfree">("ptt");
+  const [muted, setMutedState] = useState(false);
 
   const forceBatchRef = useRef(false);
   const placementRef = useRef(false);
@@ -710,6 +793,22 @@ export function useTutorSession(opts?: { forceBatch?: boolean; placement?: boole
   // The controller is reusable afterwards, so a remount can start() again.
   useEffect(() => () => ctl.dispose(), [ctl]);
 
+  const setMode = useCallback(
+    (m: "ptt" | "handsfree") => {
+      ctl.setHandsFree(m === "handsfree");
+      setModeState(m);
+      if (m === "ptt") setMutedState(false);
+    },
+    [ctl],
+  );
+  const setMuted = useCallback(
+    (v: boolean) => {
+      ctl.setMuted(v);
+      setMutedState(v);
+    },
+    [ctl],
+  );
+
   return {
     status,
     partial,
@@ -725,5 +824,9 @@ export function useTutorSession(opts?: { forceBatch?: boolean; placement?: boole
     releaseTalk: ctl.releaseTalk,
     sendText: ctl.sendText,
     end: ctl.end,
+    mode,
+    setMode,
+    muted,
+    setMuted,
   };
 }

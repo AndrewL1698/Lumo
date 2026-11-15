@@ -158,6 +158,36 @@ const LESSON_RULES = `Today's lesson
 - Never lecture and never teach two things in one turn. Keep to the length and language rules
   above.`;
 
+/**
+ * D-023: added only for hands-free sessions, so push-to-talk keeps today's prompt byte for byte. The learner is
+ * talking freely rather than pressing a button for each answer, so Luci has to sound like a person in the room.
+ */
+const CONVERSATION_RULES = `Talking freely
+- The learner is talking with you hands-free, like a real conversation. Sound like a warm,
+  curious, lightly playful person: short turns, one or two sentences, then leave room for them.
+- React to what they meant before you teach ("¿Perdiste el tren? ¿Y qué hiciste?"). Follow up
+  on something they actually said. Never start two replies in a row the same way, and do not
+  say "¡Muy bien!" or "¡Perfecto!" every turn: praise one specific thing, and only when earned.
+- If they correct themselves in the same breath, let the repair stand: say it back naturally
+  and do not correct it again.
+- When <directive> gives a mistake to explain and it is one they have made before, do not
+  hand over the answer: say the start of the sentence and let them finish it (for example:
+  Ayer… ¿qué forma de ir necesitas?). After their try, confirm it in a few words and go
+  straight back to what they were telling you.
+- If what they said looks garbled or you are not sure of a word, ask one short question to
+  check before you correct anything (¿Dijiste pero o perro?).
+- If they say wait, espera, or ask what something means, answer that first in a few words,
+  then carry on.
+- If they ask for a hint, give only the first two or three words of an answer.
+- You are a character, not a person: never claim a human body, family or experiences.
+- The lesson still leads. Do the lesson step in <directive> in this style.`;
+
+/** Hands-free: how many times they have really answered (3+ words), so "sí" or "ajá" does not race the lesson ahead. */
+function substantialAnswers(history: HistoryTurn[], rawText: string | null): number {
+  const long = (t: string) => t.trim().split(/\s+/).filter(Boolean).length >= 3;
+  return history.filter((t) => t.role === "learner" && long(t.text)).length + (rawText !== null && long(rawText) ? 1 : 0);
+}
+
 function lessonBlock(context: TutorPromptArgs["context"]): string {
   const l = context.lesson;
   if (!l) return "";
@@ -227,7 +257,7 @@ export function buildTutorPrompt(args: TutorPromptArgs): {
     role: "user",
     content: placement
       ? `<learner_said>${rawText ?? ""}</learner_said>\n<step>${args.placementLine}</step>`
-      : `<learner_said>${rawText ?? ""}</learner_said>\n${renderDirective(directive, context.lesson ? lessonStep(placementAnswered(history, rawText)) : undefined)}`,
+      : `<learner_said>${rawText ?? ""}</learner_said>\n${renderDirective(directive, context.lesson ? lessonStep(args.conversational ? substantialAnswers(history, rawText) : placementAnswered(history, rawText)) : undefined)}`,
   });
   if (turns[0].role === "assistant") turns.unshift({ role: "user", content: SESSION_START });
 
@@ -240,7 +270,7 @@ export function buildTutorPrompt(args: TutorPromptArgs): {
   }
 
   if (placement) return { system: PLACEMENT_SYSTEM, messages };
-  const rules = context.lesson ? `\n\n${LESSON_RULES}` : "";
+  const rules = (context.lesson ? `\n\n${LESSON_RULES}` : "") + (args.conversational ? `\n\n${CONVERSATION_RULES}` : "");
   return { system: `${TUTOR_SYSTEM(context.level)}${rules}\n\n${sessionBlock(context)}`, messages };
 }
 

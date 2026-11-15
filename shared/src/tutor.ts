@@ -123,6 +123,7 @@ export const ReplyRequest = z.object({
   utteranceId: z.string().nullable(),
   rawText: z.string().nullable(),
   history: z.array(HistoryTurn),
+  mode: z.enum(["ptt", "handsfree"]).optional(), // D-023: absent = push to talk, today's prompt
 });
 export type ReplyRequest = z.infer<typeof ReplyRequest>;
 

@@ -223,4 +223,15 @@ assert.ok(RECAP_SYSTEM.includes("summary_en") && RECAP_SYSTEM.includes("tips"));
   assert.ok(PLACEMENT_ASSESS_SYSTEM.includes("choose the lower one"));
 }
 
+// ---------- hands-free (D-023): only hands-free changes the prompt ----------
+{
+  const base = { context: ctx, history: [], rawText: "Hola, me llamo Ana.", directive: none };
+  const ptt = buildTutorPrompt(base);
+  assert.equal(buildTutorPrompt({ ...base, conversational: false }).system, ptt.system, "ptt prompt unchanged");
+  assert.ok(!ptt.system.includes("Talking freely"));
+  const hf = buildTutorPrompt({ ...base, conversational: true });
+  assert.equal(hf.system.replace(/\n\nTalking freely[\s\S]*?(?=\n\n<session>)/, ""), ptt.system, "hands-free only adds one block");
+  assert.ok(hf.system.includes("Talking freely"));
+}
+
 console.log("ok");
