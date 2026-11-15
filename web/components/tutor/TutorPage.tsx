@@ -11,6 +11,7 @@ import { TranscriptView } from "./TranscriptView";
 import { newlyKnown } from "./wordUpdates";
 import { visibleErrors } from "./highlight";
 import { LuciFirefly, sparkToJar, type LuciReaction } from "./LuciFirefly";
+import { LessonCard } from "./LessonCard";
 import { rememberLearned } from "@/components/vocab/justLearned";
 
 const speaker = "font-display text-base font-semibold pt-2";
@@ -18,6 +19,13 @@ const speaker = "font-display text-base font-semibold pt-2";
 // Pure view over a TutorSession. Pass useMockTutorSession() or Andrew's real useTutorSession().
 export function TutorPage({ session }: { session: TutorSession }) {
   const { status, partial, turns, targetWords, recap, notice, start, pressTalk, releaseTalk, sendText, end } = session;
+  const plan = session.plan ?? null;
+  // The lesson card starts open and folds away after your first answer (you can reopen it any time).
+  const [lessonOpen, setLessonOpen] = useState(true);
+  const answered = turns.some((t) => t.rawText);
+  useEffect(() => {
+    if (answered) setLessonOpen(false);
+  }, [answered]);
   const [toasts, setToasts] = useState<string[]>([]);
   const [seen, setSeen] = useState<Set<string>>(new Set());
   const [typed, setTyped] = useState("");
@@ -251,12 +259,52 @@ export function TutorPage({ session }: { session: TutorSession }) {
                     Show English
                   </button>
                 ))}
+              {/* J1: why Luci replied this way, in one plain line */}
+              {t.why && <p className="mt-3 border-t border-sun-line pt-2 text-sm text-muted">{t.why}</p>}
             </div>
           </div>
         )}
       </article>
     );
   };
+  const endButton = (
+    <button
+      type="button"
+      onClick={() => {
+        setEnding({ notice: notice ?? null });
+        void end();
+      }}
+      disabled={turns.length < 2}
+      className={`${btn.secondary} shrink-0`}
+    >
+      End session
+    </button>
+  );
+  const typeForm = (className: string) => (
+    <form
+      className={className}
+      onSubmit={(e) => {
+        e.preventDefault();
+        const text = typed.trim();
+        if (!text) return;
+        sendText(text);
+        setTyped("");
+      }}
+    >
+      <input
+        ref={typeInput}
+        data-ptt-space
+        value={typed}
+        onChange={(e) => setTyped(e.target.value)}
+        placeholder="Or type in Spanish"
+        aria-label="Your answer in Spanish"
+        className="min-w-0 flex-1 rounded-sm border border-line bg-panel px-3 py-2 text-ink placeholder:text-muted focus:border-muted focus:outline-none"
+      />
+      <button type="submit" className={btn.primary}>
+        Send
+      </button>
+    </form>
+  );
   const luci = (className: string) => (
     <LuciFirefly mood={status} speechText={liveText} reaction={reaction.kind} reactionKey={reaction.n} className={className} />
   );
@@ -278,7 +326,35 @@ export function TutorPage({ session }: { session: TutorSession }) {
         </p>
       )}
 
-      <TargetChips words={targetWords} known={known} />
+      {/* J2: open before your first answer (the "it planned this from what I read" moment), then folded to one
+          line with the glowing target words so the newest exchange stays at the top. */}
+      {plan ? (
+        <details
+          open={lessonOpen}
+          onToggle={(e) => setLessonOpen(e.currentTarget.open)}
+          className="group/lesson rounded-md bg-panel px-5 py-4"
+        >
+          <summary className="flex cursor-pointer list-none flex-wrap items-baseline gap-x-5 gap-y-2 [&::-webkit-details-marker]:hidden">
+            <span className="font-display text-lg font-extrabold">Tonight&apos;s lesson</span>
+            <span className="flex flex-wrap gap-x-3 gap-y-1 group-open/lesson:hidden">
+              {plan.words.map((w) => (
+                <span key={w.lemma} className={`font-bold ${known.includes(w.lemma) ? "glow-known" : "glow-learning"}`}>
+                  {w.lemma}
+                </span>
+              ))}
+            </span>
+            <span className="ml-auto text-sm text-muted underline decoration-line underline-offset-4">
+              <span className="group-open/lesson:hidden">Show plan</span>
+              <span className="hidden group-open/lesson:inline">Hide plan</span>
+            </span>
+          </summary>
+          <div className="mt-4">
+            <LessonCard plan={plan} known={known} compact />
+          </div>
+        </details>
+      ) : (
+        <TargetChips words={targetWords} known={known} />
+      )}
 
       {/* Newest exchange first. Inside an exchange the order stays natural: you, the correction, Luci's reply. */}
       {status === "listening" && (
@@ -315,51 +391,29 @@ export function TutorPage({ session }: { session: TutorSession }) {
      </div>
      </div>
 
-      {/* Controls stay pinned to the bottom of the screen so the demo never needs scrolling. */}
+      {/* Controls stay pinned to the bottom of the screen so the demo never needs scrolling. Wide screens: one
+          row (talk, type, end) so the newest exchange keeps the space. Narrow: talk row, then typing below. */}
       <div className="sticky bottom-0 -mx-4 space-y-3 border-t border-line bg-panel px-4 pb-4 pt-4">
-        <div className="flex items-center justify-between gap-3 sm:gap-4">
-          <PushToTalk status={status} onPress={pressTalk} onRelease={releaseTalk} />
-          <button
-            type="button"
-            onClick={() => {
-              setEnding({ notice: notice ?? null });
-              void end();
-            }}
-            disabled={turns.length < 2}
-            className={btn.secondary}
-          >
-            End session
-          </button>
-        </div>
-
-        <details ref={typeBox} open className="text-muted" onToggle={(e) => setTypingOpen(e.currentTarget.open)}>
-          <summary className="cursor-pointer list-none text-sm transition-colors duration-150 hover:text-ink [&::-webkit-details-marker]:hidden">
-            {typingOpen ? "Hide typing" : "Type your answer instead"}
-          </summary>
-          <form
-            className="mt-3 flex gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const text = typed.trim();
-              if (!text) return;
-              sendText(text);
-              setTyped("");
-            }}
-          >
-            <input
-              ref={typeInput}
-              data-ptt-space
-              value={typed}
-              onChange={(e) => setTyped(e.target.value)}
-              placeholder="Escribe en español"
-              aria-label="Your answer in Spanish"
-              className="min-w-0 flex-1 rounded-sm border border-line bg-panel px-3 py-2 text-ink placeholder:text-muted focus:border-muted focus:outline-none"
-            />
-            <button type="submit" className={btn.primary}>
-              Send
-            </button>
-          </form>
-        </details>
+        {wide ? (
+          <div className="flex items-center gap-4">
+            <PushToTalk status={status} onPress={pressTalk} onRelease={releaseTalk} />
+            {typeForm("flex min-w-0 flex-1 gap-2")}
+            {endButton}
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between gap-3 sm:gap-4">
+              <PushToTalk status={status} onPress={pressTalk} onRelease={releaseTalk} />
+              {endButton}
+            </div>
+            <details ref={typeBox} open className="text-muted" onToggle={(e) => setTypingOpen(e.currentTarget.open)}>
+              <summary className="cursor-pointer list-none text-sm transition-colors duration-150 hover:text-ink [&::-webkit-details-marker]:hidden">
+                {typingOpen ? "Hide typing" : "Type your answer instead"}
+              </summary>
+              {typeForm("mt-3 flex gap-2")}
+            </details>
+          </>
+        )}
       </div>
 
       <KnownToast lemma={toasts[0] ?? null} onDone={dismissToast} />
