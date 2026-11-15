@@ -115,6 +115,9 @@ export function OnboardingForm({
               <Link href="/tutor" className={btn.primary}>
                 Talk to Luci
               </Link>
+              <Link href="/progress" className={btn.secondary}>
+                See your course →
+              </Link>
               <Link href="/vocabulary" className={btn.secondary}>
                 Open your jar
               </Link>

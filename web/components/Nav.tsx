@@ -7,6 +7,7 @@ import { useSetupStatus } from "@/components/settings/useSetupStatus";
 
 const LINKS = [
   { href: "/tutor", label: "Tutor" },
+  { href: "/progress", label: "Your course" },
   { href: "/vocabulary", label: "Your jar" },
   { href: "/privacy", label: "What Luci knows" },
   { href: "/settings", label: "Settings" },
