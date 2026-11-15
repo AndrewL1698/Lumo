@@ -79,7 +79,11 @@ Short entries. Newest at the bottom. Format: **ID · date · owner**, decision, 
 **Why:** Clicking is what people try first on stage. The greetings make Luci feel like it knows you.
 **Note:** The tutor uses the server's clock, which is the learner's on the localhost demo. A hosted version would send the browser's time.
 
-### D-016 · Nov 14 · Andrew
+### D-016 · Nov 14 · Karthik (heads-up to Naren and Shravan)
+**Decision:** (1) Swapped words in the extension glow by word state, using the web app's three lights: **faint** = only came across it (never met / seen), **flickering** = learning (hovered or looked up), **solid bright** = known or mastered. A look-up turns a faint word to flickering right away. Flicker is off for reduced motion. (2) On the home page, hovering or focusing *cocina*, *mesa* or *abuela* (in the sentence and in the legend) shows its meaning (*la cocina · kitchen*, …). The text is static, with no API call.
+**Why:** Before this, every swap looked the same, so the page couldn't show progress. The home demo's words had no meaning, which is exactly what visitors try to hover.
+
+### D-017 · Nov 14 · Andrew
 **Decision:** Latency pass for the tutor. (1) **Prompt caching** on both lanes' system prompts (Haiku and Sonnet 5.5 cache from 512 tokens; ours are about 1,000–1,800 with the schema). (2) A **hedged corrector**: two identical Haiku calls, and the first valid answer wins. (3) The first TTS chunk can go out as soon as a sentence ends at the end of a stream delta. Server-side refusal fallbacks stay on. Production mode is not needed: run one rehearsal turn after starting the server so every route is compiled.
 **Why:** The probe (`eval/latency/probe.ts`) showed where the time goes. The corrector is about 700 ms to first token plus about 450 ms writing about 120 tokens, and its slow turns are random spikes (one sample took 1.9 s to first token), which a hedge absorbs. Sonnet sends its first words at about 600–800 ms, then pauses about 300–700 ms before the rest arrives in a burst, on both the plain and fallback paths. That pause, not our code, sets the first-chunk time.
 **Measured** (20 turns each, wifi, from STT final; add about 190 ms for button release): correction median/p90 1194/1517 ms → 1128/~1330 ms. Audio ready 1528/1733 ms at baseline. Caching alone left correction unchanged, and fallbacks on vs off showed no difference beyond noise. Accuracy on the 20 sentences after the hedge: recall 10/15 and 12/15, false alarms 0/5. Over 40 hedged pairs the two answers never disagreed on the error count.
