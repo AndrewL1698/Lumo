@@ -2,8 +2,8 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Luci</title>
-    <!-- Luci look: the web app's night panel (web/app/globals.css, dark tokens). Contrast on --bg:
+    <title>Lumo</title>
+    <!-- Lumo look: the web app's night panel (web/app/globals.css, dark tokens). Contrast on --bg:
          ink 15:1, muted 9:1, go 11:1, stop 8:1; dark text on the amber button 11:1 (all AA).
          Every id below is used by index.ts (Andrew's D-019 popup): keep them when changing the layout. -->
     <style>
@@ -266,7 +266,6 @@
     <header>
       <svg id="luci-logo" viewBox="0 0 128 128" width="26" height="26" aria-hidden="true">
         <rect width="128" height="128" rx="20" fill="#fff3c4" />
-        <rect x="22" y="94" width="84" height="14" rx="4" fill="#ffd23a" />
         <g transform="rotate(40 64 60)">
           <ellipse cx="64" cy="78" rx="13" ry="17" fill="#ffd23a" />
           <ellipse cx="64" cy="56" rx="12" ry="15" fill="#2a3a4a" />
@@ -276,9 +275,9 @@
           <path d="M60 29 C56 19 50 15 44 14 M68 29 C72 19 78 15 84 14" fill="none" stroke="#6fa8d6" stroke-width="3.5" stroke-linecap="round" />
         </g>
       </svg>
-      <h1>Luci</h1>
+      <h1>Lumo</h1>
       <!-- HACK: same address as API_BASE in sw/index.ts -->
-      <a id="open-app" href="http://localhost:3000" target="_blank" rel="noopener">Open Luci ↗</a>
+      <a id="open-app" href="http://localhost:3000" target="_blank" rel="noopener">Open Lumo ↗</a>
     </header>
 
     <div class="chips" aria-live="polite">
@@ -315,7 +314,7 @@
 
     <section class="card" id="pairing" hidden>
       <label class="label" for="code">Pair with the web app</label>
-      <p class="note">Enter the 6-digit code from Luci's setup page.</p>
+      <p class="note">Enter the 6-digit code from Lumo's setup page.</p>
       <div class="pair-row">
         <input id="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" placeholder="123456" autocomplete="off" />
         <button id="pair">Pair</button>

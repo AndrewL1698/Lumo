@@ -64,7 +64,7 @@ export function SettingsForm({ initial, onSave }: { initial: Settings; onSave: (
           onChange={(e) => set({ perPageCap: Number(e.target.value) })}
           className="w-full max-w-md accent-glow"
         />
-        <p className="text-sm text-muted">Luci never swaps more than this many words on one page. 0 means none.</p>
+        <p className="text-sm text-muted">Lumo never swaps more than this many words on one page. 0 means none.</p>
       </div>
 
       <div id="reading" className="scroll-mt-24">
@@ -94,9 +94,9 @@ export function SettingsForm({ initial, onSave }: { initial: Settings; onSave: (
       </section>
 
       <section>
-        <h2 className="mb-2 text-xl font-bold text-ink">Sites where Luci is on</h2>
+        <h2 className="mb-2 text-xl font-bold text-ink">Sites where Lumo is on</h2>
         {s.allowlist.length === 0 ? (
-          <p className="text-muted">None yet. Turn Luci on for a site from the extension popup.</p>
+          <p className="text-muted">None yet. Turn Lumo on for a site from the extension popup.</p>
         ) : (
           <ul className="flex flex-wrap gap-2">
             {s.allowlist.map((site) => (
@@ -106,7 +106,7 @@ export function SettingsForm({ initial, onSave }: { initial: Settings; onSave: (
             ))}
           </ul>
         )}
-        <p className="mt-2 text-sm text-muted">To add or remove a site, use the Luci popup in Chrome.</p>
+        <p className="mt-2 text-sm text-muted">To add or remove a site, use the Lumo popup in Chrome.</p>
       </section>
 
       <button

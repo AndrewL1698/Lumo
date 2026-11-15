@@ -1,12 +1,12 @@
-# Luci
+# Lumo
 
 > **Your morning reading becomes tonight's conversation lesson.**
-> Luci swaps a few English words into Spanish on sites you choose, learns which ones you don't know yet,
+> Lumo swaps a few English words into Spanish on sites you choose, learns which ones you don't know yet,
 > and then a voice tutor chats with you about what you read, correcting you instantly like a fluent friend.
 > A word only counts as learned once you use it correctly out loud.
 
 Built for HackPrinceton Fall 2026 · Amazon track: Best Practical AI Innovation.
-The name comes from *luciérnaga* (firefly): every word you learn glows a little brighter. (Parrot was the working name, and the code still uses it.)
+(Parrot and Luci were working names; the code still uses them.)
 
 <!-- TODO(demo): hero screenshot of the tutor page (docs/img/tutor.png) -->
 
@@ -20,9 +20,9 @@ English news every day but never find time to study.
   conversation is generic and nothing you read gets practised.
 
 ## What's different
-Luci connects reading and speaking in one loop:
+Lumo connects reading and speaking in one loop:
 1. **Read:** on a news site you've enabled, a few English words become Spanish (*the strike → la huelga*). Hover or click one
-   for the meaning and pronunciation. Luci notes which words you looked up.
+   for the meaning and pronunciation. Lumo notes which words you looked up.
 2. **Talk:** a *Tonight's lesson* card shows what the tutor planned from your reading: the article, the words it will
    steer toward and why, and one mistake to watch. The tutor opens with that article. You hold Space and answer in Spanish.
 3. **Get corrected, instantly:** your words appear on screen with mistakes struck through, the fix in green, and a
@@ -35,7 +35,7 @@ UI and explanations are in English; the Spanish is Latin American.
 ## How it works
 ```
 Chrome extension (MV3)                 Web app (Next.js)
-  swaps words on allowed sites           Tutor · Your jar · What Luci knows · Settings
+  swaps words on allowed sites           Tutor · Your jar · What Lumo knows · Settings
   hover cards, reading events            push-to-talk, live corrections, recap
           │  pairing token                        │
           ▼                                       ▼
@@ -70,7 +70,7 @@ The tutor decides how to teach on every turn instead of following a script:
 
 You can watch it decide. The *Tonight's lesson* card lists each target word with its reason ("you hovered it this
 morning", "due for review"), and each word lights up as you use it. A small grey **why** line under every tutor reply
-says what it chose and why, e.g. *"Not correcting out loud yet: Luci waits until a mistake comes up in two turns"*. Neither adds an extra Claude
+says what it chose and why, e.g. *"Not correcting out loud yet: Lumo waits until a mistake comes up in two turns"*. Neither adds an extra Claude
 call: both come from decisions the tutor already makes in code.
 
 ### Adaptive intelligence
@@ -104,23 +104,23 @@ Method and per-mistake-type breakdown: [`eval/README.md`](eval/README.md).
 
 ## Screenshots
 <!-- TODO(demo): add docs/img/tutor.png once the tutor uses the real reading context. -->
-<!-- TODO(demo): retake vocabulary.png and privacy.png. They are from before the Luci redesign (Sat 4:27pm). -->
+<!-- TODO(demo): retake vocabulary.png and privacy.png. They are from before the Lumo redesign (Sat 4:27pm). -->
 **Your jar:** every word is a firefly. It glows *Still faint* while you're learning it, *Glowing steady* once you've
 used it correctly out loud, and *Shining bright* when you've kept remembering it for weeks.
 
 ![Your jar page](docs/img/vocabulary.png)
 
-**What Luci knows:** everything stored about you, with a delete button on each item.
+**What Lumo knows:** everything stored about you, with a delete button on each item.
 
-![What Luci knows page](docs/img/privacy.png)
+![What Lumo knows page](docs/img/privacy.png)
 
 ## Privacy
 - **Off by default.** The extension has no site access until you turn it on for a site; Chrome asks you to confirm each one.
-- **Hard never-list.** Luci never runs on email, chat, banking, health, school and work tools (Google Docs, Canvas,
+- **Hard never-list.** Lumo never runs on email, chat, banking, health, school and work tools (Google Docs, Canvas,
   GitHub), or login and form pages, even if you allow them. This is enforced in code.
 - **Minimal data.** It never sends full page text, your browsing history, or anything you type on other sites. It stores
   the words you look up, a short activity log, article titles and websites, and your tutor transcripts.
-- **You can see and delete everything.** The "What Luci knows" page lists every stored item with a delete button, plus
+- **You can see and delete everything.** The "What Lumo knows" page lists every stored item with a delete button, plus
   "Delete everything".
 - **No keys in the browser.** All Claude and ElevenLabs calls go through server routes; the extension and the web page
   never hold an API key.
@@ -154,7 +154,7 @@ npm run seed-demo -w scripts    # reset the demo account to the demo state
 **Chrome extension:**
 1. `npm run build:ext`
 2. Open `chrome://extensions`, turn on **Developer mode**, click **Load unpacked** and pick `extension/dist`.
-3. Open the Luci popup, enter the pairing code shown on the web app's onboarding page, then enable a news site.
+3. Open the Lumo popup, enter the pairing code shown on the web app's onboarding page, then enable a news site.
 
 ## Credits
 - Word frequencies: **FrequencyWords** by Hermit Dave, derived from [OpenSubtitles 2018](http://www.opensubtitles.org/),

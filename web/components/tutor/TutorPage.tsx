@@ -68,7 +68,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
     window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
   }, [exchangeKey]);
 
-  // Wide screens: one Luci, pinned beside the conversation, never remounted. Narrow screens: Luci sits
+  // Wide screens: one Lumo, pinned beside the conversation, never remounted. Narrow screens: Lumo sits
   // beside the newest tutor message.
   const [wide, setWide] = useState(false);
   useEffect(() => {
@@ -88,7 +88,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
     typeInput.current?.focus({ preventScroll: true });
   }, [awaitingReply, turns.length]);
 
-  // Luci reacts once to each checked answer: a hop for a clean sentence, a gentle tilt for mistakes,
+  // Lumo reacts once to each checked answer: a hop for a clean sentence, a gentle tilt for mistakes,
   // and a loop (plus a spark to "Your jar") when a word becomes known. View-only; no session data changes.
   const [reaction, setReaction] = useState<{ kind: LuciReaction; n: number }>({ kind: null, n: 0 });
   const reacted = useRef<Set<string>>(new Set());
@@ -133,7 +133,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
             <p className="mt-2 text-lg text-muted">
               {failed
                 ? "Your progress from this session is already saved. You can start a new session any time."
-                : "Luci is looking back over what you said."}
+                : "Lumo is looking back over what you said."}
             </p>
           </div>
         </div>
@@ -227,7 +227,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
         {(t.tutorText || pending) && (
           <div className={`flex gap-3 sm:gap-5 ${luciHere ? "items-center" : "items-start"}`} data-luci-live={luciHere ? "" : undefined}>
             {wide ? null : luciHere ? (
-              // Narrow screens: Luci sits beside the newest reply.
+              // Narrow screens: Lumo sits beside the newest reply.
               <div className="flex w-24 shrink-0 justify-center py-4 sm:w-44">{luci("h-24 w-24 sm:h-44 sm:w-44")}</div>
             ) : (
               <div className="flex w-16 shrink-0 justify-center pt-1 sm:w-24">
@@ -239,7 +239,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
                 luciHere ? "before:top-[calc(50%-6px)]" : "before:top-6"
               }`}
             >
-              <p className="sr-only">Luci says</p>
+              <p className="sr-only">Lumo says</p>
               {/* screen readers hear each new reply as it arrives */}
               <p className="relative text-xl leading-snug text-ink sm:text-2xl" aria-live={isNewest ? "polite" : undefined}>
                 {t.tutorText || <span className="text-muted">…</span>}
@@ -259,7 +259,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
                     Show English
                   </button>
                 ))}
-              {/* J1: why Luci replied this way, in one plain line */}
+              {/* J1: why Lumo replied this way, in one plain line */}
               {t.why && <p className="mt-3 border-t border-sun-line pt-2 text-sm text-muted">{t.why}</p>}
             </div>
           </div>
@@ -356,7 +356,7 @@ export function TutorPage({ session }: { session: TutorSession }) {
         <TargetChips words={targetWords} known={known} />
       )}
 
-      {/* Newest exchange first. Inside an exchange the order stays natural: you, the correction, Luci's reply. */}
+      {/* Newest exchange first. Inside an exchange the order stays natural: you, the correction, Lumo's reply. */}
       {status === "listening" && (
         <section aria-label="You are speaking" className="exchange-newest">
           <div className="grid gap-2 sm:grid-cols-[6rem_1fr] sm:gap-4">

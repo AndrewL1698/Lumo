@@ -94,7 +94,7 @@ const MIN_HOLD_MS = 60;
 // Lip-sync. Timing, best source first: the clip's text spread over its real duration (ElevenLabs), the
 // browser voice's word boundaries, or (no audio at all, e.g. rehearsal) the reply text at a speaking pace.
 // Loudness then scales how open the mouth is, and quiet audio eases it back to rest.
-// One requestAnimationFrame loop, only while Luci is talking.
+// One requestAnimationFrame loop, only while Lumo is talking.
 function useLipSync(
   active: boolean,
   els: MouthEls,
@@ -205,7 +205,7 @@ function useLipSync(
 
 // Eyes follow the real mouse (the firefly cursor is drawn on top of it; we read the pointer itself).
 // Only the eye ovals move, inside a small radius, eased every frame through an SVG transform on a ref (no React
-// state). After ~3 s without movement, or when the mouse leaves the window, they drift back to centre. While Luci
+// state). After ~3 s without movement, or when the mouse leaves the window, they drift back to centre. While Lumo
 // talks she mostly looks at you, with a short glance at the cursor now and then. Off on touch screens, with
 // reduced motion, and on still (older) Lucis. The blink scales the outer eye group, so the eyes still vanish in it.
 const LOOK_RANGE = { x: 1.6, y: 1.2 }; // in viewBox units; the eye oval is 6 x 7.8
@@ -294,8 +294,8 @@ function useEyeTracking(
   }, [still, svgRef, lookRef, talkingRef]);
 }
 
-// Luci the firefly, the tutor's face: an original soft chibi character (round head, plump body, small oval eyes,
-// rosy cheeks, translucent veined wings, a glowing tail). Pure SVG + CSS animations (globals.css, "Luci firefly").
+// Lumo the firefly, the tutor's face: an original soft chibi character (round head, plump body, small oval eyes,
+// rosy cheeks, translucent veined wings, a glowing tail). Pure SVG + CSS animations (globals.css, "Lumo firefly").
 // Decorative only: status text elsewhere carries the meaning for screen readers.
 // mood follows the session status; reaction plays once after each answer (changing reactionKey replays it).
 // Size comes from className (responsive), or `size` in px.
@@ -308,7 +308,7 @@ export function LuciFirefly({
   className = "",
   speechText = "",
 }: {
-  speechText?: string; // the reply Luci is saying (used when there is no audio to follow)
+  speechText?: string; // the reply Lumo is saying (used when there is no audio to follow)
   mood?: TutorStatus;
   reaction?: LuciReaction;
   reactionKey?: number;
@@ -330,7 +330,7 @@ export function LuciFirefly({
   }).current;
   const uid = useId().replace(/:/g, "");
   const clipId = `luci-mouth-${uid}`;
-  const gid = `luci-${uid}`; // gradient ids, unique per Luci on the page
+  const gid = `luci-${uid}`; // gradient ids, unique per Lumo on the page
   const reactRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = reactRef.current;
@@ -352,7 +352,7 @@ export function LuciFirefly({
     window.addEventListener(VOICE_EVENT, update);
     return () => window.removeEventListener(VOICE_EVENT, update);
   }, [still]);
-  // Without audio (rehearsal, or a reply whose audio failed), Luci finishes saying the reply text even if
+  // Without audio (rehearsal, or a reply whose audio failed), Lumo finishes saying the reply text even if
   // the status has moved on; the loop ends this once the text is done.
   const [textTalk, setTextTalk] = useState(false);
   useEffect(() => {
@@ -368,7 +368,7 @@ export function LuciFirefly({
     talkingRef.current = talking;
   }, [talking]);
   useEyeTracking(svgRef, lookRef, still, talkingRef);
-  // Reaction faces when Luci isn't talking: a grin (correct / word learned) or a gentle "hmm" (mistake).
+  // Reaction faces when Lumo isn't talking: a grin (correct / word learned) or a gentle "hmm" (mistake).
   useEffect(() => {
     if (still || talking) return;
     tweenMouth(els, reaction === "good" || reaction === "loop" ? GRIN : reaction === "oops" ? HMM : SHAPES.rest, 200);
@@ -499,7 +499,7 @@ export function LuciFirefly({
   );
 }
 
-// A word became known: a tiny firefly flies from Luci's tail to "Your jar" in the nav, which then lights up.
+// A word became known: a tiny firefly flies from Lumo's tail to "Your jar" in the nav, which then lights up.
 const TINY_FIREFLY = `<svg viewBox="0 0 32 32" width="22" height="22"><g transform="rotate(-45 16 16)">
 <ellipse cx="10.6" cy="13" rx="3" ry="5.6" transform="rotate(-28 10.6 13)" fill="#6fa8d6" fill-opacity=".9" stroke="#2a3a4a" stroke-width=".7"/>
 <ellipse cx="21.4" cy="13" rx="3" ry="5.6" transform="rotate(28 21.4 13)" fill="#6fa8d6" fill-opacity=".9" stroke="#2a3a4a" stroke-width=".7"/>

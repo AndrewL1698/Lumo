@@ -59,7 +59,7 @@ export function SetupChecklist({ settings, status }: { settings: Settings; statu
         <ol className="mt-5 space-y-4">
           <Item done title="Pick your level" detail={level} />
           <Item done title="Pair the extension" />
-          <Item done title="Turn Luci on for a site" />
+          <Item done title="Turn Lumo on for a site" />
           <Item
             done
             title="Use your reading in lessons"
@@ -105,7 +105,7 @@ export function SetupChecklist({ settings, status }: { settings: Settings; statu
         <Item done={status.paired} title="Pair the extension">
           {!status.paired && <PairingCode code={DEMO_PAIRING_CODE} />}
         </Item>
-        <Item done={status.siteOn} title="Turn Luci on for a site">
+        <Item done={status.siteOn} title="Turn Lumo on for a site">
           {!status.siteOn && <ReadingSites allowlist={settings.allowlist} />}
         </Item>
         <Item

@@ -23,7 +23,7 @@ export default function Page() {
 
   return (
     <>
-      <PageHeader title="What Luci knows" subtitle="Everything stored about you. Delete any item, or all of it." />
+      <PageHeader title="What Lumo knows" subtitle="Everything stored about you. Delete any item, or all of it." />
       {loading && <LoadingState shape="chips" />}
       {error && <ErrorState message={error} onRetry={() => void reload()} />}
       {data && <KnownData data={data} onDelete={onDelete} />}

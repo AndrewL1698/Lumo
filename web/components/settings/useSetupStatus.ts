@@ -2,7 +2,7 @@
 import { DataResponse } from "@parrot/shared";
 import { useFetch } from "@/components/useFetch";
 
-// Setup status from data Luci already stores (read only). An article or any activity from the extension can only
+// Setup status from data Lumo already stores (read only). An article or any activity from the extension can only
 // exist once the extension is paired; an article means it's on for a site. The allowlist is NOT evidence: onboarding
 // pre-fills it with starter sites (D-021) before the extension is ever paired.
 const FROM_EXTENSION = new Set(["seen", "hover", "knew_it", "didnt_know", "reading"]);

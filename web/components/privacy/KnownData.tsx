@@ -110,7 +110,7 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
     <div className="space-y-16">
       <div className="max-w-3xl">
         <p className="font-display text-3xl font-extrabold leading-snug tracking-tight">
-          Luci knows {n(data.words.length, "word", "words")}, {n(data.events.length, "moment", "moments")} of activity and{" "}
+          Lumo knows {n(data.words.length, "word", "words")}, {n(data.events.length, "moment", "moments")} of activity and{" "}
           {n(data.articles.length, "article", "articles")}.
         </p>
         <p className="mt-4 text-lg text-muted">
@@ -285,7 +285,7 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
       <section className="border-t border-line pt-8">
         {!confirming ? (
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <p className="text-muted">Start over: remove everything Luci has stored. Your settings are kept.</p>
+            <p className="text-muted">Start over: remove everything Lumo has stored. Your settings are kept.</p>
             <button type="button" disabled={busy || total === 0} onClick={() => setConfirming(true)} className={btn.danger}>
               Delete everything
             </button>
@@ -293,7 +293,7 @@ export function KnownData({ data, onDelete }: { data: DataResponse; onDelete: (r
         ) : (
           <div className="space-y-4">
             <p className="max-w-2xl text-lg text-ink">
-              This deletes every word Luci has tracked, your activity, the articles you&apos;ve read, and your tutor sessions and
+              This deletes every word Lumo has tracked, your activity, the articles you&apos;ve read, and your tutor sessions and
               transcripts. Your settings are kept. This can&apos;t be undone.
             </p>
             <div className="flex flex-wrap gap-3">

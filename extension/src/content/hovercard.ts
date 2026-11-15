@@ -29,7 +29,7 @@ interface Handlers {
   onSpeak(t: HoverTarget): Promise<boolean>;
 }
 
-// Luci look (D-010): the web app's night panel, straight from web/app/globals.css
+// Lumo look (D-010): the web app's night panel, straight from web/app/globals.css
 // (--color-panel, --color-ink, --color-muted, --color-line, --color-accent, --color-go).
 // Fonts stay system ones, since the host page can't load ours.
 //

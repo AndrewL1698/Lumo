@@ -10,7 +10,7 @@ export const btn = {
   dangerSolid: `${base} bg-stop text-on-stop hover:bg-stop/85`,
 };
 
-// Small uppercase label, Luci's eyebrow.
+// Small uppercase label, Lumo's eyebrow.
 export const eyebrow = "text-xs font-bold uppercase tracking-[0.08em] text-accent";
 
 export function PageHeader({

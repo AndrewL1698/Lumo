@@ -9,7 +9,7 @@ const LINKS = [
   { href: "/tutor", label: "Tutor" },
   { href: "/progress", label: "Your course" },
   { href: "/vocabulary", label: "Your jar" },
-  { href: "/privacy", label: "What Luci knows" },
+  { href: "/privacy", label: "What Lumo knows" },
   { href: "/settings", label: "Settings" },
 ];
 
@@ -22,7 +22,7 @@ export function Nav() {
       <nav className="mx-auto flex max-w-5xl items-center gap-x-5 px-4 py-4 sm:gap-x-8">
         <Link href="/" className="nav-home flex shrink-0 items-center gap-2 rounded-sm font-display text-xl font-extrabold tracking-tight text-ink">
           <LuciMark size={30} />
-          Luci
+          Lumo
         </Link>
         <ul className="-mb-3 flex min-w-0 gap-x-4 overflow-x-auto whitespace-nowrap pb-3 [scrollbar-width:none] sm:gap-x-6">
           {LINKS.map((l) => {

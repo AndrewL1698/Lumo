@@ -11,7 +11,7 @@ import { LEVELS } from "./LevelPicker";
 const QUESTIONS = 3;
 const title = (l: Level) => LEVELS.find((x) => x.value === l)?.title ?? l;
 
-// Onboarding step 2 (D-020): Luci asks three questions out loud, then suggests a level with a reason.
+// Onboarding step 2 (D-020): Lumo asks three questions out loud, then suggests a level with a reason.
 // The learner decides: use the suggestion or keep their own pick. Skipping, or any failure, keeps their pick.
 export function PlacementCheck({ selfLevel, onDone }: { selfLevel: Level; onDone: (level: Level) => void }) {
   const { status, partial, turns, notice, sessionId, start, pressTalk, releaseTalk, sendText } = useTutorSession({
@@ -49,7 +49,7 @@ export function PlacementCheck({ selfLevel, onDone }: { selfLevel: Level; onDone
       .catch(() => setResult("failed"));
   }, [lastChecked, sessionId, turns]);
 
-  // Cursor in the type box whenever Luci is waiting (Space on the empty box still talks; see PushToTalk).
+  // Cursor in the type box whenever Lumo is waiting (Space on the empty box still talks; see PushToTalk).
   const awaiting = begun && !done && status === "idle" && !!tutorLine;
   useEffect(() => {
     if (awaiting) typeInput.current?.focus({ preventScroll: true });
@@ -59,10 +59,10 @@ export function PlacementCheck({ selfLevel, onDone }: { selfLevel: Level; onDone
     return (
       <section className="rounded-sm border border-line bg-panel p-6">
         <p className={eyebrow}>Optional · about 1 minute</p>
-        <h2 className="mt-2 text-2xl font-bold text-ink">Quick check with Luci</h2>
+        <h2 className="mt-2 text-2xl font-bold text-ink">Quick check with Lumo</h2>
         <p className="mt-2 max-w-2xl text-muted">
-          Luci asks three short questions out loud, from easy to harder. Answer in Spanish as well as you can: hold Space
-          or the button to talk, or type. Saying &quot;no sé&quot; is fine. Then Luci suggests a level and tells you why.
+          Lumo asks three short questions out loud, from easy to harder. Answer in Spanish as well as you can: hold Space
+          or the button to talk, or type. Saying &quot;no sé&quot; is fine. Then Lumo suggests a level and tells you why.
           You decide.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
@@ -153,13 +153,13 @@ export function PlacementCheck({ selfLevel, onDone }: { selfLevel: Level; onDone
 
       {done && result === null && (
         <p role="status" className="font-mono text-sm text-muted">
-          Luci is working out your level
+          Lumo is working out your level
         </p>
       )}
 
       {result === "failed" && (
         <div className="rounded-sm border border-line bg-panel p-6">
-          <p className="text-ink">Luci couldn&apos;t work out a level this time, so your choice stays: {title(selfLevel)}.</p>
+          <p className="text-ink">Lumo couldn&apos;t work out a level this time, so your choice stays: {title(selfLevel)}.</p>
           <button type="button" onClick={() => onDone(selfLevel)} className={`${btn.primary} mt-4`}>
             Continue
           </button>
@@ -168,7 +168,7 @@ export function PlacementCheck({ selfLevel, onDone }: { selfLevel: Level; onDone
 
       {result && result !== "failed" && (
         <div className="rounded-sm border border-sun-line bg-sun p-6">
-          <p className={eyebrow}>Luci suggests</p>
+          <p className={eyebrow}>Lumo suggests</p>
           <h2 className="mt-2 text-3xl font-extrabold tracking-tight text-ink">{title(result.level)}</h2>
           <p className="mt-3 text-lg text-ink">{result.reason_en}</p>
           {result.evidence_en.length > 0 && (

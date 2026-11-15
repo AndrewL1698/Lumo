@@ -60,10 +60,10 @@ const LEVEL_TEXT: Record<Level, string> = {
 function when(dueAt: string | null): string | null {
   if (!dueAt) return null;
   const days = Math.ceil((new Date(dueAt).getTime() - Date.now()) / 86_400_000);
-  if (days <= 0) return "Luci will bring it up in your next session.";
-  if (days === 1) return "Luci will bring it up again tomorrow.";
-  if (days > 60) return `Luci will check on it in about ${Math.round(days / 30)} months.`;
-  return `Luci will check on it in ${days} days.`;
+  if (days <= 0) return "Lumo will bring it up in your next session.";
+  if (days === 1) return "Lumo will bring it up again tomorrow.";
+  if (days > 60) return `Lumo will check on it in about ${Math.round(days / 30)} months.`;
+  return `Lumo will check on it in ${days} days.`;
 }
 
 export function Jar({ data, fresh }: { data: VocabResponse; fresh: Set<string> }) {

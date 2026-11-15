@@ -34,7 +34,7 @@ export default function Page() {
 
   return (
     <>
-      <PageHeader title="Settings" subtitle="Get set up, then choose how Luci works for you." />
+      <PageHeader title="Settings" subtitle="Get set up, then choose how Lumo works for you." />
       {loading && <LoadingState shape="form" />}
       {error && !data && <ErrorState message={error} onRetry={() => void reload()} />}
       {data && setup && <SetupChecklist settings={data} status={setup} />}
