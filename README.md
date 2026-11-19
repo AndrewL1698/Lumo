@@ -6,9 +6,7 @@ Lumo swaps a few English words into Spanish on the sites you already read. In th
 you about that article and corrects your mistakes as you talk. A word only counts as learned once you've used it
 correctly out loud.
 
-![The Lumo tutor: a correction shown inside the learner's own sentence, with the English reason underneath](docs/img/tutor.png)
-
-[![Watch the video](https://youtube.com)](https://www.youtube.com/watch?v=n8UM26dbQ30)
+[![Watch the video](./docs/img/tutor.png)](https://www.youtube.com/watch?v=n8UM26dbQ30)
 
 *Built at HackPrinceton Fall 2026 · Amazon track: Best Practical AI Innovation.*
 *(Parrot and Luci were working names; the code still uses them.)*
