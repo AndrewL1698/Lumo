@@ -8,6 +8,8 @@ correctly out loud.
 
 ![The Lumo tutor: a correction shown inside the learner's own sentence, with the English reason underneath](docs/img/tutor.png)
 
+[![Watch the video](https://youtube.com)](https://www.youtube.com/watch?v=n8UM26dbQ30)
+
 *Built at HackPrinceton Fall 2026 · Amazon track: Best Practical AI Innovation.*
 *(Parrot and Luci were working names; the code still uses them.)*
 
